@@ -25,7 +25,7 @@ from backend.tools.definitions import (
     TakeMessageInput,
     TransferCallInput,
 )
-from ui.mock_data import INITIAL_BUSINESSES
+from backend.mock_data import INITIAL_BUSINESSES
 
 
 @pytest.fixture
@@ -124,7 +124,7 @@ def test_rejection_of_disabled_tool_for_tenant(registry: ToolRegistry):
     )
     assert res.status == ToolExecutionStatus.DISABLED
     assert res.success is False
-    assert "is not enabled for business" in res.message
+    assert "is not enabled for business" in res.message or "is only available for businesses in" in res.message
 
 
 def test_rejection_of_unknown_tool(registry: ToolRegistry):

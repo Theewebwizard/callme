@@ -70,6 +70,7 @@ class ToolDefinition(BaseModel):
     name: str
     description: str
     category: ToolCategory
+    icon: str = "🔧"
     allowed_industries: List[str] = Field(default_factory=lambda: ["*"])
     input_schema: Type[BaseModel]
     requires_confirmation: bool = False

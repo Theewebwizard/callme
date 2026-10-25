@@ -7,7 +7,7 @@ from typing import Optional, Dict, List, Any, Tuple
 import time
 import logging
 from sqlalchemy.orm import sessionmaker, Session
-from sqlalchemy import Engine
+from sqlalchemy import Engine, select, func
 
 from backend.database.engine import (
     get_engine,
@@ -57,9 +57,17 @@ class DatabaseService:
         return self._session_factory
 
     def is_available(self) -> bool:
-        """Check if database is configured and operational."""
+        """Check if database is configured and operational with short TTL cache."""
+        now = time.time()
+        if hasattr(self, "_last_avail_check"):
+            last_ts, last_val = self._last_avail_check
+            if (now - last_ts) < 30.0:
+                return last_val
+
         status = check_database_connection(engine=self._engine)
-        return bool(status.get("connected", False))
+        val = bool(status.get("connected", False))
+        self._last_avail_check = (now, val)
+        return val
 
     def get_connection_info(self) -> Dict[str, Any]:
         """Return connectivity diagnosis information."""
@@ -102,37 +110,47 @@ class DatabaseService:
             repo = BusinessRepository(session)
             target = email_or_identifier.strip().lower()
 
-            # 1. Look up by owner_email
-            biz = repo.get_by_owner_email(target)
+            from sqlalchemy.orm import selectinload
+            from backend.database.models import Business
+            stmt = (
+                select(Business)
+                .options(selectinload(Business.faqs), selectinload(Business.tool_configs))
+                .where(func.lower(Business.owner_email) == target)
+                .limit(1)
+            )
+            biz = session.scalars(stmt).first()
 
             # 2. Look up by business ID or Name if email lookup misses
             if not biz:
-                all_b = repo.list_all()
-                for b in all_b:
-                    clean_phone = (b.phone_number or "").replace(" ", "").replace("+", "").replace("-", "")
-                    clean_t = target.replace(" ", "").replace("+", "").replace("-", "")
-                    if (
-                        b.id.lower() == target
-                        or b.name.lower() == target
-                        or (b.owner_email and b.owner_email.strip().lower() == target)
-                        or (clean_t and clean_t == clean_phone)
-                    ):
-                        biz = b
-                        break
+                id_stmt = (
+                    select(Business)
+                    .options(selectinload(Business.faqs), selectinload(Business.tool_configs))
+                    .where(
+                        (func.lower(Business.id) == target)
+                        | (func.lower(Business.name) == target)
+                    )
+                    .limit(1)
+                )
+                biz = session.scalars(id_stmt).first()
 
             if not biz:
                 return None
 
             # Verify password
-            if biz.password_hash:
-                if not verify_password(plain_password, biz.password_hash):
-                    return None
-            else:
-                # If no password hash is saved in DB, verify against standard demo password
-                if plain_password != "haveli123":
-                    return None
+            if not biz.password_hash or not verify_password(plain_password, biz.password_hash):
+                return None
 
-            return repo.get_full_profile(biz.id)
+            base_dict = biz.to_dict()
+            base_dict["faqs"] = [faq.to_dict() for faq in biz.faqs]
+            base_dict["enabled_tools"] = {tc.tool_id: tc.is_enabled for tc in biz.tool_configs}
+            base_dict["stats"] = {
+                "active_status": "Active",
+                "total_calls": 0,
+                "bookings_completed": 0,
+                "escalated_calls": 0,
+                "avg_duration": "0m 00s",
+            }
+            return base_dict
 
     def save_business_profile(
         self,
@@ -156,6 +174,7 @@ class DatabaseService:
                 faq_repo.replace_all_for_business(business_id, updates["faqs"])
 
             session.flush()
+            session.expire(updated_biz)
             profile = biz_repo.get_full_profile(business_id)
             if profile:
                 self._profile_cache[business_id] = (time.time(), profile)
@@ -233,14 +252,29 @@ class DatabaseService:
         business_id: str,
         outcome_filter: Optional[str] = None,
         limit: int = 100,
+        offset: int = 0,
     ) -> List[Dict[str, Any]]:
-        """Retrieve audited call history records for a tenant."""
+        """Retrieve audited call history records for a tenant with SQL offset pagination."""
         with session_scope(self.session_factory) as session:
             call_repo = CallRepository(session)
             return call_repo.list_dicts_for_business(
                 business_id=business_id,
                 outcome_filter=outcome_filter,
                 limit=limit,
+                offset=offset,
+            )
+
+    def get_call_count(
+        self,
+        business_id: str,
+        outcome_filter: Optional[str] = None,
+    ) -> int:
+        """Count total audited call history records for a tenant."""
+        with session_scope(self.session_factory) as session:
+            call_repo = CallRepository(session)
+            return call_repo.count_for_business(
+                business_id=business_id,
+                outcome_filter=outcome_filter,
             )
 
     def log_call(
@@ -416,7 +450,7 @@ class DatabaseService:
     def get_voice_session_by_provider_call_id(
         self,
         provider_call_id: str,
-        provider_name: str = "mock",
+        provider_name: str = "exotel",
     ) -> Optional[Dict[str, Any]]:
         """Retrieve voice session by external provider call ID."""
         with session_scope(self.session_factory) as session:

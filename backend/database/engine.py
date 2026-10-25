@@ -83,7 +83,7 @@ def create_database_engine(
             max_overflow=10,
             pool_timeout=30,
             pool_recycle=1800,  # Recycle connections after 30 minutes
-            pool_pre_ping=True,  # Test connections before checkout
+            pool_pre_ping=False,  # Avoid adding 400-500ms roundtrip ping on every connection checkout
             echo=echo,
         )
 

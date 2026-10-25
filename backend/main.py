@@ -74,6 +74,21 @@ app.add_middleware(
 app.include_router(api_router, prefix="/api")
 
 
+# Global database connection exception handler for production resilience
+from fastapi import Request, status
+from fastapi.responses import JSONResponse
+from sqlalchemy.exc import OperationalError, SQLAlchemyError
+
+@app.exception_handler(OperationalError)
+async def db_operational_error_handler(request: Request, exc: OperationalError):
+    """Handle database server connection drops or unreachability cleanly."""
+    return JSONResponse(
+        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+        content={"detail": "Database service is currently unreachable or disconnected. Please try again shortly."},
+    )
+
+
+
 # Root WebSocket alias for Exotel AgentStream
 @app.websocket("/ws/voice/exotel")
 async def root_exotel_websocket(websocket: WebSocket) -> None:

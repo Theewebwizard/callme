@@ -20,12 +20,6 @@ def get_call_history(
 ) -> CallHistoryResponse:
     """Retrieve audited call records for a business tenant with pagination and outcome filtering."""
     db_service = get_database_service()
-    if not db_service.is_available():
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Database service is currently unreachable.",
-        )
-
     profile = db_service.get_business_profile(business_id)
     if not profile:
         raise HTTPException(
@@ -34,10 +28,13 @@ def get_call_history(
         )
 
     outcome_filter = None if outcome in (None, "", "All Outcomes") else outcome
-    all_calls = db_service.get_call_history(business_id, outcome_filter=outcome_filter, limit=500)
-    total_count = len(all_calls)
-
-    paged_calls = all_calls[offset : offset + limit]
+    total_count = db_service.get_call_count(business_id, outcome_filter=outcome_filter)
+    paged_calls = db_service.get_call_history(
+        business_id,
+        outcome_filter=outcome_filter,
+        limit=limit,
+        offset=offset,
+    )
 
     call_responses = [CallRecordResponse(**c) for c in paged_calls]
 

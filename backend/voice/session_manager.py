@@ -22,6 +22,13 @@ logger = logging.getLogger(__name__)
 # Dedicated background executor for non-blocking message & timestamp persistence
 _bg_executor = ThreadPoolExecutor(max_workers=4, thread_name_prefix="voice_db_persist")
 
+
+def flush_voice_background_tasks(wait: bool = True) -> None:
+    """Flush pending background tasks and reset the executor cleanly."""
+    global _bg_executor
+    _bg_executor.shutdown(wait=wait)
+    _bg_executor = ThreadPoolExecutor(max_workers=4, thread_name_prefix="voice_db_persist")
+
 # Shared module-level in-memory caches to persist context across per-request instances
 _GLOBAL_SESSIONS_CACHE: Dict[str, CallSession] = {}
 _GLOBAL_SESSION_HISTORY_CACHE: Dict[str, List[Dict[str, Any]]] = {}

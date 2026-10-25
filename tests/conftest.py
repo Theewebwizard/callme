@@ -40,5 +40,8 @@ def isolate_test_database():
 
     yield test_service
 
+    from backend.voice.session_manager import flush_voice_background_tasks
+    flush_voice_background_tasks(wait=True)
+
     db_service_mod._DEFAULT_SERVICE = original_service
     test_engine.dispose()

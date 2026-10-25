@@ -56,11 +56,11 @@ class Business(Base):
     # Relationships with cascade delete
     faqs = relationship("BusinessFAQ", back_populates="business", cascade="all, delete-orphan", lazy="selectin")
     tool_configs = relationship("BusinessToolConfig", back_populates="business", cascade="all, delete-orphan", lazy="selectin")
-    call_records = relationship("CallRecord", back_populates="business", cascade="all, delete-orphan", lazy="selectin")
-    messages = relationship("ConversationMessage", back_populates="business", cascade="all, delete-orphan", lazy="selectin")
-    pending_actions = relationship("PendingAction", back_populates="business", cascade="all, delete-orphan", lazy="selectin")
-    voice_sessions = relationship("VoiceSession", back_populates="business", cascade="all, delete-orphan", lazy="selectin")
-    tool_demands = relationship("ToolDemand", back_populates="business", cascade="all, delete-orphan", lazy="selectin")
+    call_records = relationship("CallRecord", back_populates="business", cascade="all, delete-orphan", lazy="select")
+    messages = relationship("ConversationMessage", back_populates="business", cascade="all, delete-orphan", lazy="select")
+    pending_actions = relationship("PendingAction", back_populates="business", cascade="all, delete-orphan", lazy="select")
+    voice_sessions = relationship("VoiceSession", back_populates="business", cascade="all, delete-orphan", lazy="select")
+    tool_demands = relationship("ToolDemand", back_populates="business", cascade="all, delete-orphan", lazy="select")
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert model to dictionary representation."""

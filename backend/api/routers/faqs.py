@@ -15,12 +15,6 @@ router = APIRouter(prefix="/businesses/{business_id}/faqs", tags=["FAQs"])
 def list_faqs(business_id: str) -> List[FAQItem]:
     """Retrieve all frequently asked questions configured for a business tenant."""
     db_service = get_database_service()
-    if not db_service.is_available():
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Database service is currently unreachable.",
-        )
-
     profile = db_service.get_business_profile(business_id)
     if not profile:
         raise HTTPException(
@@ -38,12 +32,6 @@ def update_faqs(
 ) -> List[FAQItem]:
     """Atomically replace or update FAQs for a specific business tenant."""
     db_service = get_database_service()
-    if not db_service.is_available():
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Database service is currently unreachable.",
-        )
-
     profile = db_service.get_business_profile(business_id)
     if not profile:
         raise HTTPException(

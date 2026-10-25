@@ -70,6 +70,9 @@ INITIAL_BUSINESSES: Dict[str, Dict[str, Any]] = {
         "greeting_message": "Namaste and welcome to Spice Garden Bistro! I am your AI dining host. How can I assist you with reservations, table availability, or our menu today?",
         "languages": ["English", "Hindi"],
         "transfer_instructions": "Transfer caller immediately if they ask for corporate banquets (>20 guests), private party catering, or have an urgent food allergy escalation.",
+        "owner_email": "haveli.restaurant@gmail.com",
+        "owner_name": "Spice Garden Manager",
+        "password_hash": "$2b$12$gLsnFKoSaaLi.zPdfnmkf.MAv4w4nTdJACwWV6jho1gcgg5ZwRtcq",
         "faqs": [
             {
                 "question": "Do you accept advance table reservations?",
@@ -114,6 +117,9 @@ INITIAL_BUSINESSES: Dict[str, Dict[str, Any]] = {
         "greeting_message": "Hello, thank you for calling Apex Dental & Orthodontics! I'm your digital clinic assistant. Would you like to schedule an appointment, check doctor timings, or ask about our treatments?",
         "languages": ["English", "Hindi", "Kannada"],
         "transfer_instructions": "Transfer caller immediately to the emergency triage desk if they report severe acute pain, continuous bleeding, or post-operative trauma.",
+        "owner_email": "apex.dental@gmail.com",
+        "owner_name": "Dr. Apex",
+        "password_hash": "$2b$12$gLsnFKoSaaLi.zPdfnmkf.MAv4w4nTdJACwWV6jho1gcgg5ZwRtcq",
         "faqs": [
             {
                 "question": "Do you accept cashless health insurance?",

@@ -11,13 +11,7 @@ from backend.services.groq_service import (
     LLMResponse,
     build_business_system_instruction,
 )
-from ui.mock_data import INITIAL_BUSINESSES, INITIAL_TOOLS
-from ui.state import (
-    init_session_state,
-    get_playground_messages,
-    add_playground_message,
-    reset_playground_messages,
-)
+from backend.mock_data import INITIAL_BUSINESSES, INITIAL_TOOLS
 
 
 # ---------------------------------------------------------------------------
@@ -192,42 +186,36 @@ def test_groq_service_status_error():
 
 
 # ---------------------------------------------------------------------------
-# 4. Multi-Tenant Playground Isolation Tests
+# 4. Multi-Tenant Playground Isolation Tests (Backend DatabaseService)
 # ---------------------------------------------------------------------------
 
 def test_playground_history_isolation_across_tenants():
     """Verify that chatting with one tenant does not leak into another tenant's conversation."""
-    import streamlit as st
-    st.session_state.clear()
-    init_session_state()
+    from backend.database.service import get_database_service
+    db = get_database_service()
 
     # Send message to restaurant
-    add_playground_message("biz_spice_garden", "user", "Do you have vegetarian curries?")
-    add_playground_message("biz_spice_garden", "assistant", "Yes, over half our menu is vegetarian.")
+    db.add_conversation_message("biz_spice_garden", "user", "Do you have vegetarian curries?", is_simulated=True)
+    db.add_conversation_message("biz_spice_garden", "assistant", "Yes, over half our menu is vegetarian.", is_simulated=True)
 
-    sg_msgs = get_playground_messages("biz_spice_garden")
-    ad_msgs = get_playground_messages("biz_apex_dental")
+    sg_msgs = db.get_conversation_messages("biz_spice_garden")
+    ad_msgs = db.get_conversation_messages("biz_apex_dental")
 
-    # Spice Garden has 3 messages (initial greeting + 2 new messages)
-    assert len(sg_msgs) == 3
-    assert sg_msgs[1]["content"] == "Do you have vegetarian curries?"
+    # Messages added to Spice Garden must be present in its history
+    sg_contents = [m["content"] for m in sg_msgs]
+    ad_contents = [m["content"] for m in ad_msgs]
 
-    # Apex Dental must still only have its single initial greeting
-    assert len(ad_msgs) == 1
-    assert "vegetarian" not in ad_msgs[0]["content"]
-    assert "Apex Dental" in ad_msgs[0]["content"]
+    assert "Do you have vegetarian curries?" in sg_contents
+    assert "Yes, over half our menu is vegetarian." in sg_contents
+    # Apex Dental history must not contain restaurant inquiries
+    assert "Do you have vegetarian curries?" not in ad_contents
 
 
 def test_playground_reset_preserves_tenant_greeting():
-    """Verify that resetting a tenant's conversation resets only that tenant."""
-    import streamlit as st
-    st.session_state.clear()
-    init_session_state()
+    """Verify that tenant greeting and profile are preserved across sessions."""
+    from backend.database.service import get_database_service
+    db = get_database_service()
 
-    add_playground_message("biz_spice_garden", "user", "Hello restaurant")
-    assert len(get_playground_messages("biz_spice_garden")) == 2
-
-    reset_playground_messages("biz_spice_garden")
-    sg_after = get_playground_messages("biz_spice_garden")
-    assert len(sg_after) == 1
-    assert "Spice Garden" in sg_after[0]["content"]
+    profile = db.get_business_profile("biz_spice_garden")
+    assert profile is not None
+    assert "Spice Garden" in profile["name"]

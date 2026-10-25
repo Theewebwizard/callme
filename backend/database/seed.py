@@ -23,7 +23,7 @@ from backend.database.repositories import (
     CallRepository,
     ConversationRepository,
 )
-from ui.mock_data import INITIAL_BUSINESSES, INITIAL_TOOLS, MOCK_CALL_HISTORY
+from backend.mock_data import INITIAL_BUSINESSES, INITIAL_TOOLS, MOCK_CALL_HISTORY
 
 logger = logging.getLogger(__name__)
 
@@ -105,6 +105,15 @@ def seed_database(
 
                 if force_update_profile:
                     biz_repo.update(b_id, b_data)
+                else:
+                    # If existing business has no password_hash or owner_email, backfill them safely
+                    updates = {}
+                    if not biz.password_hash and b_data.get("password_hash"):
+                        updates["password_hash"] = b_data["password_hash"]
+                    if not biz.owner_email and b_data.get("owner_email"):
+                        updates["owner_email"] = b_data["owner_email"]
+                    if updates:
+                        biz_repo.update(b_id, updates)
 
                 # Ensure any newly introduced canonical tools are configured if missing
                 current_tools = tool_repo.get_tool_statuses(b_id)

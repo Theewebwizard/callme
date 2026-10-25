@@ -20,7 +20,7 @@ from backend.main import app
 from backend.services.groq_service import GroqService, LLMResponse
 import backend.services.groq_service as groq_service_mod
 from backend.database.service import get_database_service
-from ui.api_client import ApiClient, ApiClientError, ApiConnectionError, ApiNotFoundError
+from backend.api_client import ApiClient, ApiClientError, ApiConnectionError, ApiNotFoundError
 
 
 @pytest.fixture
@@ -33,8 +33,10 @@ def api_client():
 # 1. Health Endpoint Tests
 # ==============================================================================
 
-def test_health_endpoint_healthy(api_client):
+def test_health_endpoint_healthy(api_client, monkeypatch):
     """GET /health returns 200, system info, and database status."""
+    from backend.database import engine
+    monkeypatch.setattr(engine, "check_database_connection", lambda: {"connected": True, "configured": True, "dialect": "postgresql"})
     response = api_client.get("/health")
     assert response.status_code == 200
     data = response.json()

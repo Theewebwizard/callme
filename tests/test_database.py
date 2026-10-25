@@ -408,11 +408,3 @@ def test_database_service_facade(test_db_service):
     test_db_service.set_tool_status("biz_spice_garden", "check_table_availability", False)
     fresh_tools = test_db_service.get_business_profile("biz_spice_garden")["enabled_tools"]
     assert fresh_tools["check_table_availability"] is False
-
-
-def test_app_and_state_import_without_database_url():
-    """Verify that importing app and state does not crash when DATABASE_URL is missing."""
-    import app
-    from ui import state
-    assert hasattr(app, "render_dashboard_page")
-    assert hasattr(state, "init_session_state")

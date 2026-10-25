@@ -14,7 +14,6 @@ from backend.api.schemas import (
 )
 from backend.database.service import get_database_service
 from backend.tools.registry import get_tool_registry
-from ui.mock_data import INITIAL_TOOLS
 
 router = APIRouter(prefix="/businesses/{business_id}/tools", tags=["Tools"])
 
@@ -26,12 +25,6 @@ def get_business_tools(business_id: str) -> BusinessToolsResponse:
     by the business tenant's industry category.
     """
     db_service = get_database_service()
-    if not db_service.is_available():
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Database service is currently unreachable.",
-        )
-
     profile = db_service.get_business_profile(business_id)
     if not profile:
         raise HTTPException(
@@ -49,14 +42,13 @@ def get_business_tools(business_id: str) -> BusinessToolsResponse:
     tool_items = []
     for tool_def in industry_tools:
         t_id = tool_def.id
-        meta = INITIAL_TOOLS.get(t_id, {})
         tool_items.append(
             ToolItemResponse(
                 id=t_id,
                 name=tool_def.name,
                 description=tool_def.description,
-                category=meta.get("category", tool_def.category.value.title()),
-                icon=meta.get("icon", "🔧"),
+                category=tool_def.category.value if hasattr(tool_def.category, "value") else str(tool_def.category),
+                icon=getattr(tool_def, "icon", "🔧"),
                 is_enabled=enabled_map.get(t_id, False),
                 allowed_industries=tool_def.allowed_industries,
                 is_industry_compatible=True,
@@ -82,12 +74,6 @@ def update_business_tools(
     Validates that the tenant only activates tools allowed for their industry.
     """
     db_service = get_database_service()
-    if not db_service.is_available():
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Database service is currently unreachable.",
-        )
-
     profile = db_service.get_business_profile(business_id)
     if not profile:
         raise HTTPException(
@@ -133,12 +119,6 @@ def update_business_tools(
 def list_tool_demands(business_id: str) -> List[ToolDemandResponse]:
     """Retrieve all custom tool features demanded by a business tenant."""
     db_service = get_database_service()
-    if not db_service.is_available():
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Database service is currently unreachable.",
-        )
-
     profile = db_service.get_business_profile(business_id)
     if not profile:
         raise HTTPException(
@@ -157,12 +137,6 @@ def create_tool_demand(
 ) -> ToolDemandResponse:
     """Submit a new custom tool or integration feature request for a business receptionist."""
     db_service = get_database_service()
-    if not db_service.is_available():
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Database service is currently unreachable.",
-        )
-
     profile = db_service.get_business_profile(business_id)
     if not profile:
         raise HTTPException(

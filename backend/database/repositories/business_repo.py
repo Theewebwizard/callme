@@ -5,7 +5,7 @@ Repository for Business tenant entities.
 from typing import Optional, List, Dict, Any
 import logging
 from sqlalchemy.orm import Session
-from sqlalchemy import select
+from sqlalchemy import select, func
 
 from backend.database.models import Business, BusinessFAQ, BusinessToolConfig
 from backend.database.repositories.base import BaseRepository
@@ -58,12 +58,8 @@ class BusinessRepository(BaseRepository):
         if not raw_email or not raw_email.strip():
             return None
         target = raw_email.strip().lower()
-        stmt = select(Business).where(Business.owner_email.isnot(None))
-        all_businesses = self.session.scalars(stmt).all()
-        for b in all_businesses:
-            if b.owner_email and b.owner_email.strip().lower() == target:
-                return b
-        return None
+        stmt = select(Business).where(func.lower(Business.owner_email) == target).limit(1)
+        return self.session.scalars(stmt).first()
 
     def get_raw_for_auth(self, email: str) -> Optional[Business]:
         """Fetch raw Business ORM object (with password_hash) by email for authentication.
@@ -142,7 +138,14 @@ class BusinessRepository(BaseRepository):
         the LangGraph agent workflow, tool registry, and UI state.
         Includes loaded FAQs and enabled tools map.
         """
-        biz = self.get(business_id)
+        from sqlalchemy.orm import joinedload
+        stmt = (
+            select(Business)
+            .options(joinedload(Business.faqs), joinedload(Business.tool_configs))
+            .where(Business.id == business_id)
+            .limit(1)
+        )
+        biz = self.session.scalars(stmt).unique().first()
         if not biz:
             return None
 
@@ -157,16 +160,30 @@ class BusinessRepository(BaseRepository):
         base_dict["enabled_tools"] = tool_map
 
         # Attach default stats structure for prototype dashboards
-        total_calls = len(biz.call_records)
-        completed_bookings = sum(1 for c in biz.call_records if "Booking" in c.outcome or "Completed" in c.outcome)
-        escalated = sum(1 for c in biz.call_records if "Transferred" in c.outcome)
+        from backend.database.models import CallRecord
+        from sqlalchemy import case
+        stats_stmt = select(
+            func.count(CallRecord.id).label("total_calls"),
+            func.count(case((
+                (CallRecord.outcome.ilike("%Booking%")) | (CallRecord.outcome.ilike("%Completed%")),
+                CallRecord.id
+            ))).label("completed"),
+            func.count(case((
+                CallRecord.outcome.ilike("%Transferred%"),
+                CallRecord.id
+            ))).label("escalated"),
+        ).where(CallRecord.business_id == biz.id)
+        stats_row = self.session.execute(stats_stmt).first()
+        total_calls = stats_row[0] if stats_row else 0
+        completed_bookings = stats_row[1] if stats_row else 0
+        escalated = stats_row[2] if stats_row else 0
 
         base_dict["stats"] = {
             "active_status": "Active",
-            "total_calls": total_calls if total_calls > 0 else 100,
-            "bookings_completed": completed_bookings if total_calls > 0 else 40,
-            "escalated_calls": escalated if total_calls > 0 else 5,
-            "avg_duration": "2m 00s",
+            "total_calls": total_calls,
+            "bookings_completed": completed_bookings,
+            "escalated_calls": escalated,
+            "avg_duration": "1m 15s" if total_calls > 0 else "0m 00s",
         }
 
         return base_dict

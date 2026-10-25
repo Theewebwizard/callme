@@ -23,12 +23,6 @@ router = APIRouter(prefix="/businesses", tags=["Businesses"])
 def list_businesses() -> List[BusinessSummaryResponse]:
     """Retrieve list of all registered business tenants."""
     db_service = get_database_service()
-    if not db_service.is_available():
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Database service is currently unreachable.",
-        )
-
     all_businesses = db_service.get_all_businesses()
     summaries = []
     for b_id, b_data in all_businesses.items():
@@ -57,12 +51,6 @@ class BusinessAccessRequest(BaseModel):
 def login_business(req: BusinessLoginRequest) -> Dict[str, Any]:
     """Sign in to a business tenant workspace using Gmail ID and password."""
     db_service = get_database_service()
-    if not db_service.is_available():
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Database service is currently unreachable.",
-        )
-
     profile = db_service.authenticate_business(req.email, req.password)
     if not profile:
         raise HTTPException(
@@ -81,12 +69,6 @@ def login_business(req: BusinessLoginRequest) -> Dict[str, Any]:
 def access_business(req: BusinessAccessRequest) -> Dict[str, Any]:
     """Find and verify business tenant workspace access by name, ID, or phone number."""
     db_service = get_database_service()
-    if not db_service.is_available():
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Database service is currently unreachable.",
-        )
-
     query = req.identifier.strip().lower()
     all_b = db_service.get_all_businesses()
 
@@ -126,12 +108,6 @@ def get_default_tools_for_industry(industry: Optional[str]) -> Dict[str, bool]:
 def google_auth(req: GoogleAuthRequest) -> Dict[str, Any]:
     """Authenticate via Google / Gmail account for business tenant workspace."""
     db_service = get_database_service()
-    if not db_service.is_available():
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Database service is currently unreachable.",
-        )
-
     clean_email = req.email.strip().lower()
 
     # 1. Check if business exists with this owner_email
@@ -215,12 +191,6 @@ def google_auth(req: GoogleAuthRequest) -> Dict[str, Any]:
 def get_business(business_id: str) -> BusinessDetailResponse:
     """Retrieve complete profile configuration and FAQs for a specific business."""
     db_service = get_database_service()
-    if not db_service.is_available():
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Database service is currently unreachable.",
-        )
-
     profile = db_service.get_business_profile(business_id)
     if not profile:
         raise HTTPException(
@@ -241,12 +211,6 @@ def update_business(
     Does not permit modifying immutable tenant identifiers.
     """
     db_service = get_database_service()
-    if not db_service.is_available():
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Database service is currently unreachable.",
-        )
-
     # Check existence
     existing = db_service.get_business_profile(business_id)
     if not existing:
@@ -277,12 +241,6 @@ def create_business(create_req: BusinessCreateRequest) -> BusinessDetailResponse
     Register a new business tenant with initial profile, FAQs, and enabled tools.
     """
     db_service = get_database_service()
-    if not db_service.is_available():
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Database service is currently unreachable.",
-        )
-
     # 1. Determine or generate tenant slug/ID
     if create_req.id and create_req.id.strip():
         biz_id = create_req.id.strip()
@@ -362,12 +320,6 @@ def delete_business(business_id: str) -> Dict[str, Any]:
     (FAQs, tool configs, call records, conversation messages, pending actions, voice sessions).
     """
     db_service = get_database_service()
-    if not db_service.is_available():
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Database service is currently unreachable.",
-        )
-
     existing = db_service.get_business_profile(business_id)
     if not existing:
         raise HTTPException(

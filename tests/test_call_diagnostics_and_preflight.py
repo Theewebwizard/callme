@@ -124,6 +124,40 @@ def test_preflight_runner_local_checks_pass(monkeypatch):
     monkeypatch.setattr(runner.settings, "EXOTEL_STREAM_URL", "wss://api.example.com/api/voice/exotel/ws")
     monkeypatch.setattr(runner.settings, "DEEPGRAM_API_KEY", "dg_test_key")
 
+    from contextlib import contextmanager
+    from unittest.mock import MagicMock
+    import backend.voice.preflight as pf_mod
+
+    mock_db = MagicMock()
+    mock_db.is_available.return_value = True
+    mock_db.get_business_profile.return_value = {
+        "id": "biz_spice_garden",
+        "name": "Spice Garden Bistro",
+        "assigned_number_status": "Active & Connected",
+        "phone_number": "+918041235678",
+        "enabled_tools": {
+            "answer_faq": True,
+            "check_table_availability": True,
+            "create_table_booking": True,
+            "check_appointment_availability": False,
+            "create_appointment": False,
+        },
+    }
+    mock_db.get_business_by_phone_number.return_value = {"id": "biz_spice_garden"}
+    mock_db.get_all_businesses.return_value = {
+        "biz_spice_garden": {"phone_number": "+918041235678"},
+    }
+
+    @contextmanager
+    def mock_session_scope():
+        sess = MagicMock()
+        sess.execute.return_value.scalar.return_value = "005_password_auth"
+        yield sess
+
+    monkeypatch.setattr(pf_mod, "check_database_connection", lambda: {"connected": True, "dialect": "postgresql"})
+    monkeypatch.setattr(pf_mod, "session_scope", mock_session_scope)
+    monkeypatch.setattr(pf_mod, "get_database_service", lambda: mock_db)
+
     success = runner.run_all(test_live_apis=False)
     assert success is True
 

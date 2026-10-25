@@ -44,7 +44,7 @@ async function request(path, options = {}) {
 
 export const api = {
   // System Health
-  getHealth: () => fetch('/health').then((r) => r.json()).catch(() => ({ status: 'offline' })),
+  getHealth: () => fetch(`${API_BASE}/health`).then((r) => r.json()).catch(() => ({ status: 'offline' })),
 
   // Businesses (Tenants)
   listBusinesses: () => request('/businesses'),

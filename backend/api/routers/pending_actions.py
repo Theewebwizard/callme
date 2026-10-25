@@ -21,11 +21,6 @@ def confirm_pending_action(
     Strictly verifies business scoping and prevents double execution replay.
     """
     db_service = get_database_service()
-    if not db_service.is_available():
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Database service is currently unreachable.",
-        )
 
     # 1. Verify business tenant exists
     biz_profile = db_service.get_business_profile(business_id)
@@ -96,11 +91,6 @@ def cancel_pending_action(
 ) -> ActionConfirmResponse:
     """Explicitly reject or cancel a pending action."""
     db_service = get_database_service()
-    if not db_service.is_available():
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Database service is currently unreachable.",
-        )
 
     biz_profile = db_service.get_business_profile(business_id)
     if not biz_profile:

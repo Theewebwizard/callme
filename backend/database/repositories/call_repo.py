@@ -6,7 +6,7 @@ from typing import Optional, List, Dict, Any
 from datetime import datetime
 import uuid
 from sqlalchemy.orm import Session
-from sqlalchemy import select, desc
+from sqlalchemy import select, desc, func
 
 from backend.database.models import CallRecord, utcnow
 from backend.database.repositories.base import BaseRepository
@@ -48,17 +48,30 @@ class CallRepository(BaseRepository):
         self.session.flush()
         return call
 
+    def count_for_business(
+        self,
+        business_id: str,
+        outcome_filter: Optional[str] = None,
+    ) -> int:
+        """Return total count of call records matching filters."""
+        stmt = select(func.count(CallRecord.id)).where(CallRecord.business_id == business_id)
+        if outcome_filter and outcome_filter != "All Outcomes":
+            stmt = stmt.where(CallRecord.outcome == outcome_filter)
+        return self.session.scalar(stmt) or 0
+
     def list_for_business(
         self,
         business_id: str,
         outcome_filter: Optional[str] = None,
         limit: int = 100,
+        offset: int = 0,
     ) -> List[CallRecord]:
-        """Fetch call records for a business tenant with optional outcome filtering."""
+        """Fetch call records for a business tenant with optional outcome filtering and offset pagination."""
         stmt = (
             select(CallRecord)
             .where(CallRecord.business_id == business_id)
             .order_by(desc(CallRecord.timestamp))
+            .offset(offset)
             .limit(limit)
         )
         if outcome_filter and outcome_filter != "All Outcomes":
@@ -71,12 +84,14 @@ class CallRepository(BaseRepository):
         business_id: str,
         outcome_filter: Optional[str] = None,
         limit: int = 100,
+        offset: int = 0,
     ) -> List[Dict[str, Any]]:
         """Return list of call dictionaries for UI display."""
         records = self.list_for_business(
             business_id=business_id,
             outcome_filter=outcome_filter,
             limit=limit,
+            offset=offset,
         )
         return [r.to_dict() for r in records]
 

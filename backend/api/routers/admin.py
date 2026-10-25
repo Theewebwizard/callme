@@ -10,7 +10,6 @@ from pydantic import BaseModel, Field
 
 from backend.database.service import get_database_service
 from backend.tools.registry import get_tool_registry
-from ui.mock_data import INITIAL_TOOLS
 
 router = APIRouter(prefix="/admin", tags=["Admin Command Center"])
 
@@ -26,12 +25,6 @@ def get_admin_overview() -> Dict[str, Any]:
     telemetry metrics, line statuses, and active tools.
     """
     db_service = get_database_service()
-    if not db_service.is_available():
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Database service is currently unreachable.",
-        )
-
     all_businesses = db_service.get_all_businesses()
     demands = db_service.list_all_tool_demands()
 
@@ -81,12 +74,6 @@ def get_admin_tool_repository() -> Dict[str, Any]:
     Shows exactly which business agents are using which tools.
     """
     db_service = get_database_service()
-    if not db_service.is_available():
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Database service is currently unreachable.",
-        )
-
     all_businesses = db_service.get_all_businesses()
     registry = get_tool_registry()
     canonical_tools = registry.list_tools()
@@ -95,9 +82,8 @@ def get_admin_tool_repository() -> Dict[str, Any]:
 
     for tool_def in canonical_tools:
         t_id = tool_def.id
-        meta = INITIAL_TOOLS.get(t_id, {})
-        category = meta.get("category", tool_def.category.value.title())
-        icon = meta.get("icon", "🔧")
+        category = tool_def.category.value if hasattr(tool_def.category, "value") else str(tool_def.category)
+        icon = getattr(tool_def, "icon", "🔧")
 
         agent_usage = []
         active_for_count = 0
@@ -139,12 +125,6 @@ def get_admin_tool_repository() -> Dict[str, Any]:
 def get_admin_all_demands() -> List[Dict[str, Any]]:
     """Retrieve all custom tool and feature requests demanded by businesses."""
     db_service = get_database_service()
-    if not db_service.is_available():
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Database service is currently unreachable.",
-        )
-
     all_businesses = db_service.get_all_businesses()
     demands = db_service.list_all_tool_demands()
 
@@ -165,12 +145,6 @@ def get_admin_all_demands() -> List[Dict[str, Any]]:
 def update_demand_status(demand_id: str, req: DemandStatusUpdateRequest) -> Dict[str, Any]:
     """Admin endpoint to update the review or deployment status of a custom tool demand."""
     db_service = get_database_service()
-    if not db_service.is_available():
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Database service is currently unreachable.",
-        )
-
     updated = db_service.update_tool_demand_status(demand_id, req.status)
     if not updated:
         raise HTTPException(

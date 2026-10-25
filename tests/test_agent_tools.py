@@ -16,7 +16,7 @@ from backend.agent.nodes import execute_pending_action
 from backend.services.groq_service import GroqService
 from backend.tools.base import ToolExecutionStatus
 from backend.tools.registry import build_default_tool_registry
-from ui.mock_data import INITIAL_BUSINESSES, INITIAL_TOOLS
+from backend.mock_data import INITIAL_BUSINESSES, INITIAL_TOOLS
 
 
 @pytest.fixture

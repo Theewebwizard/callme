@@ -24,11 +24,6 @@ def send_playground_message(
     Executes dialogue through the LangGraph workflow with tool calling.
     """
     db_service = get_database_service()
-    if not db_service.is_available():
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Database service is currently unreachable.",
-        )
 
     # 1. Verify business tenant exists
     biz_profile = db_service.get_business_profile(business_id)

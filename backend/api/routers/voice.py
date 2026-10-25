@@ -7,7 +7,7 @@ import asyncio
 import base64
 import json
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from fastapi import APIRouter, HTTPException, Depends, Request, WebSocket, WebSocketDisconnect, status
 from pydantic import BaseModel, Field
 
@@ -201,7 +201,7 @@ def simulate_inbound_call(
     and returns initial receptionist greeting.
     """
     event = InboundCallEvent(
-        provider_call_id=f"sim_call_{datetime.utcnow().timestamp()}",
+        provider_call_id=f"sim_call_{datetime.now(timezone.utc).timestamp()}",
         provider_name=req.provider_name,
         called_number=req.called_number,
         caller_number=req.caller_number,
