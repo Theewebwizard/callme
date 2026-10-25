@@ -109,13 +109,60 @@ async def root_exotel_websocket(websocket: WebSocket) -> None:
 
 
 import pathlib
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 
 # Serve React frontend if built
 frontend_dist = pathlib.Path(__file__).parents[1] / "frontend" / "dist"
+frontend_public = pathlib.Path(__file__).parents[1] / "frontend" / "public"
+
 if (frontend_dist / "assets").exists():
     app.mount("/assets", StaticFiles(directory=str(frontend_dist / "assets")), name="react_assets")
+
+
+@app.get("/manifest.json", tags=["PWA"])
+def pwa_manifest() -> FileResponse:
+    """Serve PWA Web App Manifest."""
+    manifest_path = frontend_dist / "manifest.json"
+    if not manifest_path.exists():
+        manifest_path = frontend_public / "manifest.json"
+    return FileResponse(manifest_path, media_type="application/manifest+json")
+
+
+@app.get("/sw.js", tags=["PWA"])
+def pwa_service_worker() -> FileResponse:
+    """Serve PWA Service Worker."""
+    sw_path = frontend_dist / "sw.js"
+    if not sw_path.exists():
+        sw_path = frontend_public / "sw.js"
+    return FileResponse(sw_path, media_type="application/javascript")
+
+
+@app.get("/pwa-192.png", tags=["PWA"])
+def pwa_icon_192() -> FileResponse:
+    """Serve 192x192 PWA Icon."""
+    icon_path = frontend_dist / "pwa-192.png"
+    if not icon_path.exists():
+        icon_path = frontend_public / "pwa-192.png"
+    return FileResponse(icon_path, media_type="image/png")
+
+
+@app.get("/pwa-512.png", tags=["PWA"])
+def pwa_icon_512() -> FileResponse:
+    """Serve 512x512 PWA Icon."""
+    icon_path = frontend_dist / "pwa-512.png"
+    if not icon_path.exists():
+        icon_path = frontend_public / "pwa-512.png"
+    return FileResponse(icon_path, media_type="image/png")
+
+
+@app.get("/apple-touch-icon.png", tags=["PWA"])
+def pwa_apple_touch_icon() -> FileResponse:
+    """Serve Apple Touch Icon for iOS."""
+    icon_path = frontend_dist / "apple-touch-icon.png"
+    if not icon_path.exists():
+        icon_path = frontend_public / "apple-touch-icon.png"
+    return FileResponse(icon_path, media_type="image/png")
 
 
 @app.get("/", response_class=HTMLResponse, tags=["Frontend"])

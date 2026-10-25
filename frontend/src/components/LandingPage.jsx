@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { api } from '../api';
 import GoogleAuthModal, { GoogleIcon } from './GoogleAuthModal';
+import InstallAppPrompt from './InstallAppPrompt';
 
 const INDUSTRY_OPTIONS = [
   'Restaurant',
@@ -244,6 +245,7 @@ export default function LandingPage({ onEnterWorkspace, onEnterAdmin }) {
         </nav>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <InstallAppPrompt />
           <button
             className="btn-secondary"
             style={{ padding: '0.45rem 0.9rem', fontSize: '0.82rem', borderRadius: 'var(--radius-full)' }}

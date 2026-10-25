@@ -12,6 +12,7 @@ import {
   Building2,
   LogOut,
 } from 'lucide-react';
+import InstallAppPrompt from './InstallAppPrompt';
 
 export default function Taskbar({
   activeTab,
@@ -75,6 +76,8 @@ export default function Taskbar({
               <span className="google-email">{savedGoogleUser.email}</span>
             </div>
           )}
+
+          <InstallAppPrompt />
 
           <button
             className="btn-quick-call"
