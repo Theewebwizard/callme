@@ -13,7 +13,7 @@ from backend.api.schemas import (
     ToolDemandResponse,
 )
 from backend.database.service import get_database_service
-from backend.tools.registry import get_tool_registry
+from tools.registry import get_tool_registry
 from ui.mock_data import INITIAL_TOOLS
 
 router = APIRouter(prefix="/businesses/{business_id}/tools", tags=["Tools"])

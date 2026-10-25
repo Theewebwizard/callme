@@ -9,7 +9,7 @@ from backend.api.schemas import PlaygroundMessageRequest, PlaygroundMessageRespo
 from backend.database.service import get_database_service
 from backend.services.groq_service import get_groq_service
 from backend.agent import invoke_receptionist_workflow
-from backend.tools.registry import get_tool_registry
+from tools.registry import get_tool_registry
 
 router = APIRouter(prefix="/businesses/{business_id}/playground", tags=["Playground"])
 

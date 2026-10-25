@@ -12,7 +12,7 @@ import uuid
 from backend.agent.graph import invoke_receptionist_workflow
 from backend.database.models import utcnow
 from backend.services.groq_service import GroqService, get_groq_service
-from backend.tools.registry import ToolRegistry, get_tool_registry
+from tools.registry import ToolRegistry, get_tool_registry
 from backend.voice.events import TranscriptEvent, VoiceTurnResult, SessionStatus
 from backend.voice.interfaces import VoiceSessionManager, TextToSpeechProvider
 from backend.voice.session_manager import DatabaseVoiceSessionManager

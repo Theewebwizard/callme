@@ -116,7 +116,7 @@ def access_business(req: BusinessAccessRequest) -> Dict[str, Any]:
 
 def get_default_tools_for_industry(industry: Optional[str]) -> Dict[str, bool]:
     """Return default tool activation map tailored to the business industry."""
-    from backend.tools.registry import get_tool_registry
+    from tools.registry import get_tool_registry
     registry = get_tool_registry()
     allowed = registry.get_tools_for_industry(industry or "Other")
     return {t.id: True for t in allowed}

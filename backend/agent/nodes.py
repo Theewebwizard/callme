@@ -15,12 +15,12 @@ from backend.services.groq_service import (
     build_business_system_instruction,
     convert_tool_definition_to_groq_schema,
 )
-from backend.tools.base import (
+from tools.base import (
     ToolExecutionResult,
     ToolExecutionStatus,
     ToolExecutionMode,
 )
-from backend.tools.registry import ToolRegistry, get_tool_registry
+from tools.registry import ToolRegistry, get_tool_registry
 
 
 def _format_pending_action_summary(tool_id: str, args: Dict[str, Any]) -> str:

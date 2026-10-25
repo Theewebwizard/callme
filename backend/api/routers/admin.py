@@ -9,7 +9,7 @@ from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
 
 from backend.database.service import get_database_service
-from backend.tools.registry import get_tool_registry
+from tools.registry import get_tool_registry
 from ui.mock_data import INITIAL_TOOLS
 
 router = APIRouter(prefix="/admin", tags=["Admin Command Center"])

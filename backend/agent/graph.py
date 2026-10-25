@@ -16,7 +16,7 @@ from backend.agent.nodes import (
     execute_pending_action,
 )
 from backend.services.groq_service import GroqService
-from backend.tools.registry import ToolRegistry
+from tools.registry import ToolRegistry
 
 
 def route_after_llm(state: AgentState) -> str:
