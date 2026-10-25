@@ -1,0 +1,334 @@
+"""
+Modular Tool Registry and execution boundary for the AI Receptionist Platform.
+Enforces multi-tenant permissions, input validation, and two-phase confirmation.
+"""
+
+from typing import Dict, Any, List, Optional
+from pydantic import ValidationError
+
+from backend.tools.base import (
+    ToolDefinition,
+    ToolExecutionResult,
+    ToolExecutionStatus,
+    ToolExecutionMode,
+    ToolCategory,
+)
+from backend.tools.definitions import (
+    AnswerFAQInput,
+    CheckTableAvailabilityInput,
+    CreateTableBookingInput,
+    CheckAppointmentAvailabilityInput,
+    CreateAppointmentInput,
+    TakeMessageInput,
+    TransferCallInput,
+)
+from backend.tools.implementations.information import handle_answer_faq
+from backend.tools.implementations.dining import (
+    handle_check_table_availability,
+    handle_create_table_booking,
+)
+from backend.tools.implementations.healthcare import (
+    handle_check_appointment_availability,
+    handle_create_appointment,
+)
+from backend.tools.implementations.communication import (
+    handle_take_message,
+    handle_transfer_call,
+)
+
+
+class ToolRegistry:
+    """
+    Central repository for receptionist tools.
+    Provides lookup, listing, tenant permission enforcement, and safe execution.
+    """
+
+    def __init__(self) -> None:
+        self._tools: Dict[str, ToolDefinition] = {}
+
+    def register(self, tool: ToolDefinition) -> None:
+        """
+        Register a new tool definition.
+        Rejects duplicate tool IDs to ensure deterministic lookup.
+        """
+        if tool.id in self._tools:
+            raise ValueError(
+                f"Duplicate tool registration: Tool ID '{tool.id}' is already registered."
+            )
+        self._tools[tool.id] = tool
+
+    def get_tool(self, tool_id: str) -> Optional[ToolDefinition]:
+        """Look up a tool definition by ID."""
+        return self._tools.get(tool_id)
+
+    def has_tool(self, tool_id: str) -> bool:
+        """Check if a tool ID is registered."""
+        return tool_id in self._tools
+
+    def list_tools(
+        self,
+        category: Optional[ToolCategory] = None,
+        industry: Optional[str] = None,
+    ) -> List[ToolDefinition]:
+        """Return list of registered tools, optionally filtered by category and industry."""
+        tools = list(self._tools.values())
+        if category is not None:
+            tools = [t for t in tools if t.category == category]
+        if industry is not None:
+            tools = [t for t in tools if t.is_allowed_for_industry(industry)]
+        return tools
+
+    def get_tools_for_industry(self, industry: Optional[str]) -> List[ToolDefinition]:
+        """Return all tools permitted for a specific business industry type."""
+        return [t for t in self._tools.values() if t.is_allowed_for_industry(industry)]
+
+    def get_enabled_tools_for_business(
+        self, business_config: Dict[str, Any]
+    ) -> List[ToolDefinition]:
+        """
+        Return only the tools that are:
+        1. Explicitly enabled in the business configuration
+        2. Authorized for the business's industry category
+        """
+        enabled_map = business_config.get("enabled_tools", {})
+        biz_industry = business_config.get("industry")
+        return [
+            tool
+            for tool in self._tools.values()
+            if enabled_map.get(tool.id) is True and tool.is_allowed_for_industry(biz_industry)
+        ]
+
+    def execute_tool(
+        self,
+        business_id: str,
+        business_config: Dict[str, Any],
+        tool_id: str,
+        input_data: Dict[str, Any],
+        confirmed: bool = False,
+    ) -> ToolExecutionResult:
+        """
+        Primary execution boundary for all tool actions.
+        Enforces tenant permissions, schema validation, industry eligibility, and two-phase confirmation.
+        """
+        # 1. Validate trusted business context
+        if not business_config or not isinstance(business_config, dict):
+            return ToolExecutionResult(
+                tool_id=tool_id,
+                status=ToolExecutionStatus.ERROR,
+                success=False,
+                message="Invalid or missing trusted business context.",
+            )
+
+        # 2. Look up tool in registry
+        tool = self.get_tool(tool_id)
+        if not tool:
+            return ToolExecutionResult(
+                tool_id=tool_id,
+                status=ToolExecutionStatus.ERROR,
+                success=False,
+                message=f"Tool '{tool_id}' is not registered in the system catalogue.",
+            )
+
+        # 3. Enforce industry eligibility
+        biz_industry = business_config.get("industry")
+        if not tool.is_allowed_for_industry(biz_industry):
+            allowed_desc = ", ".join(tool.allowed_industries)
+            return ToolExecutionResult(
+                tool_id=tool_id,
+                status=ToolExecutionStatus.DISABLED,
+                success=False,
+                message=(
+                    f"Tool '{tool.name}' is only available for businesses in: {allowed_desc}. "
+                    f"Business '{business_id}' is in the '{biz_industry}' industry."
+                ),
+            )
+
+        # 4. Enforce tenant tool permissions
+        enabled_tools = business_config.get("enabled_tools", {})
+        if not enabled_tools.get(tool_id, False):
+            return ToolExecutionResult(
+                tool_id=tool_id,
+                status=ToolExecutionStatus.DISABLED,
+                success=False,
+                message=f"Tool '{tool_id}' is not enabled for business '{business_id}'.",
+            )
+
+        # 5. Check implementation readiness
+        if not tool.is_implemented or tool.handler is None:
+            return ToolExecutionResult(
+                tool_id=tool_id,
+                status=ToolExecutionStatus.UNAVAILABLE,
+                success=False,
+                mode=ToolExecutionMode.UNAVAILABLE,
+                message=f"Tool '{tool_id}' is registered but its execution handler is currently unavailable.",
+            )
+
+        # 5. Validate input payload against tool schema
+        try:
+            validated_input = tool.input_schema.model_validate(input_data)
+        except ValidationError as val_err:
+            first_err = val_err.errors()[0]
+            field_name = ".".join(str(loc) for loc in first_err["loc"])
+            return ToolExecutionResult(
+                tool_id=tool_id,
+                status=ToolExecutionStatus.VALIDATION_ERROR,
+                success=False,
+                message=f"Validation failed for field '{field_name}': {first_err['msg']}",
+            )
+
+        # 6. Two-phase confirmation boundary
+        if tool.requires_confirmation and not confirmed:
+            return ToolExecutionResult(
+                tool_id=tool_id,
+                status=ToolExecutionStatus.CONFIRMATION_REQUIRED,
+                success=False,
+                requires_confirmation=True,
+                message=(
+                    f"Action '{tool.name}' requires explicit confirmation before execution. "
+                    "Please confirm the details to complete."
+                ),
+            )
+
+        # 7. Execute permitted handler with validated input & trusted context
+        try:
+            return tool.handler(validated_input, business_config)
+        except Exception as exc:
+            return ToolExecutionResult(
+                tool_id=tool_id,
+                status=ToolExecutionStatus.ERROR,
+                success=False,
+                message=f"Unexpected error executing tool '{tool_id}': {str(exc)}",
+            )
+
+
+def build_default_tool_registry() -> ToolRegistry:
+    """
+    Construct and populate the default tool registry with canonical tools.
+    """
+    registry = ToolRegistry()
+
+    # 1. Answer FAQ (Universal)
+    registry.register(
+        ToolDefinition(
+            id="answer_faq",
+            name="Answer Business FAQs",
+            description="Answers caller questions regarding business hours, location, services, and amenities using configured business FAQs.",
+            category=ToolCategory.INFORMATION,
+            allowed_industries=["*"],
+            input_schema=AnswerFAQInput,
+            requires_confirmation=False,
+            is_implemented=True,
+            execution_mode=ToolExecutionMode.MOCK,
+            handler=handle_answer_faq,
+        )
+    )
+
+    # 2. Check Table Availability (Restaurant & Dining only)
+    registry.register(
+        ToolDefinition(
+            id="check_table_availability",
+            name="Check Table Availability",
+            description="Inspects real-time table inventory for requested date, time, and party size.",
+            category=ToolCategory.DINING,
+            allowed_industries=["Restaurant", "Dining & Hospitality", "Cafe", "Bistro", "Food & Beverage", "Bar & Lounge"],
+            input_schema=CheckTableAvailabilityInput,
+            requires_confirmation=False,
+            is_implemented=True,
+            execution_mode=ToolExecutionMode.MOCK,
+            handler=handle_check_table_availability,
+        )
+    )
+
+    # 3. Create Table Booking (Restaurant & Dining only)
+    registry.register(
+        ToolDefinition(
+            id="create_table_booking",
+            name="Create Table Booking",
+            description="Reserves a dining table after guest details and party size are confirmed.",
+            category=ToolCategory.DINING,
+            allowed_industries=["Restaurant", "Dining & Hospitality", "Cafe", "Bistro", "Food & Beverage", "Bar & Lounge"],
+            input_schema=CreateTableBookingInput,
+            requires_confirmation=True,
+            is_implemented=True,
+            execution_mode=ToolExecutionMode.MOCK,
+            handler=handle_create_table_booking,
+        )
+    )
+
+    # 4. Check Appointment Availability (Doctor, Clinic, Salon, Consulting only)
+    registry.register(
+        ToolDefinition(
+            id="check_appointment_availability",
+            name="Check Appointment Availability",
+            description="Inspects open consultation slots across clinic doctors, specialists, and departments.",
+            category=ToolCategory.HEALTHCARE,
+            allowed_industries=["Clinic", "Doctor", "Healthcare & Services", "Hospital", "Dental", "Medical", "Salon", "Spa", "Consulting / Services", "Astrology / Spiritual", "Legal"],
+            input_schema=CheckAppointmentAvailabilityInput,
+            requires_confirmation=False,
+            is_implemented=True,
+            execution_mode=ToolExecutionMode.MOCK,
+            handler=handle_check_appointment_availability,
+        )
+    )
+
+    # 5. Create Appointment (Doctor, Clinic, Salon, Consulting only)
+    registry.register(
+        ToolDefinition(
+            id="create_appointment",
+            name="Create Appointment",
+            description="Schedules a patient or client consultation after date, time, and department are confirmed.",
+            category=ToolCategory.HEALTHCARE,
+            allowed_industries=["Clinic", "Doctor", "Healthcare & Services", "Hospital", "Dental", "Medical", "Salon", "Spa", "Consulting / Services", "Astrology / Spiritual", "Legal"],
+            input_schema=CreateAppointmentInput,
+            requires_confirmation=True,
+            is_implemented=True,
+            execution_mode=ToolExecutionMode.MOCK,
+            handler=handle_create_appointment,
+        )
+    )
+
+    # 6. Take Message (Universal)
+    registry.register(
+        ToolDefinition(
+            id="take_message",
+            name="Take a Message",
+            description="Captures caller message notes, priority, and callback details when staff are unavailable.",
+            category=ToolCategory.COMMUNICATION,
+            allowed_industries=["*"],
+            input_schema=TakeMessageInput,
+            requires_confirmation=False,
+            is_implemented=True,
+            execution_mode=ToolExecutionMode.MOCK,
+            handler=handle_take_message,
+        )
+    )
+
+    # 7. Transfer Call (Universal)
+    registry.register(
+        ToolDefinition(
+            id="transfer_call",
+            name="Transfer Call",
+            description="Transfers the caller to a designated human desk or emergency line according to business escalation rules.",
+            category=ToolCategory.COMMUNICATION,
+            allowed_industries=["*"],
+            input_schema=TransferCallInput,
+            requires_confirmation=False,
+            is_implemented=True,
+            execution_mode=ToolExecutionMode.MOCK,
+            handler=handle_transfer_call,
+        )
+    )
+
+    return registry
+
+
+# Singleton cache for default registry
+_default_registry: Optional[ToolRegistry] = None
+
+
+def get_tool_registry() -> ToolRegistry:
+    """Return the application's singleton ToolRegistry instance."""
+    global _default_registry
+    if _default_registry is None:
+        _default_registry = build_default_tool_registry()
+    return _default_registry

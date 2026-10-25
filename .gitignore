@@ -1,0 +1,112 @@
+# ==========================================================================
+# CallMe AI Receptionist — Comprehensive .gitignore
+# ==========================================================================
+
+# 1. Environment Variables & Secrets (CRITICAL)
+.env
+.env.local
+.env.*.local
+.env.development
+.env.production
+.env.test
+!.env.example
+*.pem
+*.key
+*.cert
+*.crt
+.streamlit/secrets.toml
+
+# 2. Virtual Environments
+.venv/
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# 3. Node & Frontend Build Artifacts
+node_modules/
+frontend/node_modules/
+dist/
+frontend/dist/
+dist-ssr/
+frontend/dist-ssr/
+.vite/
+frontend/.vite/
+.eslintcache
+*.local
+
+# 4. Logs & Debug Files
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# 5. Python Byte-compiled / Cache Files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# 6. Database & Local Data Storage
+*.sqlite
+*.sqlite3
+*.db
+*.db-journal
+*.db-wal
+
+# 7. Testing, Type Checking & Linting
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# 8. Temporary Audio & Media Files
+tmp/
+temp/
+.temp/
+*.wav
+*.mp3
+*.webm
+*.ogg
+*.m4a
+
+# 9. IDE & Editor Artifacts
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# 10. OS Specific Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini

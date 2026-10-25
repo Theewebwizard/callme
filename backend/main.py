@@ -1,0 +1,151 @@
+"""
+Main FastAPI backend application for AI Receptionist Platform.
+"""
+
+from contextlib import asynccontextmanager
+from fastapi import FastAPI, WebSocket
+from fastapi.middleware.cors import CORSMiddleware
+from backend.config import get_settings, Settings
+from backend.api import api_router
+
+settings = get_settings()
+
+
+def validate_production_configuration(cfg: Settings) -> None:
+    """
+    Validate required production secrets and configurations at startup.
+    Fails closed immediately if required keys are missing or invalid in production mode.
+    Never prints or logs secret values.
+    """
+    if getattr(cfg, "ENVIRONMENT", "").lower() != "production":
+        return
+
+    missing = []
+
+    if not cfg.GROQ_API_KEY or not cfg.GROQ_API_KEY.strip():
+        missing.append("GROQ_API_KEY")
+
+    if not cfg.DATABASE_URL or not cfg.DATABASE_URL.strip() or "[YOUR-PASSWORD]" in cfg.DATABASE_URL:
+        missing.append("DATABASE_URL")
+
+    if not cfg.EXOTEL_ACCOUNT_SID or not cfg.EXOTEL_ACCOUNT_SID.strip():
+        missing.append("EXOTEL_ACCOUNT_SID")
+
+    if not cfg.EXOTEL_API_KEY or not cfg.EXOTEL_API_KEY.strip():
+        missing.append("EXOTEL_API_KEY")
+
+    if not cfg.EXOTEL_API_TOKEN or not cfg.EXOTEL_API_TOKEN.strip():
+        missing.append("EXOTEL_API_TOKEN")
+
+    if not cfg.DEEPGRAM_API_KEY or not cfg.DEEPGRAM_API_KEY.strip():
+        missing.append("DEEPGRAM_API_KEY")
+
+    if missing:
+        raise RuntimeError(
+            f"Production configuration validation failed. Missing or invalid required environment variable(s): "
+            f"{', '.join(missing)}. The application refuses to start in production without valid credentials."
+        )
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Application lifespan context manager enforcing pre-flight validation."""
+    validate_production_configuration(settings)
+    yield
+
+
+app = FastAPI(
+    title=settings.APP_NAME,
+    version=settings.APP_VERSION,
+    description="Backend API for the modular, multi-tenant AI Receptionist Platform.",
+    lifespan=lifespan,
+)
+
+# Standard middleware for development & prototyping
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Mount REST API router under /api
+app.include_router(api_router, prefix="/api")
+
+
+# Root WebSocket alias for Exotel AgentStream
+@app.websocket("/ws/voice/exotel")
+async def root_exotel_websocket(websocket: WebSocket) -> None:
+    """Direct root WebSocket alias for Exotel Voicebot Applet streaming."""
+    from backend.api.routers.voice import (
+        handle_exotel_media_stream,
+        get_call_router,
+        get_session_manager,
+        get_orchestrator,
+    )
+    from backend.database.service import get_database_service
+    db = get_database_service()
+    sm = get_session_manager(db)
+    cr = get_call_router(db, sm)
+    orch = get_orchestrator(db, sm)
+    await handle_exotel_media_stream(websocket, cr, sm, orch)
+
+
+
+import pathlib
+from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
+
+# Serve React frontend if built
+frontend_dist = pathlib.Path(__file__).parents[1] / "frontend" / "dist"
+if (frontend_dist / "assets").exists():
+    app.mount("/assets", StaticFiles(directory=str(frontend_dist / "assets")), name="react_assets")
+
+
+@app.get("/", response_class=HTMLResponse, tags=["Frontend"])
+def index_page() -> HTMLResponse:
+    """Serve the modern React frontend application."""
+    index_file = frontend_dist / "index.html"
+    if index_file.exists():
+        return HTMLResponse(content=index_file.read_text(encoding="utf-8"))
+    return HTMLResponse(content="<h1>CallMe React Frontend</h1><p>Please run 'npm run build' inside frontend directory.</p>")
+
+
+@app.get("/call", response_class=HTMLResponse, tags=["Web Phone"])
+def web_phone_page() -> HTMLResponse:
+    """Serve the interactive web phone UI for direct voice calls to the AI receptionist."""
+    template_path = pathlib.Path(__file__).parent / "templates" / "webphone.html"
+    if template_path.exists():
+        return HTMLResponse(content=template_path.read_text(encoding="utf-8"))
+    return HTMLResponse(content="<h1>Web Phone Template Not Found</h1>", status_code=404)
+
+
+@app.get("/health", tags=["Health"])
+@app.get("/api/health", tags=["Health"])
+def health_check() -> dict:
+    """Health check endpoint returning system status and database connectivity."""
+    from backend.database.engine import check_database_connection
+    db_status = check_database_connection()
+    return {
+        "status": "healthy",
+        "app": settings.APP_NAME,
+        "version": settings.APP_VERSION,
+        "environment": settings.ENVIRONMENT,
+        "database": {
+            "connected": db_status.get("connected", False),
+            "configured": db_status.get("configured", False),
+            "dialect": db_status.get("dialect"),
+        },
+    }
+
+
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run(
+        "backend.main:app",
+        host=settings.HOST,
+        port=settings.PORT,
+        reload=settings.DEBUG,
+    )
