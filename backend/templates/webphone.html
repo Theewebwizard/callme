@@ -516,7 +516,43 @@
       });
     }
 
+    function unlockAudioForMobile() {
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (AudioCtx) {
+          if (!window._callmeAudioCtx) {
+            window._callmeAudioCtx = new AudioCtx();
+          }
+          if (window._callmeAudioCtx.state === 'suspended') {
+            window._callmeAudioCtx.resume();
+          }
+          const buffer = window._callmeAudioCtx.createBuffer(1, 1, 22050);
+          const source = window._callmeAudioCtx.createBufferSource();
+          source.buffer = buffer;
+          source.connect(window._callmeAudioCtx.destination);
+          source.start(0);
+        }
+      } catch (e) {}
+
+      try {
+        const silent = new Audio('data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA');
+        silent.volume = 0.01;
+        silent.play().then(() => silent.pause()).catch(() => {});
+      } catch (e) {}
+    }
+
+    function getSupportedMimeType() {
+      if (window.MediaRecorder) {
+        if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) return 'audio/webm;codecs=opus';
+        if (MediaRecorder.isTypeSupported('audio/webm')) return 'audio/webm';
+        if (MediaRecorder.isTypeSupported('audio/mp4')) return 'audio/mp4';
+        if (MediaRecorder.isTypeSupported('audio/aac')) return 'audio/aac';
+      }
+      return '';
+    }
+
     async function startCall() {
+      unlockAudioForMobile();
       btnCall.classList.add('hidden');
       callStatusText.textContent = 'Connecting...';
       statusDot.classList.add('active');
@@ -609,7 +645,9 @@
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         audioChunks = [];
-        mediaRecorder = new MediaRecorder(stream);
+        const mimeType = getSupportedMimeType();
+        const options = mimeType ? { mimeType } : {};
+        mediaRecorder = new MediaRecorder(stream, options);
         mediaRecorder.ondataavailable = e => {
           if (e.data.size > 0) audioChunks.push(e.data);
         };
@@ -643,12 +681,15 @@
     async function sendRecordedAudio() {
       if (!audioChunks.length || !activeSessionId) return;
 
-      const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+      const actualMime = (mediaRecorder && mediaRecorder.mimeType) || getSupportedMimeType() || 'audio/webm';
+      const ext = actualMime.includes('mp4') ? 'mp4' : actualMime.includes('aac') ? 'aac' : 'webm';
+      const audioBlob = new Blob(audioChunks, { type: actualMime });
       audioChunks = [];
 
       const formData = new FormData();
       formData.append('session_id', activeSessionId);
-      formData.append('audio', audioBlob, 'caller.webm');
+      formData.append('audio', audioBlob, `caller.${ext}`);
+      formData.append('audio_file', audioBlob, `caller.${ext}`);
 
       await executeTurn(formData);
     }

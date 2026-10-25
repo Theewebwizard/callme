@@ -136,6 +136,42 @@ export default function WebPhone({ business }) {
     setIsListening(false);
   };
 
+  // Synchronously unlock and prime audio subsystem on mobile (iOS Safari / Android Chrome)
+  const unlockAudioForMobile = () => {
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (AudioCtx) {
+        if (!window._callmeAudioCtx) {
+          window._callmeAudioCtx = new AudioCtx();
+        }
+        if (window._callmeAudioCtx.state === 'suspended') {
+          window._callmeAudioCtx.resume();
+        }
+        const buffer = window._callmeAudioCtx.createBuffer(1, 1, 22050);
+        const source = window._callmeAudioCtx.createBufferSource();
+        source.buffer = buffer;
+        source.connect(window._callmeAudioCtx.destination);
+        source.start(0);
+      }
+    } catch (e) {
+      // Non-blocking
+    }
+
+    try {
+      const silentAudio = new Audio('data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA');
+      silentAudio.volume = 0.01;
+      silentAudio.play().then(() => silentAudio.pause()).catch(() => {});
+    } catch (e) {}
+
+    try {
+      if (window.speechSynthesis) {
+        const utter = new SpeechSynthesisUtterance('');
+        utter.volume = 0;
+        window.speechSynthesis.speak(utter);
+      }
+    } catch (e) {}
+  };
+
   // Audio Playback with dual audio/mp3 + WAV + Web Speech fallback
   const playAudio = (base64Audio, mimeType, fallbackText, onEnd) => {
     if (window.speechSynthesis) {
@@ -384,6 +420,7 @@ export default function WebPhone({ business }) {
 
   // Start Call
   const startCall = async () => {
+    unlockAudioForMobile();
     if (!business) {
       setErrorMsg('No business selected. Register or select a business first.');
       return;
@@ -749,6 +786,7 @@ export default function WebPhone({ business }) {
             <button
               className="btn-circle btn-call-start"
               onClick={startCall}
+              onTouchStart={unlockAudioForMobile}
               title="Start Live Call"
               style={{ width: '64px', height: '64px', borderRadius: '50%' }}
             >
