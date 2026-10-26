@@ -12,6 +12,8 @@ import {
   Clock,
   Layers,
   Send,
+  Save,
+  RotateCcw,
 } from 'lucide-react';
 import { api } from '../api';
 
@@ -37,7 +39,9 @@ const PRIORITIES = ['Nice to Have', 'Important', 'Business Critical'];
 export default function ToolLibrary({ business }) {
   const [activeTab, setActiveTab] = useState('existing'); // 'existing' or 'demands'
   const [tools, setTools] = useState([]);
+  const [savedEnabledMap, setSavedEnabledMap] = useState({});
   const [enabledMap, setEnabledMap] = useState({});
+  const [savingTools, setSavingTools] = useState(false);
   const [demands, setDemands] = useState([]);
   const [loading, setLoading] = useState(false);
   const [feedback, setFeedback] = useState(null);
@@ -63,8 +67,10 @@ export default function ToolLibrary({ business }) {
         api.getTools(business.id),
         api.getToolDemands(business.id).catch(() => []),
       ]);
+      const initialMap = toolsData.enabled_tools || {};
       setTools(toolsData.tools || []);
-      setEnabledMap(toolsData.enabled_tools || {});
+      setSavedEnabledMap(initialMap);
+      setEnabledMap(initialMap);
       setDemands(demandsData || []);
     } catch (err) {
       console.error('Failed to load tools:', err);
@@ -73,21 +79,35 @@ export default function ToolLibrary({ business }) {
     }
   };
 
-  const handleToggle = async (toolId) => {
-    const updatedMap = {
-      ...enabledMap,
-      [toolId]: !enabledMap[toolId],
-    };
-    setEnabledMap(updatedMap);
-    setFeedback(null);
+  // Check if any tool toggle has changed compared to saved map
+  const hasChanges = Object.keys({ ...savedEnabledMap, ...enabledMap }).some(
+    (key) => Boolean(savedEnabledMap[key]) !== Boolean(enabledMap[key])
+  );
 
+  const handleToggle = (toolId) => {
+    setEnabledMap((prev) => ({
+      ...prev,
+      [toolId]: !prev[toolId],
+    }));
+  };
+
+  const handleResetChanges = () => {
+    setEnabledMap(savedEnabledMap);
+    setFeedback(null);
+  };
+
+  const handleSaveTools = async () => {
+    setSavingTools(true);
+    setFeedback(null);
     try {
-      await api.updateTools(business.id, updatedMap);
-      setFeedback({ type: 'success', text: `Tool status updated successfully!` });
-      setTimeout(() => setFeedback(null), 3000);
+      await api.updateTools(business.id, enabledMap);
+      setSavedEnabledMap(enabledMap);
+      setFeedback({ type: 'success', text: 'Tool settings updated and published successfully!' });
+      setTimeout(() => setFeedback(null), 4000);
     } catch (err) {
-      setEnabledMap(enabledMap);
-      setFeedback({ type: 'error', text: `Failed to update tool: ${err.message}` });
+      setFeedback({ type: 'error', text: `Failed to update tools: ${err.message}` });
+    } finally {
+      setSavingTools(false);
     }
   };
 
@@ -242,8 +262,43 @@ export default function ToolLibrary({ business }) {
             </span>
           </div>
 
-          <div className="card-desc" style={{ marginBottom: '1rem' }}>
-            Turn pre-built conversational capabilities on or off for <strong>{business.name}</strong>. The AI receptionist will only invoke tools that are enabled below.
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+            <div className="card-desc" style={{ margin: 0 }}>
+              Turn pre-built conversational capabilities on or off for <strong>{business.name}</strong>. Toggle multiple tools and apply your changes when ready.
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              {hasChanges && (
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={handleResetChanges}
+                  disabled={savingTools}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.82rem', padding: '0.45rem 0.85rem' }}
+                >
+                  <RotateCcw size={14} /> Discard
+                </button>
+              )}
+              <button
+                type="button"
+                className="btn-primary"
+                onClick={handleSaveTools}
+                disabled={!hasChanges || savingTools}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  fontSize: '0.85rem',
+                  padding: '0.45rem 1.15rem',
+                  opacity: hasChanges ? 1 : 0.5,
+                  cursor: hasChanges && !savingTools ? 'pointer' : 'not-allowed',
+                  boxShadow: hasChanges ? '0 2px 8px rgba(14, 165, 233, 0.35)' : 'none',
+                }}
+              >
+                <Save size={15} />
+                {savingTools ? 'Saving Changes...' : hasChanges ? 'Update Tools (Unsaved Changes)' : 'Tool Status Updated'}
+              </button>
+            </div>
           </div>
 
           <div className="tool-grid">
