@@ -153,37 +153,65 @@ export default function CallHistory({ business }) {
                         {c.outcome}
                       </span>
                     </td>
-                    <td>
+                    <td style={{ minWidth: '150px' }}>
                       {c.tools_used && c.tools_used.length > 0 ? (
-                        c.tools_used.map((t, idx) => (
-                          <span
-                            key={idx}
-                            style={{
-                              background: 'var(--sky-50)',
-                              color: 'var(--sky-700)',
-                              fontSize: '0.72rem',
-                              padding: '2px 6px',
-                              borderRadius: '4px',
-                              marginRight: '4px',
-                            }}
-                          >
-                            {t}
-                          </span>
-                        ))
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                          {c.tools_used.map((t, idx) => (
+                            <span
+                              key={idx}
+                              style={{
+                                background: 'var(--sky-50)',
+                                border: '1px solid var(--sky-200)',
+                                color: 'var(--sky-700)',
+                                fontSize: '0.74rem',
+                                fontWeight: 600,
+                                padding: '2px 7px',
+                                borderRadius: 'var(--radius-full)',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '3px',
+                                whiteSpace: 'nowrap',
+                              }}
+                            >
+                              <Wrench size={11} color="var(--sky-600)" />
+                              {typeof t === 'string' ? t.replace(/_/g, ' ') : String(t)}
+                            </span>
+                          ))}
+                        </div>
                       ) : (
-                        <span style={{ color: 'var(--slate-400)', fontSize: '0.75rem' }}>None</span>
+                        <span style={{ color: 'var(--slate-400)', fontSize: '0.78rem', fontStyle: 'italic' }}>
+                          Direct Conversation
+                        </span>
                       )}
                     </td>
-                    <td style={{ maxWidth: '300px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {c.summary}
+                    <td style={{ maxWidth: '280px', color: 'var(--slate-700)', fontSize: '0.84rem' }}>
+                      <span
+                        title={c.summary}
+                        style={{
+                          display: '-webkit-box',
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: 'vertical',
+                          overflow: 'hidden',
+                          lineHeight: 1.45,
+                        }}
+                      >
+                        {c.summary || 'Caller inquiry processed.'}
+                      </span>
                     </td>
                     <td>
                       <button
                         className="btn-secondary"
-                        style={{ padding: '0.25rem 0.6rem', fontSize: '0.75rem' }}
+                        style={{
+                          padding: '0.28rem 0.75rem',
+                          fontSize: '0.78rem',
+                          fontWeight: 600,
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                        }}
                         onClick={() => setActiveCallDetail(c)}
                       >
-                        Inspect
+                        <Search size={12} /> Inspect
                       </button>
                     </td>
                   </tr>
@@ -204,8 +232,8 @@ export default function CallHistory({ business }) {
           style={{
             position: 'fixed',
             inset: 0,
-            background: 'rgba(15, 23, 42, 0.45)',
-            backdropFilter: 'blur(4px)',
+            background: 'rgba(15, 23, 42, 0.55)',
+            backdropFilter: 'blur(6px)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -216,48 +244,94 @@ export default function CallHistory({ business }) {
         >
           <div
             className="card"
-            style={{ width: '100%', maxWidth: '540px', maxHeight: '90vh', overflowY: 'auto' }}
+            style={{ width: '100%', maxWidth: '620px', maxHeight: '90vh', overflowY: 'auto', padding: '1.75rem' }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-              <div className="card-title">Call Details — #{activeCallDetail.id}</div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', borderBottom: '1px solid var(--slate-100)', paddingBottom: '0.85rem' }}>
+              <div className="card-title" style={{ fontSize: '1.15rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <PhoneCall size={20} color="var(--sky-600)" /> Call Details & Audit Report
+              </div>
               <button
                 className="btn-secondary"
-                style={{ padding: '0.3rem 0.65rem' }}
+                style={{ padding: '0.3rem 0.7rem', fontSize: '0.8rem' }}
                 onClick={() => setActiveCallDetail(null)}
               >
                 ✕ Close
               </button>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1rem', fontSize: '0.85rem' }}>
-              <div><strong>Caller:</strong> {activeCallDetail.caller_number}</div>
-              <div><strong>Duration:</strong> {activeCallDetail.duration}</div>
-              <div><strong>Date:</strong> {activeCallDetail.datetime}</div>
+            {/* Call Meta Overview */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '0.85rem', marginBottom: '1.25rem', background: 'var(--slate-50)', padding: '0.85rem 1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--slate-200)' }}>
               <div>
-                <strong>Outcome:</strong>{' '}
-                <span className={`outcome-pill ${getOutcomeBadgeClass(activeCallDetail.outcome)}`}>
-                  {activeCallDetail.outcome}
-                </span>
+                <span style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: 'var(--slate-500)', fontWeight: 700 }}>Caller DID</span>
+                <div style={{ fontWeight: 600, fontSize: '0.88rem', marginTop: '2px' }}><code>{activeCallDetail.caller_number}</code></div>
               </div>
-            </div>
-
-            <div style={{ marginBottom: '1rem' }}>
-              <strong style={{ fontSize: '0.85rem' }}>Executive Summary:</strong>
-              <div style={{ background: 'var(--slate-50)', padding: '0.75rem', borderRadius: 'var(--radius-sm)', marginTop: '0.35rem', fontSize: '0.85rem', lineHeight: 1.5 }}>
-                {activeCallDetail.summary}
+              <div>
+                <span style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: 'var(--slate-500)', fontWeight: 700 }}>Call Duration</span>
+                <div style={{ fontWeight: 600, fontSize: '0.88rem', marginTop: '2px' }}>{activeCallDetail.duration}</div>
               </div>
-            </div>
-
-            <div>
-              <strong style={{ fontSize: '0.85rem' }}>Tools Interventions:</strong>
-              <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.35rem', flexWrap: 'wrap' }}>
-                {activeCallDetail.tools_used?.map((t, idx) => (
-                  <span key={idx} className="outcome-pill outcome-inquiry">
-                    🔧 {t}
+              <div>
+                <span style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: 'var(--slate-500)', fontWeight: 700 }}>Date & Time</span>
+                <div style={{ fontWeight: 600, fontSize: '0.88rem', marginTop: '2px' }}>{activeCallDetail.datetime}</div>
+              </div>
+              <div>
+                <span style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: 'var(--slate-500)', fontWeight: 700 }}>Resolution Outcome</span>
+                <div style={{ marginTop: '2px' }}>
+                  <span className={`outcome-pill ${getOutcomeBadgeClass(activeCallDetail.outcome)}`}>
+                    {activeCallDetail.outcome}
                   </span>
-                ))}
+                </div>
               </div>
+            </div>
+
+            {/* Executive Call Summary */}
+            <div style={{ marginBottom: '1.25rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', marginBottom: '0.4rem' }}>
+                <CheckCircle size={15} color="var(--emerald-600)" />
+                <strong style={{ fontSize: '0.9rem', color: 'var(--slate-800)' }}>Executive Call Summary:</strong>
+              </div>
+              <div style={{ background: 'white', border: '1px solid var(--sky-200)', padding: '1rem', borderRadius: 'var(--radius-md)', fontSize: '0.88rem', lineHeight: 1.6, color: 'var(--slate-800)', boxShadow: '0 2px 6px rgba(14, 165, 233, 0.05)' }}>
+                {activeCallDetail.summary || 'Standard call completed successfully. Full turn transcripts are archived in database.'}
+              </div>
+            </div>
+
+            {/* Tools Interventions */}
+            <div style={{ marginBottom: '0.5rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', marginBottom: '0.5rem' }}>
+                <Wrench size={15} color="var(--sky-600)" />
+                <strong style={{ fontSize: '0.9rem', color: 'var(--slate-800)' }}>Autonomous Tools Interventions:</strong>
+              </div>
+              {activeCallDetail.tools_used && activeCallDetail.tools_used.length > 0 ? (
+                <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
+                  {activeCallDetail.tools_used.map((t, idx) => (
+                    <div
+                      key={idx}
+                      style={{
+                        background: 'var(--sky-50)',
+                        border: '1px solid var(--sky-200)',
+                        padding: '0.5rem 0.85rem',
+                        borderRadius: 'var(--radius-md)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        fontSize: '0.84rem',
+                        fontWeight: 600,
+                        color: 'var(--sky-800)',
+                      }}
+                    >
+                      <span style={{ fontSize: '1rem' }}>🔧</span>
+                      <span>{typeof t === 'string' ? t.replace(/_/g, ' ') : String(t)}</span>
+                      <span style={{ fontSize: '0.72rem', background: 'var(--emerald-100)', color: 'var(--emerald-700)', padding: '2px 6px', borderRadius: '4px', fontWeight: 700 }}>
+                        Executed
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ background: 'var(--slate-50)', border: '1px solid var(--slate-200)', padding: '0.75rem 1rem', borderRadius: 'var(--radius-sm)', fontSize: '0.84rem', color: 'var(--slate-500)', fontStyle: 'italic' }}>
+                  No automated external tool invocations were required for this inquiry (handled through direct dialogue & knowledge base).
+                </div>
+              )}
             </div>
           </div>
         </div>

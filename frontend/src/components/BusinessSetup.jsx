@@ -159,39 +159,8 @@ export default function BusinessSetup({ business, onBusinessSaved, onSelectBusin
         </div>
       )}
 
-      {/* Sub-Tabs: Register vs Edit */}
-      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
-        <button
-          className={`btn-secondary ${activeSubTab === 'register' ? 'active' : ''}`}
-          style={{
-            background: activeSubTab === 'register' ? 'var(--sky-50)' : 'white',
-            borderColor: activeSubTab === 'register' ? 'var(--sky-400)' : 'var(--slate-300)',
-            color: activeSubTab === 'register' ? 'var(--sky-700)' : 'var(--slate-700)',
-          }}
-          onClick={() => { setActiveSubTab('register'); setFeedback(null); }}
-        >
-          <Sparkles size={16} /> ➕ Register New Business
-        </button>
-
-        {business && (
-          <button
-            className={`btn-secondary ${activeSubTab === 'edit' ? 'active' : ''}`}
-            style={{
-              background: activeSubTab === 'edit' ? 'var(--sky-50)' : 'white',
-              borderColor: activeSubTab === 'edit' ? 'var(--sky-400)' : 'var(--slate-300)',
-              color: activeSubTab === 'edit' ? 'var(--sky-700)' : 'var(--slate-700)',
-            }}
-            onClick={() => { setActiveSubTab('edit'); setFeedback(null); }}
-          >
-            <Building2 size={16} /> ⚙️ Edit Profile: {business.name}
-          </button>
-        )}
-      </div>
-
-      {/* =========================================================================
-         REGISTER NEW BUSINESS
-         ========================================================================= */}
-      {activeSubTab === 'register' && (
+      {/* If no business is configured yet, show initial registration form */}
+      {!business && (
         <form onSubmit={handleRegister} className="card">
           <div className="card-title">
             <Building2 size={20} color="var(--sky-600)" /> Onboard Real Business Profile
@@ -311,7 +280,7 @@ export default function BusinessSetup({ business, onBusinessSaved, onSelectBusin
       {/* =========================================================================
          EDIT ACTIVE BUSINESS
          ========================================================================= */}
-      {activeSubTab === 'edit' && business && (
+      {business && (
         <form onSubmit={handleUpdate} className="card">
           <div className="card-title">
             <Building2 size={20} color="var(--sky-600)" /> Manage Profile: {editForm.name}
