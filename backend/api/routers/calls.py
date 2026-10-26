@@ -28,8 +28,7 @@ def get_call_history(
         )
 
     outcome_filter = None if outcome in (None, "", "All Outcomes") else outcome
-    total_count = db_service.get_call_count(business_id, outcome_filter=outcome_filter)
-    paged_calls = db_service.get_call_history(
+    paged_calls, total_count = db_service.get_call_history_and_count(
         business_id,
         outcome_filter=outcome_filter,
         limit=limit,

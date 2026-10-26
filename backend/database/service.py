@@ -247,6 +247,25 @@ class DatabaseService:
             repo = ToolDemandRepository(session)
             return repo.update_status(demand_id, new_status)
 
+    def get_call_history_and_count(
+        self,
+        business_id: str,
+        outcome_filter: Optional[str] = None,
+        limit: int = 100,
+        offset: int = 0,
+    ) -> tuple[List[Dict[str, Any]], int]:
+        """Retrieve audited call history records and total count in a single database session."""
+        with session_scope(self.session_factory) as session:
+            call_repo = CallRepository(session)
+            total = call_repo.count_for_business(business_id=business_id, outcome_filter=outcome_filter)
+            calls = call_repo.list_dicts_for_business(
+                business_id=business_id,
+                outcome_filter=outcome_filter,
+                limit=limit,
+                offset=offset,
+            )
+            return calls, total
+
     def get_call_history(
         self,
         business_id: str,

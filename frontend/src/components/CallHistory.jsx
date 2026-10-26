@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   History,
   Search,
@@ -19,16 +19,18 @@ export default function CallHistory({ business }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCallDetail, setActiveCallDetail] = useState(null);
 
+  // Fetch all business calls once when business mounts
   useEffect(() => {
-    if (business) {
-      loadCalls();
+    if (business?.id) {
+      loadAllCalls();
     }
-  }, [business?.id, selectedOutcome]);
+  }, [business?.id]);
 
-  const loadCalls = async () => {
+  const loadAllCalls = async () => {
     setLoading(true);
     try {
-      const res = await api.getCallHistory(business.id, selectedOutcome);
+      // Load full call history once so tab switching & searches are instantaneous (< 1ms)
+      const res = await api.getCallHistory(business.id, 'All');
       setCalls(res.calls || []);
     } catch (err) {
       console.error('Failed to load calls:', err);
@@ -37,14 +39,22 @@ export default function CallHistory({ business }) {
     }
   };
 
-  const filteredCalls = calls.filter((c) => {
-    if (!searchQuery.trim()) return true;
-    const q = searchQuery.toLowerCase();
-    return (
-      (c.caller_number && c.caller_number.toLowerCase().includes(q)) ||
-      (c.summary && c.summary.toLowerCase().includes(q))
-    );
-  });
+  // Instantaneous in-memory multi-predicate filtering (Outcome filter + Search query)
+  const filteredCalls = useMemo(() => {
+    return calls.filter((c) => {
+      // 1. Outcome pill filter
+      if (selectedOutcome !== 'All' && c.outcome !== selectedOutcome) {
+        return false;
+      }
+      // 2. Search query filter
+      if (!searchQuery.trim()) return true;
+      const q = searchQuery.toLowerCase();
+      const numMatch = c.caller_number && c.caller_number.toLowerCase().includes(q);
+      const sumMatch = c.summary && c.summary.toLowerCase().includes(q);
+      const toolsMatch = c.tools_used && c.tools_used.some((t) => String(t).toLowerCase().includes(q));
+      return numMatch || sumMatch || toolsMatch;
+    });
+  }, [calls, selectedOutcome, searchQuery]);
 
   const getOutcomeBadgeClass = (outcome) => {
     switch (outcome) {
