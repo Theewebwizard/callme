@@ -9,6 +9,13 @@ from typing import Dict, Any, Optional
 from pydantic import ValidationError
 
 from backend.agent.state import AgentState
+from backend.agent.semantic_intent import (
+    FollowupIntentType,
+    SemanticIntentExtraction,
+    extract_semantic_followup_intent,
+    is_followup_prompt,
+    detect_language,
+)
 from backend.services.groq_service import (
     GroqService,
     get_groq_service,
@@ -92,12 +99,78 @@ def prepare_context_node(
         tools_catalogue=enabled_tools_map,
     )
 
+    # Check if the caller is replying to an assistant prompt asking if they have any other queries
+    last_assistant_turn = None
+    last_user_turn = None
+    for m in reversed(valid_turns):
+        if m.get("role") == "user" and last_user_turn is None:
+            last_user_turn = m
+        elif m.get("role") == "assistant" and last_assistant_turn is None:
+            last_assistant_turn = m
+        if last_assistant_turn and last_user_turn:
+            break
+
+    if last_assistant_turn and last_user_turn and valid_turns[-1].get("role") == "user":
+        ast_content = last_assistant_turn.get("content", "")
+        user_content = last_user_turn.get("content", "")
+
+        if is_followup_prompt(ast_content):
+            # Extract semantic intent via Pydantic model
+            intent_res = extract_semantic_followup_intent(
+                caller_text=user_content,
+                last_assistant_text=ast_content,
+            )
+
+            if intent_res.intent == FollowupIntentType.NO_FURTHER_QUERY:
+                biz_name = biz_config.get("name", "our business")
+                is_hindi = intent_res.language == "hi" or detect_language(user_content) == "hi"
+                if is_hindi:
+                    farewell = "कॉल करने के लिए धन्यवाद! आपका दिन शुभ हो, अलविदा।"
+                else:
+                    farewell = f"Thank you for calling {biz_name}! Have a wonderful day, goodbye!"
+
+                return {
+                    "system_instruction": system_instruction,
+                    "tool_definitions": tool_schemas,
+                    "iteration_count": 0,
+                    "response_content": farewell,
+                    "followup_intent": FollowupIntentType.NO_FURTHER_QUERY.value,
+                    "should_terminate": True,
+                    "success": True,
+                    "error": None,
+                    "tools_called": [],
+                    "work_completed": False,
+                }
+
+            elif intent_res.intent == FollowupIntentType.HAS_FURTHER_QUERY:
+                is_hindi = intent_res.language == "hi" or detect_language(user_content) == "hi"
+                if is_hindi:
+                    prompt_reply = "जी बिल्कुल! बताइए, मैं आपकी और क्या सहायता कर सकता हूँ?"
+                else:
+                    prompt_reply = "Certainly! What else can I help you with?"
+
+                return {
+                    "system_instruction": system_instruction,
+                    "tool_definitions": tool_schemas,
+                    "iteration_count": 0,
+                    "response_content": prompt_reply,
+                    "followup_intent": FollowupIntentType.HAS_FURTHER_QUERY.value,
+                    "should_terminate": False,
+                    "success": True,
+                    "error": None,
+                    "tools_called": [],
+                    "work_completed": False,
+                }
+
     return {
         "system_instruction": system_instruction,
         "tool_definitions": tool_schemas,
         "iteration_count": 0,
         "success": True,
         "error": None,
+        "tools_called": [],
+        "work_completed": False,
+        "should_terminate": False,
     }
 
 
@@ -146,6 +219,66 @@ def call_llm_node(
 generate_response_node = call_llm_node
 
 
+def _is_prior_action_confirmed(messages: list, tool_id: str) -> bool:
+    """
+    Check if the conversation history shows that this tool's action was already
+    proposed in the prior assistant turn and the caller just verbally confirmed it.
+    Enables voice callers to confirm bookings/appointments verbally without clicking UI buttons.
+    """
+    import re
+    if not messages or len(messages) < 2:
+        return False
+
+    last_user_content = ""
+    prev_assistant_content = ""
+
+    for i in range(len(messages) - 1, -1, -1):
+        msg = messages[i]
+        role = msg.get("role")
+        content = msg.get("content") or ""
+
+        if role == "user" and not last_user_content:
+            last_user_content = content.strip().lower()
+            for j in range(i - 1, -1, -1):
+                if messages[j].get("role") == "assistant":
+                    prev_assistant_content = (messages[j].get("content") or "").strip().lower()
+                    break
+            break
+
+    if not last_user_content or not prev_assistant_content:
+        return False
+
+    # 1. Verify previous assistant message proposed an action awaiting confirmation
+    proposal_cues = [
+        "prepared your",
+        "action:",
+        "details:",
+        "confirm or cancel",
+        "confirm this",
+        "confirm for you",
+        "shall i go ahead",
+        "would you like me to confirm",
+        "booking details",
+        "appointment details",
+    ]
+    had_proposal = any(cue in prev_assistant_content for cue in proposal_cues)
+    if not had_proposal:
+        return False
+
+    # 2. Check for explicit cancellation
+    cancel_cues = ["cancel", "don't", "dont", "abort", "stop", "nahi mat", "mat karo", "no don't", "no dont"]
+    if any(re.search(rf"\b{re.escape(c)}\b", last_user_content) for c in cancel_cues):
+        return False
+
+    # 3. Check for verbal confirmation phrases
+    confirm_patterns = [
+        r"\b(?:confirm|confirmed|confirming)\b",
+        r"\b(?:yes|yeah|yep|yup|sure|okay|ok|go ahead|proceed|book it|please do|do it)\b",
+        r"\b(?:haan|haanji|ha ji|kardo|kar do|kar dijiye|theek hai|bilkul)\b",
+    ]
+    return any(re.search(pat, last_user_content) for pat in confirm_patterns)
+
+
 def execute_tools_node(
     state: AgentState,
     tool_registry: Optional[ToolRegistry] = None,
@@ -163,6 +296,7 @@ def execute_tools_node(
     biz_id = state.get("business_id", "")
     biz_config = state.get("business_config", {})
     messages = list(state.get("messages", []))
+    tools_called = list(state.get("tools_called") or [])
 
     # Record assistant tool call turn in messages history
     assistant_turn = {
@@ -232,32 +366,60 @@ def execute_tools_node(
             })
             continue
 
-        # 5. Two-phase confirmation interception
+        # 5. Two-phase confirmation interception & verbal confirmation handling
         if tool_def.requires_confirmation:
-            action_id = str(uuid.uuid4())
-            summary_text = _format_pending_action_summary(tool_id, validated_dict)
-            pending_action = {
-                "action_id": action_id,
-                "business_id": biz_id,
-                "tool_id": tool_id,
-                "tool_name": tool_def.name,
-                "arguments": validated_dict,
-                "summary": summary_text,
-                "status": "pending_confirmation",
-            }
-            confirmation_prompt = (
-                f"I've prepared your {tool_def.name.lower()} details:\n\n"
-                f"{summary_text}\n\n"
-                f"Please click **Confirm** or **Cancel** below to complete."
-            )
-            return {
-                "messages": messages,
-                "pending_action": pending_action,
-                "response_content": confirmation_prompt,
-                "latest_tool_calls": None,
-                "success": True,
-                "error": None,
-            }
+            is_verbally_confirmed = _is_prior_action_confirmed(messages, tool_id)
+            if not is_verbally_confirmed:
+                action_id = str(uuid.uuid4())
+                summary_text = _format_pending_action_summary(tool_id, validated_dict)
+                pending_action = {
+                    "action_id": action_id,
+                    "business_id": biz_id,
+                    "tool_id": tool_id,
+                    "tool_name": tool_def.name,
+                    "arguments": validated_dict,
+                    "summary": summary_text,
+                    "status": "pending_confirmation",
+                }
+                friendly_name = "dining reservation" if tool_id == "create_table_booking" else "appointment"
+                last_caller_msg = messages[-2].get("content", "") if len(messages) >= 2 else ""
+                if detect_language(last_caller_msg) == "hi":
+                    confirmation_prompt = (
+                        f"मैंने आपकी {friendly_name} की जानकारी तैयार कर ली है:\n\n"
+                        f"{summary_text}\n\n"
+                        f"क्या मैं इसे आपके लिए कन्फर्म कर दूँ?"
+                    )
+                else:
+                    confirmation_prompt = (
+                        f"I've prepared your {friendly_name} details:\n\n"
+                        f"{summary_text}\n\n"
+                        f"Would you like me to go ahead and confirm this for you?"
+                    )
+                return {
+                    "messages": messages,
+                    "pending_action": pending_action,
+                    "response_content": confirmation_prompt,
+                    "latest_tool_calls": None,
+                    "success": True,
+                    "error": None,
+                }
+            else:
+                # Verbal confirmation received: caller confirmed in conversation! Execute tool directly.
+                result = registry.execute_tool(
+                    business_id=biz_id,
+                    business_config=biz_config,
+                    tool_id=tool_id,
+                    input_data=validated_dict,
+                    confirmed=True,
+                )
+                tools_called.append(tool_id)
+                messages.append({
+                    "role": "tool",
+                    "tool_call_id": tc_id,
+                    "name": tool_id,
+                    "content": result.message,
+                })
+                continue
 
         # 6. Execute permitted non-confirmation tool
         result = registry.execute_tool(
@@ -267,6 +429,7 @@ def execute_tools_node(
             input_data=validated_dict,
             confirmed=False,
         )
+        tools_called.append(tool_id)
         messages.append({
             "role": "tool",
             "tool_call_id": tc_id,
@@ -277,6 +440,8 @@ def execute_tools_node(
     return {
         "messages": messages,
         "latest_tool_calls": None,
+        "tools_called": tools_called,
+        "work_completed": True,
         "success": True,
         "error": None,
     }
@@ -286,6 +451,7 @@ def finalize_response_node(state: AgentState) -> Dict[str, Any]:
     """
     Node D: Finalize Response
     Packages final workflow output. Never converts errors into successful claims.
+    Ensures that when work is done, the caller is informed and asked if they have other queries.
     """
     if not state.get("success", False) or state.get("error"):
         return {
@@ -293,12 +459,36 @@ def finalize_response_node(state: AgentState) -> Dict[str, Any]:
             "response_content": None,
             "error": state.get("error", "Conversation workflow encountered an error."),
             "pending_action": None,
+            "tools_called": state.get("tools_called") or [],
+            "work_completed": False,
+            "should_terminate": False,
+            "followup_intent": None,
         }
+
+    response_content = state.get("response_content", "") or ""
+    work_completed = state.get("work_completed", False)
+    tools_called = state.get("tools_called") or []
+    should_terminate = state.get("should_terminate", False)
+    followup_intent = state.get("followup_intent")
+
+    # If work/tools were executed or completed, verify if follow-up question is present
+    if (work_completed or len(tools_called) > 0) and response_content and not should_terminate:
+        if not is_followup_prompt(response_content):
+            lang = detect_language(response_content)
+            if lang == "hi":
+                followup_q = " क्या मैं आपकी किसी और चीज़ में सहायता कर सकता हूँ?"
+            else:
+                followup_q = " Is there anything else I can help you with today?"
+            response_content = response_content.rstrip() + followup_q
 
     return {
         "success": True,
-        "response_content": state.get("response_content", ""),
+        "response_content": response_content,
         "pending_action": state.get("pending_action"),
+        "tools_called": tools_called,
+        "work_completed": work_completed or len(tools_called) > 0,
+        "should_terminate": should_terminate,
+        "followup_intent": followup_intent,
         "error": None,
     }
 

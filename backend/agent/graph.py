@@ -19,6 +19,21 @@ from backend.services.groq_service import GroqService
 from backend.tools.registry import ToolRegistry
 
 
+def route_after_prepare_context(state: AgentState) -> str:
+    """
+    Conditional router after prepare_context.
+    If a semantic farewell or direct follow-up prompt was resolved,
+    routes directly to finalize_response without redundant LLM roundtrips.
+    """
+    if not state.get("success", False) or state.get("error"):
+        return "finalize_response"
+
+    if state.get("response_content") and (state.get("should_terminate") or state.get("followup_intent") == "has_further_query"):
+        return "finalize_response"
+
+    return "call_llm"
+
+
 def route_after_llm(state: AgentState) -> str:
     """
     Conditional edge router evaluating LLM generation outcome.
@@ -28,6 +43,9 @@ def route_after_llm(state: AgentState) -> str:
         return "finalize_response"
 
     if state.get("pending_action"):
+        return "finalize_response"
+
+    if state.get("should_terminate"):
         return "finalize_response"
 
     tool_calls = state.get("latest_tool_calls")
@@ -86,7 +104,14 @@ def create_receptionist_graph(
 
     # 2. Connect Edges
     workflow.add_edge(START, "prepare_context")
-    workflow.add_edge("prepare_context", "call_llm")
+    workflow.add_conditional_edges(
+        "prepare_context",
+        route_after_prepare_context,
+        {
+            "call_llm": "call_llm",
+            "finalize_response": "finalize_response",
+        },
+    )
 
     # Conditional routing after LLM response
     workflow.add_conditional_edges(
@@ -142,6 +167,10 @@ def invoke_receptionist_workflow(
         "iteration_count": 0,
         "pending_action": None,
         "latest_tool_calls": None,
+        "work_completed": False,
+        "should_terminate": False,
+        "followup_intent": None,
+        "tools_called": [],
     }
 
     return graph.invoke(initial_state)

@@ -128,9 +128,18 @@ def session_scope(
     session: Session = factory()
     try:
         yield session
-        session.commit()
+        if session.in_transaction():
+            try:
+                session.commit()
+            except Exception as commit_err:
+                if 'no transaction is active' not in str(commit_err).lower():
+                    raise
     except Exception as exc:
-        session.rollback()
+        if session.in_transaction():
+            try:
+                session.rollback()
+            except Exception:
+                pass
         logger.error(f"Database session rolled back due to error: {exc}")
         raise
     finally:

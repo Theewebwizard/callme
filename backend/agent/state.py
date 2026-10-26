@@ -23,3 +23,7 @@ class AgentState(TypedDict, total=False):
     pending_action: Optional[Dict[str, Any]]
     iteration_count: int
     latest_tool_calls: Optional[List[Dict[str, Any]]]
+    work_completed: Optional[bool]
+    should_terminate: Optional[bool]
+    followup_intent: Optional[str]
+    tools_called: Optional[List[str]]

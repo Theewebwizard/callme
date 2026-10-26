@@ -146,6 +146,7 @@ class VoiceTurnOrchestrator:
                     response_content = workflow_result.get("response_content") or ""
                 pending_action = workflow_result.get("pending_action")
                 tools_called = workflow_result.get("tools_called") or []
+                should_terminate = bool(workflow_result.get("should_terminate", False))
 
             except Exception as e:
                 logger.error(
@@ -185,9 +186,20 @@ class VoiceTurnOrchestrator:
 
             # 10. Check if user or conversation signalled call termination
             lower_response = response_content.lower()
-            if any(term in lower_response for term in ["goodbye", "have a great day", "bye for now"]):
-                # Subtle termination hint
-                pass
+            farewell_terms = ["goodbye", "have a great day", "have a wonderful day", "bye for now", "alvida", "shubh din"]
+            if any(term in lower_response for term in farewell_terms) and (
+                workflow_result.get("followup_intent") == "no_further_query"
+                or "thank you for calling" in lower_response
+                or "कॉल करने के लिए धन्यवाद" in response_content
+            ):
+                should_terminate = True
+
+            session_status = SessionStatus.COMPLETED.value if should_terminate else SessionStatus.ACTIVE.value
+            if should_terminate:
+                try:
+                    self.session_manager.terminate_session(session_id, reason="completed")
+                except Exception as term_err:
+                    logger.debug("Auto-terminating session %s on call completion: %s", session_id, str(term_err))
 
             return VoiceTurnResult(
                 session_id=session_id,
@@ -198,7 +210,7 @@ class VoiceTurnOrchestrator:
                 tool_calls_executed=tools_called,
                 pending_action=pending_action,
                 llm_duration_ms=llm_duration_ms,
-                session_status=SessionStatus.ACTIVE.value,
+                session_status=session_status,
                 should_terminate=should_terminate,
                 timestamp=utcnow(),
             )

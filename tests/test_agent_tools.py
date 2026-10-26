@@ -275,7 +275,7 @@ def test_booking_request_creates_pending_action_without_execution(registry):
     assert pending["arguments"]["party_size"] == 4
 
     # The action was NOT yet executed through the registry
-    assert "Please click **Confirm** or **Cancel**" in result["response_content"]
+    assert "Would you like me to go ahead and confirm" in result["response_content"]
 
 
 def test_appointment_request_creates_pending_action_without_execution(registry):
