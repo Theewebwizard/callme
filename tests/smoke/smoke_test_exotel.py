@@ -1,7 +1,7 @@
 """
 Manual smoke-test script for live Exotel telephony configuration and routing readiness.
 Run using:
-    python -m backend.voice.smoke_test_exotel
+    python -m tests.smoke.smoke_test_exotel
 
 Verifies configuration, Basic Auth headers, HMAC signature verification, and tenant routing.
 Never prints or leaks credentials or secrets.

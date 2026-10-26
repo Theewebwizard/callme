@@ -1,5 +1,5 @@
 """
-Mock data and initial tenant configurations for prototype UI.
+Initial seed tenant configurations, canonical tool definitions, and baseline sample records.
 """
 
 from typing import Dict, List, Any

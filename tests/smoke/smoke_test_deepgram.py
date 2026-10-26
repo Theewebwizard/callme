@@ -1,10 +1,7 @@
 """
 Manual smoke-test script for live Deepgram STT and TTS connectivity.
 Run using:
-    python -m backend.voice.smoke_test
-
-Only executes live external requests if DEEPGRAM_API_KEY is configured in .env.
-Never prints or leaks credentials or raw audio.
+    python -m tests.smoke.smoke_test_deepgram
 """
 
 import sys

@@ -11,7 +11,7 @@ from backend.services.groq_service import (
     LLMResponse,
     build_business_system_instruction,
 )
-from backend.mock_data import INITIAL_BUSINESSES, INITIAL_TOOLS
+from backend.database.seed_data import INITIAL_BUSINESSES, INITIAL_TOOLS
 
 
 # ---------------------------------------------------------------------------

@@ -25,7 +25,7 @@ from backend.tools.definitions import (
     TakeMessageInput,
     TransferCallInput,
 )
-from backend.mock_data import INITIAL_BUSINESSES
+from backend.database.seed_data import INITIAL_BUSINESSES
 
 
 @pytest.fixture

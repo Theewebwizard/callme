@@ -16,7 +16,7 @@ from backend.agent.graph import (
     invoke_receptionist_workflow,
 )
 from backend.services.groq_service import GroqService
-from backend.mock_data import INITIAL_BUSINESSES, INITIAL_TOOLS
+from backend.database.seed_data import INITIAL_BUSINESSES, INITIAL_TOOLS
 
 
 # ---------------------------------------------------------------------------

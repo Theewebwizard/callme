@@ -23,7 +23,7 @@ from backend.database.repositories import (
     CallRepository,
     ConversationRepository,
 )
-from backend.mock_data import INITIAL_BUSINESSES, INITIAL_TOOLS, MOCK_CALL_HISTORY
+from backend.database.seed_data import INITIAL_BUSINESSES, INITIAL_TOOLS, MOCK_CALL_HISTORY
 
 logger = logging.getLogger(__name__)
 
