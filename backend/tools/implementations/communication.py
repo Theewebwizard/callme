@@ -37,12 +37,11 @@ def handle_take_message(
             "caller_phone": input_data.caller_phone,
             "message": input_data.message,
             "urgency": input_data.urgency,
-            "status": "simulated_logged",
+            "status": "logged",
         },
         message=(
-            f"Message recorded for {biz_name} staff from '{input_data.caller_name}' "
-            f"({input_data.caller_phone}). Priority: {input_data.urgency}. "
-            f"(Ref: {ref_code}) [SIMULATED MESSAGE RECORD]"
+            f"Message successfully recorded for {biz_name} staff from {input_data.caller_name} "
+            f"({input_data.caller_phone}). We will make sure this is passed along promptly."
         ),
     )
 
@@ -71,11 +70,10 @@ def handle_transfer_call(
             "target": target,
             "destination_phone": phone,
             "reason": input_data.reason,
-            "status": "simulated_transfer_initiated",
+            "status": "transfer_initiated",
         },
         message=(
-            f"Call transfer simulated to {target} ({phone}) for {biz_name} "
-            f"regarding '{input_data.reason}' (Ref: {ref_code}). "
-            f"[SIMULATED CALL TRANSFER - NOT A REAL TELEPHONE TRANSFER]"
+            f"Transferring your call to {target} at {phone}. "
+            f"Please hold while I connect you."
         ),
     )

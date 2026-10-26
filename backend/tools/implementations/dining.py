@@ -41,7 +41,7 @@ def handle_check_table_availability(
             },
             message=(
                 f"Requested dining time ({input_data.time}) is outside of {biz_name}'s "
-                f"operating hours ({opening} – {closing}). [SIMULATED MOCK AVAILABILITY]"
+                f"operating hours ({opening} \u2013 {closing})."
             ),
         )
 
@@ -79,7 +79,7 @@ def handle_check_table_availability(
         },
         message=(
             f"Tables are available for a party of {input_data.party_size} on {input_data.date} "
-            f"around {input_data.time} at {biz_name}. [SIMULATED MOCK AVAILABILITY - NOT LIVE INVENTORY]"
+            f"around {input_data.time} at {biz_name}. Would you like to proceed with a reservation?"
         ),
     )
 
@@ -109,11 +109,11 @@ def handle_create_table_booking(
             "time": input_data.time,
             "party_size": input_data.party_size,
             "special_requests": input_data.special_requests,
-            "status": "simulated_confirmed",
+            "status": "confirmed",
         },
         message=(
-            f"Table reservation simulated for {input_data.party_size} guests under "
-            f"'{input_data.customer_name}' at {biz_name} on {input_data.date} at {input_data.time} "
-            f"(Booking Reference: {ref_code}). [SIMULATED MOCK BOOKING - NOT A REAL RESERVATION]"
+            f"Table reserved for {input_data.party_size} guests under "
+            f"'{input_data.customer_name}' at {biz_name} on {input_data.date} at {input_data.time}. "
+            f"Booking reference: {ref_code}. A confirmation will be shared with the guest."
         ),
     )

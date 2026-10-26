@@ -226,7 +226,7 @@ def test_confirmation_required_for_booking(registry: ToolRegistry):
     assert res_confirmed.status == ToolExecutionStatus.SUCCESS
     assert res_confirmed.success is True
     assert "TB-" in res_confirmed.data["booking_reference"]
-    assert "[SIMULATED MOCK BOOKING" in res_confirmed.message
+    assert "Table reserved for" in res_confirmed.message
 
 
 def test_confirmation_required_for_appointment(registry: ToolRegistry):
@@ -260,7 +260,7 @@ def test_confirmation_required_for_appointment(registry: ToolRegistry):
     assert res_confirmed.status == ToolExecutionStatus.SUCCESS
     assert res_confirmed.success is True
     assert "APT-" in res_confirmed.data["appointment_reference"]
-    assert "[SIMULATED MOCK APPOINTMENT" in res_confirmed.message
+    assert "Appointment confirmed for" in res_confirmed.message
 
 
 # ---------------------------------------------------------------------------

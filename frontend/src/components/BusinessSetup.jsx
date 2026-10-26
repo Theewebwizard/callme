@@ -32,6 +32,7 @@ const TIMEZONE_OPTIONS = ['Asia/Kolkata', 'UTC', 'America/New_York', 'Europe/Lon
 export default function BusinessSetup({ business, onBusinessSaved, onSelectBusiness }) {
   const [activeSubTab, setActiveSubTab] = useState(business ? 'edit' : 'register');
   const [loading, setLoading] = useState(false);
+  const [faqSaving, setFaqSaving] = useState(false);
   const [feedback, setFeedback] = useState(null);
 
   // Registration Form State
@@ -117,17 +118,58 @@ export default function BusinessSetup({ business, onBusinessSaved, onSelectBusin
     }
   };
 
-  const handleAddFaqToEdit = () => {
+  // Option A: Direct database auto-save when adding an FAQ
+  const handleAddFaqToEdit = async () => {
     if (!newFaqQ.trim() || !newFaqA.trim()) return;
-    const updatedFaqs = [...(editForm.faqs || []), { question: newFaqQ.trim(), answer: newFaqA.trim(), category: 'General' }];
-    setEditForm({ ...editForm, faqs: updatedFaqs });
+    const newEntry = { question: newFaqQ.trim(), answer: newFaqA.trim(), category: 'General' };
+    const updatedFaqs = [...(editForm.faqs || []), newEntry];
+    
+    // Optimistic UI update
+    setEditForm((prev) => ({ ...prev, faqs: updatedFaqs }));
     setNewFaqQ('');
     setNewFaqA('');
+    setFaqSaving(true);
+
+    try {
+      const savedFaqs = await api.updateFaqs(editForm.id, updatedFaqs);
+      setEditForm((prev) => ({ ...prev, faqs: savedFaqs }));
+      if (onBusinessSaved) {
+        onBusinessSaved({ ...business, faqs: savedFaqs });
+      }
+      setFeedback({ type: 'success', message: 'New FAQ saved directly to database!' });
+      setTimeout(() => setFeedback(null), 3000);
+    } catch (err) {
+      // Revert if failed
+      setEditForm((prev) => ({ ...prev, faqs: editForm.faqs || [] }));
+      setFeedback({ type: 'error', message: `Failed to save FAQ to DB: ${err.message}` });
+    } finally {
+      setFaqSaving(false);
+    }
   };
 
-  const handleRemoveFaqFromEdit = (index) => {
-    const updatedFaqs = editForm.faqs.filter((_, idx) => idx !== index);
-    setEditForm({ ...editForm, faqs: updatedFaqs });
+  // Option A: Direct database auto-save when removing an FAQ
+  const handleRemoveFaqFromEdit = async (index) => {
+    const previousFaqs = editForm.faqs || [];
+    const updatedFaqs = previousFaqs.filter((_, idx) => idx !== index);
+
+    // Optimistic UI update
+    setEditForm((prev) => ({ ...prev, faqs: updatedFaqs }));
+    setFaqSaving(true);
+
+    try {
+      const savedFaqs = await api.updateFaqs(editForm.id, updatedFaqs);
+      setEditForm((prev) => ({ ...prev, faqs: savedFaqs }));
+      if (onBusinessSaved) {
+        onBusinessSaved({ ...business, faqs: savedFaqs });
+      }
+      setFeedback({ type: 'success', message: 'FAQ removed from database!' });
+      setTimeout(() => setFeedback(null), 3000);
+    } catch (err) {
+      setEditForm((prev) => ({ ...prev, faqs: previousFaqs }));
+      setFeedback({ type: 'error', message: `Failed to delete FAQ: ${err.message}` });
+    } finally {
+      setFaqSaving(false);
+    }
   };
 
   return (
@@ -459,9 +501,9 @@ export default function BusinessSetup({ business, onBusinessSaved, onSelectBusin
                   type="button"
                   className="btn-secondary"
                   onClick={handleAddFaqToEdit}
-                  disabled={!newFaqQ.trim() || !newFaqA.trim()}
+                  disabled={!newFaqQ.trim() || !newFaqA.trim() || faqSaving}
                 >
-                  <Plus size={16} /> Add FAQ
+                  <Plus size={16} /> {faqSaving ? 'Saving...' : 'Add FAQ'}
                 </button>
               </div>
             </div>

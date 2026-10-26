@@ -9,13 +9,208 @@ import {
   Radio,
   Sparkles,
   Zap,
-  Clock,
+  Volume2,
+  Loader2,
 } from 'lucide-react';
 import { api } from '../api';
 
+/* ─────────────────────────────────────────────────────────
+   Inline style objects — self-contained, no external CSS clash
+───────────────────────────────────────────────────────── */
+const S = {
+  page: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    padding: '2rem 1rem 3rem',
+    minHeight: '100%',
+  },
+  pageHeader: { textAlign: 'center', marginBottom: '2rem' },
+  pageTitle: { fontSize: '1.5rem', fontWeight: 800, color: 'var(--slate-800)', letterSpacing: '-0.02em', marginBottom: '0.35rem' },
+  pageSubtitle: { fontSize: '0.88rem', color: 'var(--slate-500)', fontWeight: 500 },
+  errorBanner: {
+    width: '100%', maxWidth: '440px', marginBottom: '1rem',
+    padding: '0.7rem 1rem', borderRadius: '10px',
+    background: '#fff1f2', border: '1px solid #fecdd3',
+    color: '#be123c', fontSize: '0.83rem', fontWeight: 600,
+    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+  },
+  card: {
+    width: '100%', maxWidth: '420px', borderRadius: '24px',
+    background: 'linear-gradient(160deg, #0f172a 0%, #1e293b 100%)',
+    boxShadow: '0 24px 60px rgba(0,0,0,0.38), 0 8px 24px rgba(0,0,0,0.18)',
+    overflow: 'hidden', display: 'flex', flexDirection: 'column',
+  },
+  topBar: {
+    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+    padding: '14px 18px 10px', borderBottom: '1px solid rgba(255,255,255,0.06)',
+  },
+  topBarLeft: { display: 'flex', alignItems: 'center', gap: '6px' },
+  topBarLabel: { fontSize: '0.74rem', fontWeight: 700, letterSpacing: '0.04em', color: 'rgba(255,255,255,0.55)', textTransform: 'uppercase' },
+  topBarTimer: { fontSize: '0.8rem', fontWeight: 700, color: 'rgba(255,255,255,0.9)', fontVariantNumeric: 'tabular-nums', letterSpacing: '0.05em', fontFamily: 'monospace' },
+  langSwitcher: {
+    display: 'flex', alignItems: 'center',
+    background: 'rgba(255,255,255,0.06)', borderRadius: '99px',
+    padding: '3px', gap: '2px', border: '1px solid rgba(255,255,255,0.1)',
+  },
+  avatarZone: { display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '2rem 1.5rem 1.25rem', gap: '0.75rem' },
+  bizName: { fontSize: '1.2rem', fontWeight: 800, color: 'white', textAlign: 'center', letterSpacing: '-0.01em' },
+  waveform: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', height: '36px', padding: '0 1.5rem', marginBottom: '0.25rem' },
+  transcriptArea: {
+    margin: '0 1rem', borderRadius: '14px',
+    background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.07)',
+    padding: '0.85rem', height: '200px', overflowY: 'auto',
+    display: 'flex', flexDirection: 'column', gap: '0.5rem',
+  },
+  transcriptEmpty: {
+    flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
+    flexDirection: 'column', gap: '0.5rem', color: 'rgba(255,255,255,0.25)',
+    fontSize: '0.83rem', textAlign: 'center', fontWeight: 500,
+  },
+  inputRow: { display: 'flex', gap: '8px', margin: '10px 1rem 0' },
+  textInput: {
+    flex: 1, background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)',
+    borderRadius: '12px', color: 'white', fontSize: '0.85rem', padding: '10px 14px', outline: 'none',
+  },
+  controlsBar: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1.75rem', padding: '1.5rem 1.5rem 1rem' },
+  controlItem: { display: 'flex', flexDirection: 'column', alignItems: 'center' },
+  settingsStrip: { borderTop: '1px solid rgba(255,255,255,0.06)', padding: '0.75rem 1.25rem 1.25rem', display: 'flex', flexDirection: 'column', gap: '0.6rem' },
+  settingsRow: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' },
+  settingsLabel: { fontSize: '0.72rem', color: 'rgba(255,255,255,0.4)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' },
+  pauseChips: { display: 'flex', gap: '4px' },
+  toolBadge: {
+    display: 'inline-flex', alignItems: 'center', gap: '3px', marginTop: '4px',
+    padding: '2px 7px', borderRadius: '6px', background: 'rgba(255,255,255,0.12)',
+    color: 'rgba(255,255,255,0.7)', fontSize: '0.68rem', fontWeight: 700,
+  },
+  bubbleSpeaker: { fontSize: '0.68rem', fontWeight: 800, opacity: 0.65, marginBottom: '3px', letterSpacing: '0.03em', textTransform: 'uppercase' },
+};
+
+function dotColor(isListening, isSpeaking, isTurnLoading, isConnecting, callActive) {
+  if (!callActive && !isConnecting) return '#64748b';
+  if (isListening)   return '#10b981';
+  if (isSpeaking)    return '#818cf8';
+  if (isTurnLoading) return '#38bdf8';
+  if (isConnecting)  return '#f59e0b';
+  return '#0ea5e9';
+}
+
+function pillStyle(type) {
+  const map = {
+    idle:       { bg: 'rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.45)' },
+    connecting: { bg: 'rgba(245,158,11,0.18)',  color: '#fbbf24' },
+    listening:  { bg: 'rgba(16,185,129,0.18)',  color: '#34d399' },
+    speaking:   { bg: 'rgba(99,102,241,0.2)',   color: '#a78bfa' },
+    thinking:   { bg: 'rgba(14,165,233,0.18)',  color: '#38bdf8' },
+    active:     { bg: 'rgba(14,165,233,0.12)',  color: '#7dd3fc' },
+    muted:      { bg: 'rgba(239,68,68,0.18)',   color: '#f87171' },
+  };
+  const s = map[type] || map.idle;
+  return {
+    display: 'inline-flex', alignItems: 'center', gap: '6px',
+    padding: '5px 14px', borderRadius: '99px',
+    background: s.bg, color: s.color,
+    fontSize: '0.78rem', fontWeight: 700, letterSpacing: '0.02em',
+    border: `1px solid ${s.color}30`,
+  };
+}
+
+function langBtnStyle(active) {
+  return {
+    padding: '4px 14px', borderRadius: '99px', fontSize: '0.74rem', fontWeight: 700,
+    border: 'none', cursor: 'pointer',
+    background: active ? '#0ea5e9' : 'transparent',
+    color: active ? 'white' : 'rgba(255,255,255,0.5)',
+    transition: 'all 0.18s ease', letterSpacing: '0.02em',
+  };
+}
+
+function ctrlBtn(variant) {
+  const variants = {
+    call:        { w: 72, bg: 'linear-gradient(135deg,#10b981,#059669)', shadow: '0 8px 24px rgba(16,185,129,0.45)' },
+    endcall:     { w: 72, bg: 'linear-gradient(135deg,#ef4444,#dc2626)', shadow: '0 8px 24px rgba(239,68,68,0.45)' },
+    mic:         { w: 60, bg: 'linear-gradient(135deg,#0ea5e9,#0284c7)', shadow: '0 6px 18px rgba(14,165,233,0.4)' },
+    'mic-on':    { w: 60, bg: 'linear-gradient(135deg,#10b981,#059669)', shadow: '0 6px 24px rgba(16,185,129,0.55)' },
+    'mic-muted': { w: 60, bg: 'rgba(255,255,255,0.09)', shadow: 'none', border: '1px solid rgba(255,255,255,0.12)' },
+    speaker:     { w: 52, bg: 'rgba(255,255,255,0.07)', shadow: 'none', border: '1px solid rgba(255,255,255,0.1)' },
+    'spk-active':{ w: 52, bg: 'rgba(129,140,248,0.18)', shadow: 'none', border: '1px solid rgba(129,140,248,0.4)' },
+  };
+  const v = variants[variant] || variants.speaker;
+  return {
+    width: `${v.w}px`, height: `${v.w}px`, borderRadius: '50%',
+    border: v.border || 'none', cursor: 'pointer',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    background: v.bg, boxShadow: v.shadow || 'none', color: 'white',
+    transition: 'all 0.2s cubic-bezier(0.16,1,0.3,1)', flexShrink: 0,
+  };
+}
+
+function pauseChipStyle(active) {
+  return {
+    padding: '3px 9px', borderRadius: '6px', fontSize: '0.69rem', fontWeight: 700,
+    border: 'none', cursor: 'pointer',
+    background: active ? '#0ea5e9' : 'rgba(255,255,255,0.08)',
+    color: active ? 'white' : 'rgba(255,255,255,0.4)',
+    transition: 'all 0.15s',
+  };
+}
+
+function bubbleStyle(role) {
+  return {
+    maxWidth: '88%',
+    alignSelf: role === 'user' ? 'flex-end' : 'flex-start',
+    background: role === 'user'
+      ? 'linear-gradient(135deg,#0ea5e9,#0284c7)'
+      : 'rgba(255,255,255,0.1)',
+    color: 'white',
+    borderRadius: role === 'user' ? '14px 14px 4px 14px' : '14px 14px 14px 4px',
+    padding: '8px 12px', fontSize: '0.83rem', lineHeight: '1.45',
+  };
+}
+
+/* Animated waveform */
+function Waveform({ active }) {
+  const heights = [0.5, 0.85, 1, 0.7, 0.9, 0.6, 0.8];
+  return (
+    <div style={S.waveform}>
+      {heights.map((h, i) => (
+        <div key={i} style={{
+          width: '3px',
+          height: active ? `${Math.round(h * 28)}px` : '6px',
+          borderRadius: '3px',
+          background: active ? `rgba(14,165,233,${0.5 + h * 0.5})` : 'rgba(255,255,255,0.12)',
+          transition: `height ${0.18 + i * 0.04}s ease`,
+          animation: active ? `wbAnim${i} 0.9s ease-in-out ${i * 0.1}s infinite alternate` : 'none',
+        }} />
+      ))}
+    </div>
+  );
+}
+
+/* Toggle switch */
+function Toggle({ checked, onChange }) {
+  return (
+    <button type="button" role="switch" aria-checked={checked} onClick={() => onChange(!checked)}
+      style={{
+        width: '32px', height: '18px', borderRadius: '9px', position: 'relative',
+        background: checked ? '#0ea5e9' : 'rgba(255,255,255,0.15)',
+        border: 'none', cursor: 'pointer', transition: 'background 0.2s ease', flexShrink: 0,
+      }}
+    >
+      <span style={{
+        position: 'absolute', top: '2px', left: checked ? '16px' : '2px',
+        width: '14px', height: '14px', borderRadius: '50%', background: 'white',
+        transition: 'left 0.2s ease', boxShadow: '0 1px 3px rgba(0,0,0,0.25)',
+        display: 'block',
+      }} />
+    </button>
+  );
+}
+
 export default function WebPhone({ business }) {
   const [callActive, setCallActive] = useState(false);
-  const [callStatus, setCallStatus] = useState('Ready to Call');
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [callStatus, setCallStatus] = useState('idle');
   const [sessionId, setSessionId] = useState(null);
   const [duration, setDuration] = useState(0);
   const [transcript, setTranscript] = useState([]);
@@ -23,927 +218,609 @@ export default function WebPhone({ business }) {
   const [isListening, setIsListening] = useState(false);
   const [interimText, setInterimText] = useState('');
   const [handsFree, setHandsFree] = useState(true);
-  const [pauseDuration, setPauseDuration] = useState(2500); // 2.5s generous thinking pause default
   const [isMicMuted, setIsMicMuted] = useState(false);
   const [textInput, setTextInput] = useState('');
   const [errorMsg, setErrorMsg] = useState(null);
+  const [isTurnLoading, setIsTurnLoading] = useState(false);
 
-  // Spoken Language State: 'hi-IN' (Hindi) or 'en-IN' (English)
   const [speechLang, setSpeechLang] = useState(() => {
-    try {
-      return localStorage.getItem('callme_speech_lang') || 'hi-IN';
-    } catch {
-      return 'hi-IN';
-    }
+    try { return localStorage.getItem('callme_speech_lang') || 'hi-IN'; } catch { return 'hi-IN'; }
   });
 
-  // Synchronous refs to prevent stale closures across turn callbacks
-  const callActiveRef = useRef(false);
-  const sessionIdRef = useRef(null);
-  const isSpeakingRef = useRef(false);
-  const isListeningRef = useRef(false);
-  const isMicMutedRef = useRef(false);
-  const handsFreeRef = useRef(true);
-  const pauseDurationRef = useRef(2500);
-  const speechLangRef = useRef(speechLang);
-  const isTurnInFlightRef = useRef(false);
-  const silenceTimerRef = useRef(null);
+  // Refs (prevent stale closures)
+  const callActiveRef       = useRef(false);
+  const isStartingCallRef   = useRef(false);
+  const currentTurnIdRef    = useRef(0);
+  const cooloffTimerRef     = useRef(null);
+  const sessionIdRef        = useRef(null);
+  const isSpeakingRef       = useRef(false);
+  const isListeningRef      = useRef(false);
+  const isMicMutedRef       = useRef(false);
+  const handsFreeRef        = useRef(true);
+  const speechLangRef       = useRef(speechLang);
+  const isTurnInFlightRef   = useRef(false);
+  const silenceTimerRef     = useRef(null);
   const accumulatedSpeechRef = useRef('');
-
-  const timerRef = useRef(null);
-  const currentAudioRef = useRef(null);
-  const recognitionRef = useRef(null);
+  const timerRef            = useRef(null);
+  const currentAudioRef     = useRef(null);
+  const recognitionRef      = useRef(null);
   const transcriptBottomRef = useRef(null);
 
-  // Synchronize state with refs
-  useEffect(() => {
-    callActiveRef.current = callActive;
-  }, [callActive]);
+  useEffect(() => { callActiveRef.current = callActive; }, [callActive]);
+  useEffect(() => { sessionIdRef.current = sessionId; }, [sessionId]);
+  useEffect(() => { isMicMutedRef.current = isMicMuted; }, [isMicMuted]);
+  useEffect(() => { handsFreeRef.current = handsFree; }, [handsFree]);
+  useEffect(() => { speechLangRef.current = speechLang; }, [speechLang]);
 
-  useEffect(() => {
-    sessionIdRef.current = sessionId;
-  }, [sessionId]);
-
-  useEffect(() => {
-    isMicMutedRef.current = isMicMuted;
-  }, [isMicMuted]);
-
-  useEffect(() => {
-    handsFreeRef.current = handsFree;
-  }, [handsFree]);
-
-  useEffect(() => {
-    pauseDurationRef.current = pauseDuration;
-  }, [pauseDuration]);
-
-  useEffect(() => {
-    speechLangRef.current = speechLang;
-  }, [speechLang]);
-
-  const changeSpeechLanguage = (newLang) => {
-    setSpeechLang(newLang);
-    speechLangRef.current = newLang;
-    try {
-      localStorage.setItem('callme_speech_lang', newLang);
-    } catch {}
-
-    // If currently listening, smoothly restart recognition with new language
-    if (callActiveRef.current && isListeningRef.current) {
-      stopRecognition();
-      setTimeout(() => {
-        if (callActiveRef.current && !isSpeakingRef.current && !isTurnInFlightRef.current) {
-          startSpeechListening();
-        }
-      }, 150);
-    }
-  };
-
-  // Auto-scroll transcript to bottom
   useEffect(() => {
     transcriptBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [transcript, interimText]);
 
-  // Clean up on unmount
   useEffect(() => {
     return () => {
       callActiveRef.current = false;
+      isStartingCallRef.current = false;
       if (timerRef.current) clearInterval(timerRef.current);
       if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
-      if (currentAudioRef.current) currentAudioRef.current.pause();
-      if (window.speechSynthesis) window.speechSynthesis.cancel();
+      if (cooloffTimerRef.current) clearTimeout(cooloffTimerRef.current);
+      stopAllAudio();
       stopRecognition();
     };
   }, []);
 
   const formatDuration = (secs) => {
-    const mins = Math.floor(secs / 60);
-    const remaining = secs % 60;
-    return `${mins.toString().padStart(2, '0')}:${remaining.toString().padStart(2, '0')}`;
+    const m = Math.floor(secs / 60).toString().padStart(2, '0');
+    const s = (secs % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
   };
 
-  // Stop active speech recognition safely
+  const changeSpeechLanguage = (lang) => {
+    setSpeechLang(lang);
+    speechLangRef.current = lang;
+    try { localStorage.setItem('callme_speech_lang', lang); } catch {}
+    if (callActiveRef.current && isListeningRef.current) {
+      stopRecognition();
+      setTimeout(() => {
+        if (callActiveRef.current && !isSpeakingRef.current && !isTurnInFlightRef.current) startSpeechListening();
+      }, 150);
+    }
+  };
+
+  // ── Audio helpers ──────────────────────────────────────────────────────────
+
   const stopRecognition = () => {
     if (recognitionRef.current) {
-      try {
-        recognitionRef.current.onend = null;
-        recognitionRef.current.abort();
-      } catch (e) {
-        // Ignore already aborted
-      }
+      try { recognitionRef.current.onend = null; recognitionRef.current.abort(); } catch {}
       recognitionRef.current = null;
     }
     isListeningRef.current = false;
     setIsListening(false);
   };
 
-  // Synchronously unlock and prime audio subsystem on mobile (iOS Safari / Android Chrome)
   const unlockAudioForMobile = () => {
     try {
       const AudioCtx = window.AudioContext || window.webkitAudioContext;
       if (AudioCtx) {
-        if (!window._callmeAudioCtx) {
-          window._callmeAudioCtx = new AudioCtx();
-        }
-        if (window._callmeAudioCtx.state === 'suspended') {
-          window._callmeAudioCtx.resume();
-        }
-        const buffer = window._callmeAudioCtx.createBuffer(1, 1, 22050);
-        const source = window._callmeAudioCtx.createBufferSource();
-        source.buffer = buffer;
-        source.connect(window._callmeAudioCtx.destination);
-        source.start(0);
+        if (!window._callmeAudioCtx) window._callmeAudioCtx = new AudioCtx();
+        if (window._callmeAudioCtx.state === 'suspended') window._callmeAudioCtx.resume();
+        const buf = window._callmeAudioCtx.createBuffer(1, 1, 22050);
+        const src = window._callmeAudioCtx.createBufferSource();
+        src.buffer = buf; src.connect(window._callmeAudioCtx.destination); src.start(0);
       }
-    } catch (e) {
-      // Non-blocking
-    }
-
+    } catch {}
     try {
-      const silentAudio = new Audio('data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA');
-      silentAudio.volume = 0.01;
-      silentAudio.play().then(() => silentAudio.pause()).catch(() => {});
-    } catch (e) {}
-
+      const silent = new Audio('data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA');
+      silent.volume = 0.01;
+      silent.play().then(() => silent.pause()).catch(() => {});
+    } catch {}
     try {
-      if (window.speechSynthesis) {
-        const utter = new SpeechSynthesisUtterance('');
-        utter.volume = 0;
-        window.speechSynthesis.speak(utter);
-      }
-    } catch (e) {}
+      if (window.speechSynthesis) { const u = new SpeechSynthesisUtterance(''); u.volume = 0; window.speechSynthesis.speak(u); }
+    } catch {}
   };
 
-  // Audio Playback with dual audio/mp3 + WAV + Web Speech fallback
-  const playAudio = (base64Audio, mimeType, fallbackText, onEnd) => {
-    if (window.speechSynthesis) {
-      window.speechSynthesis.cancel();
+  const stopAllAudio = () => {
+    if (cooloffTimerRef.current) { clearTimeout(cooloffTimerRef.current); cooloffTimerRef.current = null; }
+    if (currentAudioRef.current) {
+      try {
+        currentAudioRef.current.onended = null; currentAudioRef.current.onerror = null;
+        currentAudioRef.current.pause(); currentAudioRef.current.currentTime = 0; currentAudioRef.current.src = '';
+      } catch {}
+      currentAudioRef.current = null;
     }
+    if (window.speechSynthesis) { try { window.speechSynthesis.pause(); window.speechSynthesis.cancel(); } catch {} }
+    isSpeakingRef.current = false;
+    setIsSpeaking(false);
+  };
+
+  const playAudio = (base64Audio, mimeType, fallbackText, onEnd) => {
+    stopRecognition();
+    if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+    accumulatedSpeechRef.current = '';
+    setInterimText('');
+    stopAllAudio();
+    if (!callActiveRef.current) return;
 
     const onAudioComplete = () => {
-      isSpeakingRef.current = false;
-      setIsSpeaking(false);
-      currentAudioRef.current = null;
-      if (onEnd) onEnd();
+      if (!callActiveRef.current) { stopAllAudio(); return; }
+      isSpeakingRef.current = false; setIsSpeaking(false); currentAudioRef.current = null;
+      if (cooloffTimerRef.current) clearTimeout(cooloffTimerRef.current);
+      // BUG FIX: do NOT gate on isTurnInFlightRef here — onEnd itself resets it.
+      // Without this fix the callback never fires and the mic never re-arms.
+      cooloffTimerRef.current = setTimeout(() => {
+        if (callActiveRef.current && !isSpeakingRef.current && onEnd) onEnd();
+      }, 350);
     };
 
     const speakFallback = (txt) => {
+      if (!callActiveRef.current) return;
       if (window.speechSynthesis && txt) {
-        isSpeakingRef.current = true;
-        setIsSpeaking(true);
-        setCallStatus('🔊 Receptionist Speaking...');
+        isSpeakingRef.current = true; setIsSpeaking(true);
         const utter = new SpeechSynthesisUtterance(txt);
         utter.rate = 1.05;
-        if (/[\u0900-\u097F]/.test(txt) || (speechLangRef.current || '').startsWith('hi')) {
-          utter.lang = 'hi-IN';
-        } else {
-          utter.lang = 'en-IN';
-        }
-        utter.onend = onAudioComplete;
-        utter.onerror = onAudioComplete;
+        utter.lang = /[\u0900-\u097F]/.test(txt) || (speechLangRef.current || '').startsWith('hi') ? 'hi-IN' : 'en-IN';
+        utter.onend = onAudioComplete; utter.onerror = onAudioComplete;
         window.speechSynthesis.speak(utter);
-      } else {
-        onAudioComplete();
-      }
+      } else { onAudioComplete(); }
     };
 
-    if (!base64Audio) {
-      speakFallback(fallbackText);
-      return;
-    }
-
-    isSpeakingRef.current = true;
-    setIsSpeaking(true);
-    setCallStatus('🔊 Receptionist Speaking...');
-
+    if (!base64Audio) { speakFallback(fallbackText); return; }
+    isSpeakingRef.current = true; setIsSpeaking(true);
     const mime = mimeType || (base64Audio.startsWith('UklGR') ? 'audio/wav' : 'audio/mp3');
     const audio = new Audio(`data:${mime};base64,${base64Audio}`);
     currentAudioRef.current = audio;
-
     audio.onended = onAudioComplete;
     audio.onerror = () => speakFallback(fallbackText);
     audio.play().catch(() => speakFallback(fallbackText));
   };
 
-  // Start continuous Web Speech recognition
+  // ── Speech recognition ─────────────────────────────────────────────────────
+
+  // ── Smart VAD speech listening ────────────────────────────────────────────
+  // Uses continuous=false so the browser's own Voice Activity Detection
+  // auto-detects when the user STOPS speaking (no fixed pause timer needed).
+  // When the browser fires `onend` we check if we collected speech and send it,
+  // or restart listening if nothing was captured.
   const startSpeechListening = () => {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      setCallStatus('Mic active (WebSpeech not supported in browser, type inquiry below)');
-      return;
-    }
-
-    if (
-      !callActiveRef.current ||
-      isTurnInFlightRef.current ||
-      isSpeakingRef.current ||
-      isMicMutedRef.current
-    ) {
-      return;
-    }
-
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) { setCallStatus('Browser speech not supported — type below'); return; }
+    if (!callActiveRef.current || isTurnInFlightRef.current || isSpeakingRef.current || isMicMutedRef.current) return;
     stopRecognition();
 
     try {
-      const recognition = new SpeechRecognition();
-      recognition.continuous = true;
-      recognition.interimResults = true;
-      recognition.lang = speechLangRef.current || 'hi-IN';
-      recognitionRef.current = recognition;
+      const rec = new SR();
+      // continuous=false → browser's built-in VAD stops recording when you pause
+      rec.continuous = false;
+      rec.interimResults = true;
+      rec.lang = speechLangRef.current || 'hi-IN';
+      recognitionRef.current = rec;
 
-      recognition.onstart = () => {
+      rec.onstart = () => {
+        if (isSpeakingRef.current || !callActiveRef.current || isTurnInFlightRef.current) {
+          stopRecognition(); return;
+        }
         isListeningRef.current = true;
         setIsListening(true);
-        const isHindi = (speechLangRef.current || '').startsWith('hi');
-        setCallStatus(
-          accumulatedSpeechRef.current.trim()
-            ? (isHindi ? '🟢 सुन रहा हूँ... (सोचिए, पॉज़ लीजिए)' : '🟢 Listening... (thinking pause)')
-            : (isHindi ? '🟢 सुन रहा हूँ... बोलिए (Hindi Active)' : '🟢 Listening... Speak now (English Active)')
-        );
+        setCallStatus('listening');
       };
 
-      recognition.onresult = (event) => {
-        if (silenceTimerRef.current) {
-          clearTimeout(silenceTimerRef.current);
+      rec.onresult = (event) => {
+        // Echo guard: if AI started speaking, discard
+        if (isSpeakingRef.current || !callActiveRef.current || isTurnInFlightRef.current) {
+          accumulatedSpeechRef.current = ''; setInterimText(''); return;
         }
-
-        let interim = '';
-        let finalChunk = '';
-
+        let interim = '', finalChunk = '';
         for (let i = event.resultIndex; i < event.results.length; ++i) {
           const item = event.results[i];
-          if (item.isFinal) {
-            finalChunk += item[0].transcript;
-          } else {
-            interim += item[0].transcript;
-          }
+          if (item.isFinal) finalChunk += item[0].transcript;
+          else interim += item[0].transcript;
         }
-
-        if (finalChunk) {
-          accumulatedSpeechRef.current += ' ' + finalChunk;
-        }
-
-        const currentDisplay = (accumulatedSpeechRef.current + ' ' + interim).trim();
-        setInterimText(currentDisplay);
-
-        // Auto-endpoint: wait for configurable pause duration (default 2.5s) to allow thinking
-        if (handsFreeRef.current) {
-          silenceTimerRef.current = setTimeout(() => {
-            const toSend = accumulatedSpeechRef.current.trim() || interim.trim();
-            if (toSend && toSend.length > 1 && !isTurnInFlightRef.current) {
-              accumulatedSpeechRef.current = '';
-              setInterimText('');
-              executeSendTurn(toSend);
-            }
-          }, pauseDurationRef.current);
-        }
+        if (finalChunk) accumulatedSpeechRef.current += ' ' + finalChunk;
+        // Show live interim text in the UI
+        const display = (accumulatedSpeechRef.current + ' ' + interim).trim();
+        setInterimText(display);
       };
 
-      recognition.onerror = (e) => {
+      rec.onerror = (e) => {
         if (e.error === 'no-speech') {
+          // No speech detected this round — re-arm silently
           return;
         }
         if (e.error === 'not-allowed') {
-          setErrorMsg('Microphone access blocked. Please enable mic permissions in your browser.');
-          isListeningRef.current = false;
-          setIsListening(false);
-          return;
+          setErrorMsg('Microphone access blocked. Enable mic permissions in browser settings.');
+          isListeningRef.current = false; setIsListening(false); return;
         }
-        console.warn('Speech recognition status:', e.error);
+        console.warn('SpeechRecognition error:', e.error);
       };
 
-      recognition.onend = () => {
+      rec.onend = () => {
         isListeningRef.current = false;
         setIsListening(false);
 
-        // If the call is still active and we're not speaking or waiting for response:
-        // Do NOT lose accumulated speech! Automatically re-arm recognition to keep listening.
-        if (
-          callActiveRef.current &&
-          !isSpeakingRef.current &&
-          !isTurnInFlightRef.current &&
-          !isMicMutedRef.current &&
-          handsFreeRef.current
-        ) {
+        // Call was ended or AI is speaking — do nothing
+        if (!callActiveRef.current || isSpeakingRef.current || isTurnInFlightRef.current) return;
+
+        const captured = accumulatedSpeechRef.current.trim();
+
+        if (captured && captured.length > 1 && handsFreeRef.current && !isMicMutedRef.current) {
+          // Browser VAD detected end-of-speech and we have content → send it
+          accumulatedSpeechRef.current = '';
+          setInterimText('');
+          executeSendTurn(captured);
+        } else if (!captured && handsFreeRef.current && !isMicMutedRef.current) {
+          // Nothing captured (silence / noise) → re-arm immediately
+          accumulatedSpeechRef.current = '';
+          setInterimText('');
           setTimeout(() => {
-            if (
-              callActiveRef.current &&
-              !isSpeakingRef.current &&
-              !isTurnInFlightRef.current &&
-              !isMicMutedRef.current
-            ) {
+            if (callActiveRef.current && !isSpeakingRef.current && !isTurnInFlightRef.current && !isMicMutedRef.current)
               startSpeechListening();
-            }
-          }, 120);
+          }, 80);
         }
+        // If not hands-free, just stop (push-to-talk handles its own flow)
       };
 
-      recognition.start();
+      rec.start();
     } catch (e) {
       console.warn('Could not start SpeechRecognition:', e);
-      isListeningRef.current = false;
-      setIsListening(false);
+      isListeningRef.current = false; setIsListening(false);
     }
   };
 
-  // Immediate send of spoken query (bypassing the pause timer)
   const handleImmediateSendSpeech = () => {
-    if (silenceTimerRef.current) {
-      clearTimeout(silenceTimerRef.current);
-    }
+    if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
     const toSend = (accumulatedSpeechRef.current + ' ' + interimText).trim();
-    if (toSend && !isTurnInFlightRef.current) {
-      accumulatedSpeechRef.current = '';
-      setInterimText('');
-      executeSendTurn(toSend);
+    if (toSend && !isTurnInFlightRef.current && callActiveRef.current) {
+      accumulatedSpeechRef.current = ''; setInterimText(''); executeSendTurn(toSend);
     }
   };
 
-  // Send conversation turn to backend
+  // ── Turn ──────────────────────────────────────────────────────────────────
+
   const executeSendTurn = async (textToSend) => {
-    const activeSessionId = sessionIdRef.current;
-    if (!activeSessionId || !textToSend || !textToSend.trim() || isTurnInFlightRef.current) {
-      return;
-    }
+    const sid = sessionIdRef.current;
+    if (!sid || !textToSend?.trim() || isTurnInFlightRef.current || !callActiveRef.current) return;
+    const turnId = ++currentTurnIdRef.current;
+    isTurnInFlightRef.current = true; setIsTurnLoading(true);
+    stopRecognition(); stopAllAudio();
+    if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+    accumulatedSpeechRef.current = ''; setInterimText('');
 
-    isTurnInFlightRef.current = true;
-    stopRecognition();
-    const cleanUserText = textToSend.trim();
-
-    // Render user speech bubble in transcript immediately
-    setTranscript((prev) => [
-      ...prev,
-      { role: 'user', speaker: 'You', text: cleanUserText },
-    ]);
-    setCallStatus('⚡ Receptionist thinking...');
+    const cleanText = textToSend.trim();
+    setTranscript(prev => [...prev, { role: 'user', speaker: 'You', text: cleanText }]);
+    setCallStatus('thinking');
 
     try {
-      const res = await api.sendWebCallTurn(activeSessionId, null, cleanUserText);
-      const assistantText = res.assistant_text || res.response_text || 'Thank you.';
-      const toolUsed = res.tool_used || (res.tool_calls && res.tool_calls[0]);
-
-      setTranscript((prev) => [
-        ...prev,
-        {
-          role: 'assistant',
-          speaker: business?.name || 'Receptionist',
-          text: assistantText,
-          toolUsed: toolUsed,
-        },
-      ]);
-
-      if (res.should_terminate) {
-        playAudio(res.audio_base64, res.audio_mime, assistantText, () => {
-          endCall();
-        });
-        return;
+      const res = await api.sendWebCallTurn(sid, null, cleanText);
+      if (!callActiveRef.current || currentTurnIdRef.current !== turnId) {
+        stopAllAudio(); isTurnInFlightRef.current = false; setIsTurnLoading(false); return;
       }
+      const aText = res.assistant_text || res.response_text || 'Thank you.';
+      const toolUsed = res.tool_used || res.tool_calls?.[0];
+      setTranscript(prev => [...prev, { role: 'assistant', speaker: business?.name || 'Receptionist', text: aText, toolUsed }]);
+      setIsTurnLoading(false);
 
-      // Play reply and re-arm microphone as soon as agent finishes speaking
-      playAudio(res.audio_base64, res.audio_mime, assistantText, () => {
-        isTurnInFlightRef.current = false;
-        accumulatedSpeechRef.current = '';
-        setInterimText('');
-        if (callActiveRef.current && handsFreeRef.current && !isMicMutedRef.current) {
-          startSpeechListening();
-        } else {
-          setCallStatus('Call in Progress');
-        }
+      if (res.should_terminate) { playAudio(res.audio_base64, res.audio_mime, aText, () => endCall()); return; }
+
+      playAudio(res.audio_base64, res.audio_mime, aText, () => {
+        isTurnInFlightRef.current = false; accumulatedSpeechRef.current = ''; setInterimText('');
+        if (callActiveRef.current && handsFreeRef.current && !isMicMutedRef.current) startSpeechListening();
+        else setCallStatus('active');
       });
     } catch (err) {
-      setErrorMsg(`Turn failed: ${err.message}`);
-      setCallStatus('Call in Progress');
-      isTurnInFlightRef.current = false;
-      if (callActiveRef.current && handsFreeRef.current && !isMicMutedRef.current) {
-        startSpeechListening();
+      if (!callActiveRef.current || currentTurnIdRef.current !== turnId) {
+        isTurnInFlightRef.current = false; setIsTurnLoading(false); return;
       }
+      setErrorMsg(`Turn failed: ${err.message}`);
+      setCallStatus('active');
+      isTurnInFlightRef.current = false; setIsTurnLoading(false);
+      if (callActiveRef.current && handsFreeRef.current && !isMicMutedRef.current) startSpeechListening();
     }
   };
 
-  // Start Call
+  // ── Call lifecycle ─────────────────────────────────────────────────────────
+
   const startCall = async () => {
     unlockAudioForMobile();
-    if (!business) {
-      setErrorMsg('No business selected. Register or select a business first.');
-      return;
-    }
-
-    setErrorMsg(null);
-    setCallStatus('Connecting to AI Receptionist...');
-    isTurnInFlightRef.current = false;
-    accumulatedSpeechRef.current = '';
-    setInterimText('');
+    if (callActiveRef.current || isStartingCallRef.current) return;
+    if (!business) { setErrorMsg('No business selected. Register or select a business first.'); return; }
+    isStartingCallRef.current = true;
+    setIsConnecting(true); setErrorMsg(null); setCallStatus('connecting');
+    isTurnInFlightRef.current = false; accumulatedSpeechRef.current = ''; setInterimText('');
+    stopAllAudio(); stopRecognition();
 
     try {
       const data = await api.startWebCall(business.id);
-      const activeId = data.session_id;
-
-      sessionIdRef.current = activeId;
-      setSessionId(activeId);
-      callActiveRef.current = true;
-      setCallActive(true);
-      setDuration(0);
-
-      // Start duration timer
+      if (!isStartingCallRef.current) {
+        if (data?.session_id) api.hangupWebCall(data.session_id).catch(() => {}); return;
+      }
+      sessionIdRef.current = data.session_id; setSessionId(data.session_id);
+      callActiveRef.current = true; setCallActive(true); setIsConnecting(false);
+      isStartingCallRef.current = false; setDuration(0);
       if (timerRef.current) clearInterval(timerRef.current);
-      timerRef.current = setInterval(() => {
-        setDuration((prev) => prev + 1);
-      }, 1000);
+      timerRef.current = setInterval(() => setDuration(prev => prev + 1), 1000);
 
-      // Add opening greeting to transcript
       const greeting = data.greeting_text || `Namaste and welcome to ${business.name}! How can I help you?`;
-      setTranscript([
-        {
-          role: 'assistant',
-          speaker: data.business_name || business.name,
-          text: greeting,
-        },
-      ]);
-
-      // Play greeting and then open mic
+      setTranscript([{ role: 'assistant', speaker: data.business_name || business.name, text: greeting }]);
       playAudio(data.audio_base64, data.audio_mime, greeting, () => {
         isTurnInFlightRef.current = false;
-        if (handsFreeRef.current && !isMicMutedRef.current) {
-          startSpeechListening();
-        } else {
-          setCallStatus('Call in Progress');
-        }
+        if (callActiveRef.current && handsFreeRef.current && !isMicMutedRef.current) startSpeechListening();
+        else setCallStatus('active');
       });
     } catch (err) {
       setErrorMsg(`Failed to start call: ${err.message}`);
-      setCallStatus('Ready to Call');
-      callActiveRef.current = false;
-      setCallActive(false);
+      setCallStatus('idle'); callActiveRef.current = false;
+      isStartingCallRef.current = false; setIsConnecting(false); setCallActive(false);
     }
   };
 
-  // Hangup Call
   const endCall = async () => {
-    callActiveRef.current = false;
-    isSpeakingRef.current = false;
-    isListeningRef.current = false;
-    isTurnInFlightRef.current = false;
-    accumulatedSpeechRef.current = '';
-    setInterimText('');
-
+    isStartingCallRef.current = false; setIsConnecting(false);
+    currentTurnIdRef.current++;
+    callActiveRef.current = false; setCallActive(false);
+    stopAllAudio(); stopRecognition();
     if (timerRef.current) clearInterval(timerRef.current);
     if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
-    if (currentAudioRef.current) currentAudioRef.current.pause();
-    if (window.speechSynthesis) window.speechSynthesis.cancel();
-    stopRecognition();
-
+    if (cooloffTimerRef.current) clearTimeout(cooloffTimerRef.current);
+    isSpeakingRef.current = false; isListeningRef.current = false; isTurnInFlightRef.current = false;
+    accumulatedSpeechRef.current = ''; setInterimText('');
+    setIsSpeaking(false); setIsListening(false); setIsTurnLoading(false); setCallStatus('idle');
     const activeId = sessionIdRef.current || sessionId;
-    setCallActive(false);
-    setIsSpeaking(false);
-    setIsListening(false);
-    setCallStatus('Call Ended');
-
-    if (activeId) {
-      try {
-        await api.hangupWebCall(activeId);
-      } catch (err) {
-        console.error('Hangup error:', err);
-      }
-    }
-
-    setTimeout(() => {
-      setCallStatus('Ready to Call');
-      sessionIdRef.current = null;
-      setSessionId(null);
-    }, 2000);
+    sessionIdRef.current = null; setSessionId(null);
+    if (activeId) api.hangupWebCall(activeId).catch(err => console.error('Hangup:', err));
   };
 
-  // Manual Text Submit
   const handleTextSubmit = (e) => {
     e.preventDefault();
-    if (!textInput.trim() || !callActive || isTurnInFlightRef.current) return;
-    const txt = textInput.trim();
-    setTextInput('');
-    executeSendTurn(txt);
+    if (!textInput.trim() || !callActiveRef.current || isTurnInFlightRef.current) return;
+    const txt = textInput.trim(); setTextInput('');
+    stopAllAudio(); stopRecognition(); executeSendTurn(txt);
   };
 
-  // Toggle Mute / Mic
   const toggleMute = () => {
-    const nextMuted = !isMicMutedRef.current;
-    isMicMutedRef.current = nextMuted;
-    setIsMicMuted(nextMuted);
-
-    if (nextMuted) {
-      stopRecognition();
-      setCallStatus('Mic Muted');
-    } else {
-      if (callActiveRef.current && !isSpeakingRef.current) {
-        startSpeechListening();
-      }
-    }
+    const next = !isMicMutedRef.current; isMicMutedRef.current = next; setIsMicMuted(next);
+    if (next) stopRecognition();
+    else if (callActiveRef.current && !isSpeakingRef.current) startSpeechListening();
   };
 
-  // Push to Talk mouse/touch handlers for manual mode
-  const handlePushToTalkStart = () => {
-    if (!callActiveRef.current || isSpeakingRef.current || isTurnInFlightRef.current) return;
-    if (!handsFree) {
-      startSpeechListening();
-    }
+  const handlePTTStart = () => {
+    if (!callActiveRef.current || isSpeakingRef.current || isTurnInFlightRef.current || handsFree) return;
+    startSpeechListening();
+  };
+  const handlePTTEnd = () => {
+    if (!callActiveRef.current || isSpeakingRef.current || isTurnInFlightRef.current || handsFree) return;
+    handleImmediateSendSpeech();
   };
 
-  const handlePushToTalkEnd = () => {
-    if (!callActiveRef.current || isSpeakingRef.current || isTurnInFlightRef.current) return;
-    if (!handsFree) {
-      handleImmediateSendSpeech();
-    }
-  };
+  // ── Derived UI values ──────────────────────────────────────────────────────
+  const micVariant = isMicMuted ? 'mic-muted' : isListening ? 'mic-on' : 'mic';
+  const spkVariant = isSpeaking ? 'spk-active' : 'speaker';
+
+  const pillType = isMicMuted ? 'muted' : isTurnLoading ? 'thinking' : isSpeaking ? 'speaking' : isListening ? 'listening' : isConnecting ? 'connecting' : callActive ? 'active' : 'idle';
+  const pillLabel = isMicMuted ? '🔴 Mic Muted' : isTurnLoading ? '⚡ Thinking...' : isSpeaking ? '🔊 AI Speaking' : isListening ? '🟢 Listening...' : isConnecting ? 'Connecting...' : callActive ? 'Call Active' : 'Ready to Call';
+  const dot = dotColor(isListening, isSpeaking, isTurnLoading, isConnecting, callActive);
+  const pulsing = isListening || isSpeaking || isTurnLoading || isConnecting;
 
   return (
-    <section className="main-content">
-      <div className="section-header" style={{ textAlign: 'center', marginBottom: '1.25rem' }}>
-        <h1 className="section-title">📞 Direct Web Voice Phone</h1>
-        <p className="section-subtitle">
-          Natural back-and-forth conversational AI receptionist with context memory and thinking pause tolerance.
-        </p>
+    <section style={S.page}>
+      {/* Page header */}
+      <div style={S.pageHeader}>
+        <h1 style={S.pageTitle}>📞 Web Voice Phone</h1>
+        <p style={S.pageSubtitle}>Natural back-and-forth AI receptionist with memory & thinking-pause tolerance</p>
       </div>
 
+      {/* Error banner */}
       {errorMsg && (
-        <div
-          style={{
-            maxWidth: '460px',
-            margin: '0 auto 1.25rem',
-            padding: '0.75rem 1rem',
-            background: 'var(--rose-100)',
-            color: 'var(--rose-700)',
-            borderRadius: 'var(--radius-sm)',
-            fontSize: '0.85rem',
-            fontWeight: 600,
-          }}
-        >
-          {errorMsg}
+        <div style={S.errorBanner}>
+          <span>⚠️ {errorMsg}</span>
+          <button onClick={() => setErrorMsg(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', fontWeight: 800, fontSize: '1rem', lineHeight: 1 }}>✕</button>
         </div>
       )}
 
-      {/* Modern Smartphone Mockup */}
-      <div className="phone-container" style={{ maxWidth: '440px', margin: '0 auto', padding: '1.5rem' }}>
-        {/* Calling Header Avatar */}
-        <div className={`phone-avatar-wrapper ${isSpeaking ? 'active' : ''}`}>
-          <Bot size={44} />
+      {/* Phone card */}
+      <div style={S.card}>
+
+        {/* Top bar */}
+        <div style={S.topBar}>
+          <div style={S.topBarLeft}>
+            <div style={{
+              width: '8px', height: '8px', borderRadius: '50%', background: dot, flexShrink: 0,
+              boxShadow: pulsing ? `0 0 0 3px ${dot}30` : 'none',
+              animation: pulsing ? 'wpPulse 1.5s ease-in-out infinite' : 'none',
+            }} />
+            <span style={S.topBarLabel}>{isConnecting ? 'Connecting' : callActive ? 'Live' : 'Standby'}</span>
+          </div>
+
+          {/* Language switcher */}
+          <div style={S.langSwitcher}>
+            <button style={langBtnStyle(speechLang === 'hi-IN')} onClick={() => changeSpeechLanguage('hi-IN')}>हिंदी</button>
+            <button style={langBtnStyle(speechLang === 'en-IN')} onClick={() => changeSpeechLanguage('en-IN')}>English</button>
+          </div>
+
+          {callActive && <span style={S.topBarTimer}>{formatDuration(duration)}</span>}
         </div>
 
-        <div className="phone-biz-name" style={{ marginTop: '0.5rem' }}>
-          {business?.name || 'AI Voice Receptionist'}
+        {/* Avatar zone */}
+        <div style={S.avatarZone}>
+          <div style={{
+            width: '86px', height: '86px', borderRadius: '50%',
+            background: (callActive || isConnecting) ? 'linear-gradient(135deg,#0ea5e9 0%,#6366f1 100%)' : 'rgba(255,255,255,0.08)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: (callActive || isConnecting) ? '0 0 0 6px rgba(14,165,233,0.18),0 0 0 12px rgba(14,165,233,0.08)' : 'none',
+            transition: 'all 0.4s cubic-bezier(0.16,1,0.3,1)',
+          }}>
+            {isConnecting
+              ? <Loader2 size={38} color="white" style={{ animation: 'wpSpin 1s linear infinite' }} />
+              : <Bot size={38} color="white" style={{ opacity: 0.95 }} />
+            }
+          </div>
+          <div style={S.bizName}>{business?.name || 'AI Receptionist'}</div>
+          <div style={pillStyle(pillType)}>
+            {pulsing && <Radio size={12} style={{ flexShrink: 0, animation: 'wpPulse 1.2s ease-in-out infinite' }} />}
+            {pillLabel}
+          </div>
         </div>
 
-        {/* Live Call Status Pill */}
-        <div
-          className="phone-status"
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '6px',
-            padding: '4px 12px',
-            borderRadius: '12px',
-            background: callActive ? 'var(--sky-50)' : 'var(--slate-100)',
-            color: callActive ? 'var(--sky-800)' : 'var(--slate-600)',
-            fontWeight: 700,
-            fontSize: '0.82rem',
-            marginTop: '0.5rem',
-            border: '1px solid var(--sky-200)',
-          }}
-        >
-          {callActive && <Radio size={14} className={isSpeaking || isListening ? 'animate-pulse' : ''} />}
-          {callActive ? `${callStatus} • ${formatDuration(duration)}` : callStatus}
-        </div>
+        {/* Waveform */}
+        <Waveform active={isSpeaking || isListening} />
 
-        {/* Real-time Language Selector Pill Switcher */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '0.4rem',
-            background: 'var(--slate-100)',
-            padding: '3px 4px',
-            borderRadius: 'var(--radius-full)',
-            marginTop: '0.65rem',
-            border: '1px solid var(--slate-200)',
-          }}
-          title="Switch the language the receptionist listens and replies in"
-        >
-          <span style={{ fontSize: '0.74rem', color: 'var(--slate-500)', fontWeight: 700, paddingLeft: '6px' }}>
-            Language:
-          </span>
-          <button
-            type="button"
-            onClick={() => changeSpeechLanguage('hi-IN')}
-            style={{
-              padding: '0.22rem 0.65rem',
-              borderRadius: 'var(--radius-full)',
-              fontSize: '0.76rem',
-              fontWeight: 700,
-              border: 'none',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '3px',
-              transition: 'var(--transition)',
-              background: speechLang === 'hi-IN' ? 'var(--sky-500)' : 'transparent',
-              color: speechLang === 'hi-IN' ? 'white' : 'var(--slate-700)',
-              boxShadow: speechLang === 'hi-IN' ? '0 2px 6px rgba(14, 165, 233, 0.35)' : 'none',
-            }}
-          >
-            🇮🇳 हिंदी (Hindi)
-          </button>
-          <button
-            type="button"
-            onClick={() => changeSpeechLanguage('en-IN')}
-            style={{
-              padding: '0.22rem 0.65rem',
-              borderRadius: 'var(--radius-full)',
-              fontSize: '0.76rem',
-              fontWeight: 700,
-              border: 'none',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '3px',
-              transition: 'var(--transition)',
-              background: speechLang === 'en-IN' ? 'var(--sky-500)' : 'transparent',
-              color: speechLang === 'en-IN' ? 'white' : 'var(--slate-700)',
-              boxShadow: speechLang === 'en-IN' ? '0 2px 6px rgba(14, 165, 233, 0.35)' : 'none',
-            }}
-          >
-            🌐 English
-          </button>
-        </div>
-
-        {/* Dynamic Waveform Display */}
-        <div className={`phone-waveform ${isSpeaking || isListening ? 'active' : ''}`} style={{ margin: '1rem 0' }}>
-          <div className="wave-bar" />
-          <div className="wave-bar" />
-          <div className="wave-bar" />
-          <div className="wave-bar" />
-          <div className="wave-bar" />
-        </div>
-
-        {/* Live Conversation Transcript */}
-        <div className="phone-transcript" style={{ height: '260px', borderRadius: '12px', padding: '0.85rem' }}>
+        {/* Transcript */}
+        <div style={S.transcriptArea}>
           {transcript.length === 0 ? (
-            <div style={{ textAlign: 'center', margin: 'auto', color: 'var(--slate-400)', fontSize: '0.88rem' }}>
-              👋 Press the green call button below to start talking back-and-forth with your AI Receptionist!
+            <div style={S.transcriptEmpty}>
+              <Phone size={28} style={{ opacity: 0.3 }} />
+              <span>Tap the green call button to speak with your AI receptionist</span>
             </div>
-          ) : (
-            transcript.map((item, i) => (
-              <div key={i} className={`chat-bubble ${item.role}`}>
-                <div style={{ fontSize: '0.72rem', fontWeight: 800, marginBottom: '2px', opacity: 0.85 }}>
-                  {item.speaker}
-                </div>
-                <div>{item.text}</div>
-                {item.toolUsed && (
-                  <div
-                    style={{
-                      fontSize: '0.7rem',
-                      background: 'rgba(255,255,255,0.8)',
-                      color: 'var(--sky-800)',
-                      padding: '2px 6px',
-                      borderRadius: '4px',
-                      marginTop: '4px',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '4px',
-                    }}
-                  >
-                    <Sparkles size={11} /> Executed: {item.toolUsed}
-                  </div>
-                )}
-              </div>
-            ))
-          )}
+          ) : transcript.map((item, i) => (
+            <div key={i} style={bubbleStyle(item.role)}>
+              <div style={S.bubbleSpeaker}>{item.speaker}</div>
+              <div>{item.text}</div>
+              {item.toolUsed && (
+                <div style={S.toolBadge}><Sparkles size={10} /> {item.toolUsed}</div>
+              )}
+            </div>
+          ))}
 
-          {/* Real-time Interim Speech Bubble with instant Send Now button */}
           {interimText && (
-            <div
-              className="chat-bubble user"
-              style={{
-                background: 'var(--sky-400)',
-                opacity: 0.95,
-                animation: 'pulse 1.8s infinite',
-              }}
-            >
+            <div style={{
+              maxWidth: '88%', alignSelf: 'flex-end',
+              background: 'rgba(14,165,233,0.2)', border: '1px solid rgba(14,165,233,0.35)',
+              color: '#7dd3fc', borderRadius: '14px 14px 4px 14px',
+              padding: '8px 12px', fontSize: '0.83rem', fontStyle: 'italic',
+            }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                <span style={{ fontSize: '0.72rem', fontWeight: 800 }}>You (speaking...)</span>
-                <button
-                  type="button"
-                  onClick={handleImmediateSendSpeech}
-                  style={{
-                    background: 'white',
-                    color: 'var(--sky-800)',
-                    border: 'none',
-                    borderRadius: '12px',
-                    padding: '2px 8px',
-                    fontSize: '0.7rem',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '3px',
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-                  }}
-                  title="Click to send immediately without waiting for pause timeout"
-                >
-                  <Zap size={11} /> Send Now
+                <span style={{ fontSize: '0.68rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em', opacity: 0.7 }}>You (speaking…)</span>
+                <button type="button" onClick={handleImmediateSendSpeech} style={{
+                  background: '#0ea5e9', color: 'white', border: 'none', borderRadius: '8px',
+                  padding: '2px 8px', fontSize: '0.68rem', fontWeight: 700, cursor: 'pointer',
+                  display: 'inline-flex', alignItems: 'center', gap: '3px',
+                }}>
+                  <Zap size={10} /> Send
                 </button>
               </div>
-              <div style={{ fontStyle: 'italic' }}>{interimText}</div>
+              {interimText}
             </div>
           )}
-
           <div ref={transcriptBottomRef} />
         </div>
 
-        {/* Text fallback input during active call */}
+        {/* Text input */}
         {callActive && (
-          <form
-            onSubmit={handleTextSubmit}
-            style={{ width: '100%', display: 'flex', gap: '0.5rem', marginBottom: '1.25rem' }}
-          >
+          <form onSubmit={handleTextSubmit} style={S.inputRow}>
             <input
               type="text"
-              className="form-input"
-              placeholder={speechLang === 'hi-IN' ? "हिंदी या Hinglish में टाइप करें या बोलें..." : "Type in English or speak into mic..."}
+              placeholder={speechLang === 'hi-IN' ? 'हिंदी या English में टाइप करें...' : 'Type or speak...'}
               value={textInput}
-              onChange={(e) => setTextInput(e.target.value)}
-              style={{ flex: 1, padding: '0.55rem 0.85rem', fontSize: '0.85rem' }}
+              onChange={e => setTextInput(e.target.value)}
+              style={S.textInput}
             />
-            <button
-              type="submit"
-              className="btn-secondary"
-              style={{ padding: '0.55rem 0.85rem' }}
-              disabled={!textInput.trim() || isTurnInFlightRef.current}
-            >
-              <Send size={15} />
+            <button type="submit" disabled={!textInput.trim() || isTurnInFlightRef.current}
+              style={{ ...S.sendBtn || {}, width: '42px', height: '42px', borderRadius: '12px', background: '#0ea5e9', border: 'none', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, opacity: !textInput.trim() ? 0.4 : 1, transition: 'opacity 0.15s' }}>
+              <Send size={17} />
             </button>
           </form>
         )}
 
-        {/* Call Controls */}
-        <div className="phone-controls" style={{ display: 'flex', justifyContent: 'center', gap: '1.25rem' }}>
-          {!callActive ? (
-            <button
-              className="btn-circle btn-call-start"
-              onClick={startCall}
-              onTouchStart={unlockAudioForMobile}
-              title="Start Live Call"
-              style={{ width: '64px', height: '64px', borderRadius: '50%' }}
-            >
-              <Phone size={28} />
-            </button>
-          ) : (
-            <>
-              {/* Mic / Push-to-Talk Button */}
-              <button
-                className={`btn-circle btn-mic-toggle ${isListening ? 'listening' : ''}`}
-                onClick={handsFree ? toggleMute : undefined}
-                onMouseDown={!handsFree ? handlePushToTalkStart : undefined}
-                onMouseUp={!handsFree ? handlePushToTalkEnd : undefined}
-                onTouchStart={!handsFree ? handlePushToTalkStart : undefined}
-                onTouchEnd={!handsFree ? handlePushToTalkEnd : undefined}
-                title={
-                  handsFree
-                    ? isMicMuted
-                      ? 'Unmute Mic'
-                      : 'Mute Mic'
-                    : 'Hold to Speak, Release to Send'
-                }
-                style={{
-                  width: '56px',
-                  height: '56px',
-                  borderRadius: '50%',
-                  background: isMicMuted
-                    ? 'var(--slate-200)'
-                    : isListening
-                    ? 'var(--emerald-500, #10b981)'
-                    : 'var(--sky-500)',
-                  color: isMicMuted ? 'var(--slate-600)' : 'white',
-                  border: 'none',
-                  boxShadow: isListening ? '0 0 16px rgba(16, 185, 129, 0.4)' : 'none',
-                  cursor: 'pointer',
-                }}
-              >
-                {isMicMuted ? <MicOff size={22} /> : <Mic size={22} />}
+        {/* Controls */}
+        <div style={S.controlsBar}>
+          {!callActive && !isConnecting && (
+            <div style={S.controlItem}>
+              <button style={ctrlBtn('call')} onClick={startCall} onTouchStart={unlockAudioForMobile} title="Start Call">
+                <Phone size={30} />
               </button>
+              <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#34d399', marginTop: '6px', textAlign: 'center', letterSpacing: '0.03em' }}>Call</span>
+            </div>
+          )}
 
-              {/* End Call Button */}
-              <button
-                className="btn-circle btn-call-end"
-                onClick={endCall}
-                title="Hangup Call"
-                style={{
-                  width: '56px',
-                  height: '56px',
-                  borderRadius: '50%',
-                  background: 'var(--rose-600)',
-                  color: 'white',
-                  border: 'none',
-                  cursor: 'pointer',
-                }}
-              >
-                <PhoneOff size={24} />
+          {isConnecting && (
+            <div style={S.controlItem}>
+              <button style={ctrlBtn('endcall')} onClick={endCall} title="Cancel">
+                <PhoneOff size={26} />
               </button>
+              <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#f87171', marginTop: '6px', textAlign: 'center', letterSpacing: '0.03em' }}>Cancel</span>
+            </div>
+          )}
+
+          {callActive && (
+            <>
+              {/* Mic */}
+              <div style={S.controlItem}>
+                <button
+                  style={ctrlBtn(micVariant)}
+                  onClick={handsFree ? toggleMute : undefined}
+                  onMouseDown={!handsFree ? handlePTTStart : undefined}
+                  onMouseUp={!handsFree ? handlePTTEnd : undefined}
+                  onTouchStart={!handsFree ? handlePTTStart : undefined}
+                  onTouchEnd={!handsFree ? handlePTTEnd : undefined}
+                  title={handsFree ? (isMicMuted ? 'Unmute' : 'Mute') : 'Hold to Speak'}
+                >
+                  {isMicMuted ? <MicOff size={24} /> : <Mic size={24} />}
+                </button>
+                <span style={{ fontSize: '0.7rem', fontWeight: 700, color: isMicMuted ? '#f87171' : isListening ? '#34d399' : 'rgba(255,255,255,0.55)', marginTop: '6px', textAlign: 'center', letterSpacing: '0.03em' }}>
+                  {isMicMuted ? 'Muted' : isListening ? 'Listening' : 'Mic'}
+                </span>
+              </div>
+
+              {/* Speaker indicator */}
+              <div style={S.controlItem}>
+                <div style={{ ...ctrlBtn(spkVariant), cursor: 'default' }}>
+                  <Volume2 size={22} color={isSpeaking ? '#a78bfa' : 'rgba(255,255,255,0.4)'} />
+                </div>
+                <span style={{ fontSize: '0.7rem', fontWeight: 700, color: isSpeaking ? '#a78bfa' : 'rgba(255,255,255,0.3)', marginTop: '6px', textAlign: 'center', letterSpacing: '0.03em' }}>
+                  {isSpeaking ? 'Speaking' : 'Speaker'}
+                </span>
+              </div>
+
+              {/* End call */}
+              <div style={S.controlItem}>
+                <button style={ctrlBtn('endcall')} onClick={endCall} title="End Call">
+                  <PhoneOff size={26} />
+                </button>
+                <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#f87171', marginTop: '6px', textAlign: 'center', letterSpacing: '0.03em' }}>End Call</span>
+              </div>
             </>
           )}
         </div>
 
-        {/* Thinking Pause Tolerance & Mode Controls */}
+        {/* Settings strip */}
         {callActive && (
-          <div
-            style={{
-              marginTop: '1rem',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '0.5rem',
-              fontSize: '0.75rem',
-              color: 'var(--slate-500)',
-              borderTop: '1px solid var(--slate-100)',
-              paddingTop: '0.75rem',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span>
-                {isMicMuted
-                  ? '🔴 Mic Muted'
-                  : isListening
-                  ? '🟢 Mic Listening'
-                  : isSpeaking
-                  ? '🔊 Assistant Speaking'
-                  : '⚡ Ready'}
-              </span>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}>
-                <input
-                  type="checkbox"
-                  checked={handsFree}
-                  onChange={(e) => {
-                    const val = e.target.checked;
-                    setHandsFree(val);
-                    handsFreeRef.current = val;
-                    if (val && callActiveRef.current && !isSpeakingRef.current) {
-                      startSpeechListening();
-                    } else if (!val) {
-                      stopRecognition();
-                    }
-                  }}
-                  style={{ cursor: 'pointer' }}
-                />
-                Hands-Free Auto Turn
-              </label>
+          <div style={S.settingsStrip}>
+            <div style={S.settingsRow}>
+              <span style={S.settingsLabel}><Mic size={12} /> Hands-Free Auto-Turn</span>
+              <Toggle checked={handsFree} onChange={(val) => {
+                setHandsFree(val); handsFreeRef.current = val;
+                if (val && callActiveRef.current && !isSpeakingRef.current) startSpeechListening();
+                else if (!val) stopRecognition();
+              }} />
             </div>
 
-            {/* Pause tolerance selector */}
             {handsFree && (
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  background: 'var(--slate-50)',
-                  padding: '4px 8px',
-                  borderRadius: '6px',
-                  fontSize: '0.72rem',
-                }}
-              >
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
-                  <Clock size={12} /> Pause Tolerance:
+              <div style={{ ...S.settingsRow, justifyContent: 'center' }}>
+                <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.3)', fontWeight: 600, textAlign: 'center' }}>
+                  🧠 Smart VAD — mic auto-stops when you finish speaking
                 </span>
-                <div style={{ display: 'flex', gap: '4px' }}>
-                  {[
-                    { label: '1.5s (Quick)', val: 1500 },
-                    { label: '2.5s (Standard)', val: 2500 },
-                    { label: '4.0s (Long)', val: 4000 },
-                  ].map((p) => (
-                    <button
-                      key={p.val}
-                      type="button"
-                      onClick={() => setPauseDuration(p.val)}
-                      style={{
-                        padding: '2px 6px',
-                        borderRadius: '4px',
-                        border: 'none',
-                        cursor: 'pointer',
-                        fontSize: '0.7rem',
-                        fontWeight: pauseDuration === p.val ? 800 : 500,
-                        background: pauseDuration === p.val ? 'var(--sky-500)' : 'transparent',
-                        color: pauseDuration === p.val ? 'white' : 'var(--slate-600)',
-                      }}
-                    >
-                      {p.label}
-                    </button>
-                  ))}
-                </div>
               </div>
             )}
 
             {!handsFree && (
-              <div style={{ textAlign: 'center', fontSize: '0.72rem', color: 'var(--sky-700)', fontWeight: 600 }}>
-                💡 Push-to-Talk active: Press and hold the green mic to speak, release when finished.
+              <div style={{ fontSize: '0.71rem', color: 'rgba(255,255,255,0.35)', textAlign: 'center', fontWeight: 600 }}>
+                💡 Hold the mic button to speak, release to send
               </div>
             )}
           </div>
         )}
       </div>
+
+      {/* Keyframe animations */}
+      <style>{`
+        @keyframes wpPulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+        @keyframes wpSpin  { from { transform:rotate(0deg); } to { transform:rotate(360deg); } }
+        @keyframes wbAnim0 { from { height:6px; }  to { height:20px; } }
+        @keyframes wbAnim1 { from { height:8px; }  to { height:26px; } }
+        @keyframes wbAnim2 { from { height:10px; } to { height:28px; } }
+        @keyframes wbAnim3 { from { height:7px; }  to { height:22px; } }
+        @keyframes wbAnim4 { from { height:9px; }  to { height:25px; } }
+        @keyframes wbAnim5 { from { height:6px; }  to { height:19px; } }
+        @keyframes wbAnim6 { from { height:8px; }  to { height:23px; } }
+      `}</style>
     </section>
   );
 }

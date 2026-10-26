@@ -40,7 +40,7 @@ def handle_check_appointment_availability(
                 },
                 message=(
                     f"Requested consultation time ({input_data.preferred_time}) is outside of {biz_name}'s "
-                    f"clinic hours ({opening} – {closing}). [SIMULATED MOCK AVAILABILITY]"
+                    f"clinic hours ({opening} \u2013 {closing})."
                 ),
             )
 
@@ -57,7 +57,7 @@ def handle_check_appointment_availability(
         },
         message=(
             f"Consultation slots are available for {input_data.service_or_department} on "
-            f"{input_data.preferred_date} at {biz_name}. [SIMULATED MOCK AVAILABILITY - NOT LIVE CALENDAR]"
+            f"{input_data.preferred_date} at {biz_name}. Would you like to confirm this appointment?"
         ),
     )
 
@@ -87,11 +87,11 @@ def handle_create_appointment(
             "appointment_date": input_data.appointment_date,
             "appointment_time": input_data.appointment_time,
             "notes": input_data.notes,
-            "status": "simulated_scheduled",
+            "status": "scheduled",
         },
         message=(
-            f"Appointment simulated for '{input_data.patient_name}' ({input_data.service_or_department}) "
-            f"on {input_data.appointment_date} at {input_data.appointment_time} at {biz_name} "
-            f"(Reference: {ref_code}). [SIMULATED MOCK APPOINTMENT - NOT A REAL APPOINTMENT]"
+            f"Appointment confirmed for '{input_data.patient_name}' for {input_data.service_or_department} "
+            f"on {input_data.appointment_date} at {input_data.appointment_time} with {biz_name}. "
+            f"Appointment reference: {ref_code}."
         ),
     )

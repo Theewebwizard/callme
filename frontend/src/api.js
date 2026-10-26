@@ -59,6 +59,14 @@ export const api = {
   updateBusiness: (id, data) => request(`/businesses/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteBusiness: (id) => request(`/businesses/${id}`, { method: 'DELETE' }),
 
+  // FAQs
+  getFaqs: (businessId) => request(`/businesses/${businessId}/faqs`),
+  updateFaqs: (businessId, faqs) =>
+    request(`/businesses/${businessId}/faqs`, {
+      method: 'PUT',
+      body: JSON.stringify({ faqs }),
+    }),
+
   // Tools
   getTools: (businessId) => request(`/businesses/${businessId}/tools`),
   updateTools: (businessId, toolStatuses) =>
