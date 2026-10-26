@@ -26,10 +26,12 @@ from backend.tools.implementations.information import handle_answer_faq
 from backend.tools.implementations.dining import (
     handle_check_table_availability,
     handle_create_table_booking,
+    format_dining_reservation_summary,
 )
 from backend.tools.implementations.healthcare import (
     handle_check_appointment_availability,
     handle_create_appointment,
+    format_appointment_summary,
 )
 from backend.tools.implementations.communication import (
     handle_take_message,
@@ -255,6 +257,8 @@ def build_default_tool_registry() -> ToolRegistry:
             is_implemented=True,
             execution_mode=ToolExecutionMode.MOCK,
             handler=handle_create_table_booking,
+            friendly_name="dining reservation",
+            confirmation_formatter=format_dining_reservation_summary,
         )
     )
 
@@ -289,6 +293,8 @@ def build_default_tool_registry() -> ToolRegistry:
             is_implemented=True,
             execution_mode=ToolExecutionMode.MOCK,
             handler=handle_create_appointment,
+            friendly_name="appointment",
+            confirmation_formatter=format_appointment_summary,
         )
     )
 

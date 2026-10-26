@@ -156,6 +156,14 @@ class VoiceSessionManager(Protocol):
         """Update last active turn timestamp on session."""
         ...
 
+    def record_tool_used(self, session_id: str, tool_id: str) -> None:
+        """Record an autonomous tool invoked during a voice session."""
+        ...
+
+    def get_session_tools(self, session_id: str) -> List[str]:
+        """Retrieve all tools invoked during a session."""
+        ...
+
     def terminate_session(
         self,
         session_id: str,

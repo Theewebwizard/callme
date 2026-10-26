@@ -95,3 +95,15 @@ def handle_create_appointment(
             f"Appointment reference: {ref_code}."
         ),
     )
+
+
+def format_appointment_summary(args: Dict[str, Any]) -> str:
+    """Format human-readable summary of a clinical appointment for confirmation."""
+    notes = f"\n• Notes: {args['notes']}" if args.get("notes") else ""
+    return (
+        f"• Action: Clinical Consultation Appointment\n"
+        f"• Patient: {args.get('patient_name')} ({args.get('patient_phone')})\n"
+        f"• Service / Department: {args.get('service_or_department')}\n"
+        f"• Date & Time: {args.get('appointment_date')} at {args.get('appointment_time')}"
+        f"{notes}"
+    )

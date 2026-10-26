@@ -27,6 +27,7 @@ class CallRepository(BaseRepository):
         is_simulated: bool = True,
         call_id: Optional[str] = None,
         timestamp: Optional[datetime] = None,
+        transcript: Optional[List[Dict[str, Any]]] = None,
     ) -> CallRecord:
         """Create and persist a call audit record."""
         # Format duration string if not supplied
@@ -42,6 +43,7 @@ class CallRepository(BaseRepository):
             outcome=outcome,
             summary=summary,
             tools_used=tools_used or [],
+            transcript=transcript or [],
             is_simulated=is_simulated,
         )
         self.session.add(call)

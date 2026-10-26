@@ -161,6 +161,7 @@ class CallRecord(Base):
     outcome = Column(String(100), nullable=False, index=True)
     summary = Column(Text, nullable=True)
     tools_used = Column(JSON, default=list, nullable=False)
+    transcript = Column(JSON, default=list, nullable=True)
     is_simulated = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
 
@@ -183,6 +184,7 @@ class CallRecord(Base):
             "outcome": self.outcome,
             "summary": self.summary or "",
             "tools_used": self.tools_used or [],
+            "transcript": self.transcript or [],
             "is_simulated": self.is_simulated,
         }
 

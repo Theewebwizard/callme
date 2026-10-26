@@ -170,7 +170,11 @@ export default function App() {
         )}
 
         {activeTab === 'calls' && (
-          <CallHistory business={activeBusiness} />
+          <CallHistory
+            business={activeBusiness}
+            initialCalls={recentCalls}
+            onCallsUpdated={setRecentCalls}
+          />
         )}
 
         {activeTab === 'tools' && (

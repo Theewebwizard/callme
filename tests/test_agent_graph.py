@@ -254,3 +254,138 @@ def test_workflow_error_does_not_fabricate_response():
     assert result["response_content"] is None
     assert "error" in result
     assert result["error"] is not None
+
+
+def test_new_question_after_followup_prompt_routes_to_llm():
+    """
+    Verify that when a caller asks a specific question in response to a follow-up prompt,
+    the graph routes to call_llm rather than skipping to a canned response.
+    """
+    mock_client = MagicMock()
+    mock_choice = MagicMock()
+    mock_choice.message.content = "We open tomorrow at 11:30 AM."
+    mock_choice.message.tool_calls = None
+    mock_client.chat.completions.create.return_value = MagicMock(choices=[mock_choice])
+    mock_service = GroqService(client=mock_client)
+
+    messages = [
+        {"role": "user", "content": "What is your address?"},
+        {"role": "assistant", "content": "We are at 123 Main St. Is there anything else I can help you with today?"},
+        {"role": "user", "content": "What time do you open tomorrow?"},
+    ]
+
+    result = invoke_receptionist_workflow(
+        business_id="biz_spice_garden",
+        business_config=INITIAL_BUSINESSES["biz_spice_garden"],
+        enabled_tools=INITIAL_TOOLS,
+        messages=messages,
+        groq_service=mock_service,
+    )
+
+    assert result["success"] is True
+    assert "11:30 AM" in result["response_content"]
+    assert mock_client.chat.completions.create.called
+
+
+def test_execution_budget_timeout_halts_workflow():
+    """Verify that an expired execution budget halts execution gracefully."""
+    from backend.agent.state import AgentExecutionBudget
+
+    expired_budget = AgentExecutionBudget(
+        max_llm_turns=5,
+        max_tool_rounds=5,
+        max_execution_seconds=0.01,
+        start_timestamp=100.0,  # Far in the past
+    )
+
+    mock_client = MagicMock()
+    mock_service = GroqService(client=mock_client)
+
+    graph = create_receptionist_graph(groq_service=mock_service)
+    state = {
+        "business_id": "biz_spice_garden",
+        "business_config": INITIAL_BUSINESSES["biz_spice_garden"],
+        "enabled_tools": INITIAL_TOOLS,
+        "messages": [{"role": "user", "content": "Hello"}],
+        "iteration_count": 0,
+        "success": True,
+        "budget": expired_budget.model_dump(),
+    }
+
+    result = graph.invoke(state)
+    assert result["success"] is True
+    assert "processing limit" in result["response_content"].lower()
+    # LLM should not even have been called due to budget expiration
+    assert not mock_client.chat.completions.create.called
+
+
+def test_tool_metadata_confirmation_formatting_extensibility():
+    """
+    Verify that tools declare their own metadata and confirmation formatters
+    without central orchestration branching in nodes.py.
+    """
+    from backend.tools.registry import get_tool_registry
+    registry = get_tool_registry()
+    table_tool = registry.get_tool("create_table_booking")
+    assert table_tool is not None
+    assert table_tool.friendly_name == "dining reservation"
+    table_summary = table_tool.format_confirmation_summary({
+        "customer_name": "Priya",
+        "customer_phone": "+91 99999 11111",
+        "party_size": 4,
+        "date": "2026-10-30",
+        "time": "20:00",
+    })
+    assert "Dining Table Reservation" in table_summary
+    assert "Priya" in table_summary
+    assert "4 guests" in table_summary
+
+    appt_tool = registry.get_tool("create_appointment")
+    assert appt_tool is not None
+    assert appt_tool.friendly_name == "appointment"
+    appt_summary = appt_tool.format_confirmation_summary({
+        "patient_name": "Rahul Verma",
+        "patient_phone": "+91 98888 22222",
+        "service_or_department": "Cardiology",
+        "appointment_date": "2026-11-01",
+        "appointment_time": "10:30",
+    })
+    assert "Clinical Consultation Appointment" in appt_summary
+    assert "Rahul Verma" in appt_summary
+    assert "Cardiology" in appt_summary
+
+
+def test_groq_service_retry_and_metrics_telemetry():
+    """Verify that GroqService handles transient errors with retry and records usage metrics."""
+    import groq
+
+    mock_client = MagicMock()
+    # First attempt fails with rate limit, second succeeds
+    mock_choice = MagicMock()
+    mock_choice.message.content = "Recovered response"
+    mock_choice.message.tool_calls = None
+    mock_usage = MagicMock()
+    mock_usage.prompt_tokens = 15
+    mock_usage.completion_tokens = 8
+    mock_usage.total_tokens = 23
+    success_resp = MagicMock(choices=[mock_choice], usage=mock_usage)
+
+    rate_limit_err = groq.RateLimitError(
+        message="Rate limit reached",
+        response=MagicMock(status_code=429, headers={}),
+        body=None,
+    )
+    mock_client.chat.completions.create.side_effect = [rate_limit_err, success_resp]
+
+    service = GroqService(client=mock_client)
+    res = service.generate_response(
+        messages=[{"role": "user", "content": "Hi"}],
+        system_instruction="System prompt",
+    )
+
+    assert res.success is True
+    assert res.content == "Recovered response"
+    assert res.total_tokens == 23
+    assert res.latency_ms > 0
+    assert mock_client.chat.completions.create.call_count == 2
+

@@ -1,20 +1,28 @@
 """
 Workflow nodes for the shared LangGraph conversation graph.
-Executes tool-calling decisions, schema validation, and two-phase confirmation guards.
+Executes tool-calling decisions, schema validation, bounded execution limits,
+and two-phase confirmation guards.
 """
 
 import json
+import logging
 import uuid
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from pydantic import ValidationError
 
-from backend.agent.state import AgentState
+from backend.config import get_settings
+from backend.agent.state import (
+    AgentState,
+    AgentExecutionBudget,
+    WorkflowStatus,
+)
 from backend.agent.semantic_intent import (
     FollowupIntentType,
     SemanticIntentExtraction,
     extract_semantic_followup_intent,
     is_followup_prompt,
     detect_language,
+    is_action_confirmed_semantically,
 )
 from backend.services.groq_service import (
     GroqService,
@@ -29,44 +37,41 @@ from backend.tools.base import (
 )
 from backend.tools.registry import ToolRegistry, get_tool_registry
 
+logger = logging.getLogger(__name__)
 
-def _format_pending_action_summary(tool_id: str, args: Dict[str, Any]) -> str:
-    """Format human-readable summary of a confirmation-required action."""
-    if tool_id == "create_table_booking":
-        notes = f"\n• Special Requests: {args['special_requests']}" if args.get("special_requests") else ""
-        return (
-            f"• Action: Dining Table Reservation\n"
-            f"• Guest Contact: {args.get('customer_name')} ({args.get('customer_phone')})\n"
-            f"• Party Size: {args.get('party_size')} guests\n"
-            f"• Reservation Date & Time: {args.get('date')} at {args.get('time')}"
-            f"{notes}"
-        )
-    elif tool_id == "create_appointment":
-        notes = f"\n• Notes: {args['notes']}" if args.get("notes") else ""
-        return (
-            f"• Action: Clinical Consultation Appointment\n"
-            f"• Patient: {args.get('patient_name')} ({args.get('patient_phone')})\n"
-            f"• Service / Department: {args.get('service_or_department')}\n"
-            f"• Date & Time: {args.get('appointment_date')} at {args.get('appointment_time')}"
-            f"{notes}"
-        )
-    return "\n".join(f"• {k}: {v}" for k, v in args.items())
+
+def _format_pending_action_summary(
+    tool_id: str,
+    args: Dict[str, Any],
+    tool_registry: Optional[ToolRegistry] = None,
+) -> str:
+    """
+    Format human-readable summary of a confirmation-required action.
+    Delegates directly to the registered ToolDefinition for modularity.
+    """
+    reg = tool_registry or get_tool_registry()
+    tool_def = reg.get_tool(tool_id)
+    if tool_def:
+        return tool_def.format_confirmation_summary(args)
+    return "\n".join(f"• {k.replace('_', ' ').title()}: {v}" for k, v in args.items() if v is not None)
 
 
 def prepare_context_node(
     state: AgentState,
     tool_registry: Optional[ToolRegistry] = None,
+    groq_service: Optional[GroqService] = None,
 ) -> Dict[str, Any]:
     """
     Node A: Prepare Context
     Validates business configuration and conversation history, retrieves enabled
-    tools, and compiles the tenant-specific system prompt and tool definitions.
+    tools, initializes execution budget, and compiles the tenant-specific system prompt and tool definitions.
     """
     biz_config = state.get("business_config")
     if not biz_config or not isinstance(biz_config, dict):
         return {
             "error": "Missing or invalid business configuration in workflow state.",
             "success": False,
+            "workflow_status": WorkflowStatus.FAILED.value,
         }
 
     messages = state.get("messages")
@@ -74,6 +79,7 @@ def prepare_context_node(
         return {
             "error": "Missing or invalid conversation messages in workflow state.",
             "success": False,
+            "workflow_status": WorkflowStatus.FAILED.value,
         }
 
     # Validate that at least one valid turn exists
@@ -85,7 +91,27 @@ def prepare_context_node(
         return {
             "error": "Conversation input is empty. At least one message is required.",
             "success": False,
+            "workflow_status": WorkflowStatus.FAILED.value,
         }
+
+    # Initialize execution budget
+    settings = get_settings()
+    budget_dict = state.get("budget")
+    if budget_dict and isinstance(budget_dict, dict):
+        try:
+            budget = AgentExecutionBudget.model_validate(budget_dict)
+        except Exception:
+            budget = AgentExecutionBudget(
+                max_llm_turns=settings.AGENT_MAX_ITERATIONS,
+                max_tool_rounds=settings.AGENT_MAX_TOOL_ROUNDS,
+                max_execution_seconds=settings.AGENT_MAX_EXECUTION_SECONDS,
+            )
+    else:
+        budget = AgentExecutionBudget(
+            max_llm_turns=settings.AGENT_MAX_ITERATIONS,
+            max_tool_rounds=settings.AGENT_MAX_TOOL_ROUNDS,
+            max_execution_seconds=settings.AGENT_MAX_EXECUTION_SECONDS,
+        )
 
     registry = tool_registry or get_tool_registry()
     enabled_tool_defs = registry.get_enabled_tools_for_business(biz_config)
@@ -114,11 +140,13 @@ def prepare_context_node(
         ast_content = last_assistant_turn.get("content", "")
         user_content = last_user_turn.get("content", "")
 
-        if is_followup_prompt(ast_content):
-            # Extract semantic intent via Pydantic model
+        service = groq_service or get_groq_service()
+        if is_followup_prompt(ast_content, groq_service=service):
+            # Extract semantic intent via LLM reasoning & Pydantic model
             intent_res = extract_semantic_followup_intent(
                 caller_text=user_content,
                 last_assistant_text=ast_content,
+                groq_service=service,
             )
 
             if intent_res.intent == FollowupIntentType.NO_FURTHER_QUERY:
@@ -140,6 +168,8 @@ def prepare_context_node(
                     "error": None,
                     "tools_called": [],
                     "work_completed": False,
+                    "workflow_status": WorkflowStatus.TERMINATED.value,
+                    "budget": budget.model_dump(),
                 }
 
             elif intent_res.intent == FollowupIntentType.HAS_FURTHER_QUERY:
@@ -160,6 +190,8 @@ def prepare_context_node(
                     "error": None,
                     "tools_called": [],
                     "work_completed": False,
+                    "workflow_status": WorkflowStatus.WAITING_CONFIRMATION.value,
+                    "budget": budget.model_dump(),
                 }
 
     return {
@@ -171,6 +203,8 @@ def prepare_context_node(
         "tools_called": [],
         "work_completed": False,
         "should_terminate": False,
+        "workflow_status": WorkflowStatus.PREPARING.value,
+        "budget": budget.model_dump(),
     }
 
 
@@ -181,11 +215,47 @@ def call_llm_node(
     """
     Node B: Call LLM
     Invokes Groq with conversation messages, system prompt, and authorized tool schemas.
+    Enforces bounded turn limits and execution timeouts.
     """
     if not state.get("success", False) or state.get("error"):
         return {}
 
-    iter_count = state.get("iteration_count", 0) + 1
+    settings = get_settings()
+    budget_dict = state.get("budget")
+    if budget_dict and isinstance(budget_dict, dict):
+        try:
+            budget = AgentExecutionBudget.model_validate(budget_dict)
+        except Exception:
+            budget = AgentExecutionBudget(
+                max_llm_turns=settings.AGENT_MAX_ITERATIONS,
+                max_tool_rounds=settings.AGENT_MAX_TOOL_ROUNDS,
+                max_execution_seconds=settings.AGENT_MAX_EXECUTION_SECONDS,
+            )
+    else:
+        budget = AgentExecutionBudget(
+            max_llm_turns=settings.AGENT_MAX_ITERATIONS,
+            max_tool_rounds=settings.AGENT_MAX_TOOL_ROUNDS,
+            max_execution_seconds=settings.AGENT_MAX_EXECUTION_SECONDS,
+        )
+
+    iter_count = state.get("iteration_count", 0)
+
+    # Enforce bounded execution budget before exceeding turn limits
+    if iter_count >= budget.max_llm_turns or budget.is_exceeded():
+        logger.warning("Agent execution budget reached (turns: %d, elapsed: %.2fs)", iter_count, budget.elapsed_seconds)
+        return {
+            "latest_tool_calls": None,
+            "response_content": "I apologize, but I have reached the processing limit for this request. Please call our team directly for further assistance.",
+            "iteration_count": iter_count,
+            "success": True,
+            "should_terminate": True,
+            "workflow_status": WorkflowStatus.COMPLETED.value,
+            "budget": budget.model_dump(),
+        }
+
+    iter_count += 1
+    budget.llm_turns_completed += 1
+
     service = groq_service or get_groq_service()
     system_instruction = state.get("system_instruction", "")
     messages = state.get("messages", [])
@@ -204,6 +274,8 @@ def call_llm_node(
             "iteration_count": iter_count,
             "success": True,
             "error": None,
+            "workflow_status": WorkflowStatus.PROCESSING_LLM.value,
+            "budget": budget.model_dump(),
         }
     else:
         return {
@@ -212,6 +284,8 @@ def call_llm_node(
             "iteration_count": iter_count,
             "success": False,
             "error": llm_resp.error or "Failed to generate AI response from Groq.",
+            "workflow_status": WorkflowStatus.FAILED.value,
+            "budget": budget.model_dump(),
         }
 
 
@@ -219,13 +293,16 @@ def call_llm_node(
 generate_response_node = call_llm_node
 
 
-def _is_prior_action_confirmed(messages: list, tool_id: str) -> bool:
+def _is_prior_action_confirmed(
+    messages: list,
+    tool_id: str,
+    groq_service: Optional[GroqService] = None,
+) -> bool:
     """
     Check if the conversation history shows that this tool's action was already
-    proposed in the prior assistant turn and the caller just verbally confirmed it.
-    Enables voice callers to confirm bookings/appointments verbally without clicking UI buttons.
+    proposed in the prior assistant turn and the caller verbally confirmed it.
+    Enables voice callers to confirm bookings/appointments verbally through semantic intent.
     """
-    import re
     if not messages or len(messages) < 2:
         return False
 
@@ -238,58 +315,66 @@ def _is_prior_action_confirmed(messages: list, tool_id: str) -> bool:
         content = msg.get("content") or ""
 
         if role == "user" and not last_user_content:
-            last_user_content = content.strip().lower()
+            last_user_content = content.strip()
             for j in range(i - 1, -1, -1):
                 if messages[j].get("role") == "assistant":
-                    prev_assistant_content = (messages[j].get("content") or "").strip().lower()
+                    prev_assistant_content = (messages[j].get("content") or "").strip()
                     break
             break
 
     if not last_user_content or not prev_assistant_content:
         return False
 
-    # 1. Verify previous assistant message proposed an action awaiting confirmation
+    # Check if assistant proposed an action awaiting confirmation
     proposal_cues = [
-        "prepared your",
-        "action:",
-        "details:",
-        "confirm or cancel",
-        "confirm this",
-        "confirm for you",
-        "shall i go ahead",
-        "would you like me to confirm",
-        "booking details",
-        "appointment details",
+        "prepared your", "action:", "details:", "confirm or cancel",
+        "confirm this", "confirm for you", "shall i go ahead",
+        "would you like me to confirm", "booking details", "appointment details"
     ]
-    had_proposal = any(cue in prev_assistant_content for cue in proposal_cues)
+    had_proposal = any(cue in prev_assistant_content.lower() for cue in proposal_cues)
     if not had_proposal:
         return False
 
-    # 2. Check for explicit cancellation
-    cancel_cues = ["cancel", "don't", "dont", "abort", "stop", "nahi mat", "mat karo", "no don't", "no dont"]
-    if any(re.search(rf"\b{re.escape(c)}\b", last_user_content) for c in cancel_cues):
-        return False
-
-    # 3. Check for verbal confirmation phrases
-    confirm_patterns = [
-        r"\b(?:confirm|confirmed|confirming)\b",
-        r"\b(?:yes|yeah|yep|yup|sure|okay|ok|go ahead|proceed|book it|please do|do it)\b",
-        r"\b(?:haan|haanji|ha ji|kardo|kar do|kar dijiye|theek hai|bilkul)\b",
-    ]
-    return any(re.search(pat, last_user_content) for pat in confirm_patterns)
+    return is_action_confirmed_semantically(
+        caller_text=last_user_content,
+        assistant_prompt=prev_assistant_content,
+        groq_service=groq_service,
+    )
 
 
 def execute_tools_node(
     state: AgentState,
     tool_registry: Optional[ToolRegistry] = None,
+    groq_service: Optional[GroqService] = None,
 ) -> Dict[str, Any]:
     """
     Node C: Execute Tools
     Validates requested tool calls, enforces tenant permissions, intercepts
-    confirmation-required actions, and executes permitted tools through the registry.
+    confirmation-required actions using tool metadata, and executes permitted tools.
     """
     if not state.get("success", False) or state.get("error"):
         return {}
+
+    budget_dict = state.get("budget")
+    if budget_dict and isinstance(budget_dict, dict):
+        try:
+            budget = AgentExecutionBudget.model_validate(budget_dict)
+        except Exception:
+            budget = AgentExecutionBudget()
+    else:
+        budget = AgentExecutionBudget()
+    budget.tool_rounds_completed += 1
+
+    if budget.is_exceeded():
+        logger.warning("Tool execution budget exceeded (rounds: %d)", budget.tool_rounds_completed)
+        return {
+            "latest_tool_calls": None,
+            "response_content": "I apologize, but tool execution limits were reached. Please speak with our team directly.",
+            "should_terminate": True,
+            "success": True,
+            "workflow_status": WorkflowStatus.COMPLETED.value,
+            "budget": budget.model_dump(),
+        }
 
     registry = tool_registry or get_tool_registry()
     tool_calls = state.get("latest_tool_calls") or []
@@ -298,30 +383,29 @@ def execute_tools_node(
     messages = list(state.get("messages", []))
     tools_called = list(state.get("tools_called") or [])
 
-    # Record assistant tool call turn in messages history
-    assistant_turn = {
+    # Append assistant's tool-call request turn to history
+    messages.append({
         "role": "assistant",
         "content": state.get("response_content") or "",
         "tool_calls": tool_calls,
-    }
-    messages.append(assistant_turn)
+    })
 
     for tc in tool_calls:
-        tc_id = tc.get("id", str(uuid.uuid4()))
-        fn = tc.get("function", {})
-        tool_id = fn.get("name")
-        raw_args = fn.get("arguments", "{}")
+        tc_id = tc.get("id")
+        func_entry = tc.get("function") or {}
+        tool_id = func_entry.get("name")
+        raw_args = func_entry.get("arguments")
 
-        # 1. Parse JSON arguments
+        # 1. Parse JSON arguments safely
         if isinstance(raw_args, str):
             try:
                 args_dict = json.loads(raw_args)
-            except Exception:
+            except json.JSONDecodeError:
                 messages.append({
                     "role": "tool",
                     "tool_call_id": tc_id,
                     "name": tool_id or "unknown",
-                    "content": "Error: Malformed JSON arguments in tool call request.",
+                    "content": "Error: Malformed JSON arguments. Expected valid JSON format.",
                 })
                 continue
         elif isinstance(raw_args, dict):
@@ -368,10 +452,11 @@ def execute_tools_node(
 
         # 5. Two-phase confirmation interception & verbal confirmation handling
         if tool_def.requires_confirmation:
-            is_verbally_confirmed = _is_prior_action_confirmed(messages, tool_id)
+            service = groq_service or get_groq_service()
+            is_verbally_confirmed = _is_prior_action_confirmed(messages, tool_id, groq_service=service)
             if not is_verbally_confirmed:
                 action_id = str(uuid.uuid4())
-                summary_text = _format_pending_action_summary(tool_id, validated_dict)
+                summary_text = tool_def.format_confirmation_summary(validated_dict)
                 pending_action = {
                     "action_id": action_id,
                     "business_id": biz_id,
@@ -381,7 +466,7 @@ def execute_tools_node(
                     "summary": summary_text,
                     "status": "pending_confirmation",
                 }
-                friendly_name = "dining reservation" if tool_id == "create_table_booking" else "appointment"
+                friendly_name = tool_def.friendly_name or tool_def.name.lower()
                 last_caller_msg = messages[-2].get("content", "") if len(messages) >= 2 else ""
                 if detect_language(last_caller_msg) == "hi":
                     confirmation_prompt = (
@@ -402,6 +487,8 @@ def execute_tools_node(
                     "latest_tool_calls": None,
                     "success": True,
                     "error": None,
+                    "workflow_status": WorkflowStatus.WAITING_CONFIRMATION.value,
+                    "budget": budget.model_dump(),
                 }
             else:
                 # Verbal confirmation received: caller confirmed in conversation! Execute tool directly.
@@ -444,6 +531,8 @@ def execute_tools_node(
         "work_completed": True,
         "success": True,
         "error": None,
+        "workflow_status": WorkflowStatus.EXECUTING_TOOLS.value,
+        "budget": budget.model_dump(),
     }
 
 
@@ -463,6 +552,7 @@ def finalize_response_node(state: AgentState) -> Dict[str, Any]:
             "work_completed": False,
             "should_terminate": False,
             "followup_intent": None,
+            "workflow_status": WorkflowStatus.FAILED.value,
         }
 
     response_content = state.get("response_content", "") or ""
@@ -481,6 +571,12 @@ def finalize_response_node(state: AgentState) -> Dict[str, Any]:
                 followup_q = " Is there anything else I can help you with today?"
             response_content = response_content.rstrip() + followup_q
 
+    final_status = (
+        WorkflowStatus.TERMINATED.value if should_terminate
+        else (WorkflowStatus.WAITING_CONFIRMATION.value if state.get("pending_action")
+        else WorkflowStatus.COMPLETED.value)
+    )
+
     return {
         "success": True,
         "response_content": response_content,
@@ -490,6 +586,7 @@ def finalize_response_node(state: AgentState) -> Dict[str, Any]:
         "should_terminate": should_terminate,
         "followup_intent": followup_intent,
         "error": None,
+        "workflow_status": final_status,
     }
 
 
@@ -540,7 +637,7 @@ def execute_pending_action(
     tool_id = pending_action.get("tool_id", "")
     args = pending_action.get("arguments", {})
 
-    # Mark action as executed to prevent double execution
+    # Mark action as executed to prevent double execution in-memory
     pending_action["status"] = "executed"
 
     return registry.execute_tool(

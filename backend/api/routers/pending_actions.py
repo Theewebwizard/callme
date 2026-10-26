@@ -44,7 +44,19 @@ def confirm_pending_action(
             detail="This action has already been executed, cancelled, or expired.",
         )
 
-    # 3. Commit execution through existing confirmation boundary
+    # 3. Atomically transition database status to executed to prevent concurrent double-execution
+    claimed = db_service.transition_pending_action(
+        business_id=business_id,
+        action_id=action_id,
+        new_status="executed",
+    )
+    if not claimed:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="This action has already been executed, cancelled, or expired.",
+        )
+
+    # 4. Commit execution through confirmation boundary
     execution_result = execute_pending_action(
         business_id=business_id,
         business_config=biz_profile,
@@ -53,20 +65,25 @@ def confirm_pending_action(
     )
 
     if not execution_result.success:
+        db_service.transition_pending_action(
+            business_id=business_id,
+            action_id=action_id,
+            new_status="failed",
+        )
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=execution_result.message or "Action execution failed.",
         )
 
-    # 4. Transition database status to executed
-    db_service.transition_pending_action(
-        business_id=business_id,
-        action_id=action_id,
-        new_status="executed",
-        execution_reference=execution_result.reference_id,
-    )
+    # 5. Record reference ID if produced
+    if execution_result.reference_id:
+        db_service.set_pending_action_reference(
+            business_id=business_id,
+            action_id=action_id,
+            execution_reference=execution_result.reference_id,
+        )
 
-    # 5. Append confirmed message to persistent chat history
+    # 6. Append confirmed message to persistent chat history
     ref_note = f" (Reference: {execution_result.reference_id})" if execution_result.reference_id else ""
     db_service.add_conversation_message(
         business_id=business_id,
@@ -106,17 +123,16 @@ def cancel_pending_action(
             detail=f"Pending action '{action_id}' not found for business '{business_id}'.",
         )
 
-    if pending.get("status") != "pending_confirmation":
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="This action is not pending confirmation (already executed, cancelled, or expired).",
-        )
-
-    db_service.transition_pending_action(
+    cancelled = db_service.transition_pending_action(
         business_id=business_id,
         action_id=action_id,
         new_status="cancelled",
     )
+    if not cancelled:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="This action is not pending confirmation (already executed, cancelled, or expired).",
+        )
 
     db_service.add_conversation_message(
         business_id=business_id,

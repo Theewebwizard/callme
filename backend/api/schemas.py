@@ -179,6 +179,7 @@ class CallRecordResponse(BaseModel):
     outcome: str
     summary: str
     tools_used: List[str]
+    transcript: Optional[List[Dict[str, Any]]] = None
     is_simulated: bool
 
     model_config = ConfigDict(from_attributes=True)

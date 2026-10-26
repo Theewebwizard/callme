@@ -164,7 +164,12 @@ class VoiceTurnOrchestrator:
             if not response_content:
                 response_content = "I'm listening. How can I help you today?"
 
-            # 7. Persist assistant reply in session history
+            # 7. Record executed tools in session manager for call history auditing
+            if tools_called:
+                for t in tools_called:
+                    self.session_manager.record_tool_used(session_id, t)
+
+            # 8. Persist assistant reply in session history
             self.session_manager.record_message(
                 business_id=session.business_id,
                 session_id=session_id,
@@ -172,7 +177,7 @@ class VoiceTurnOrchestrator:
                 content=response_content,
             )
 
-            # 8. Persist pending action if action was yielded
+            # 9. Persist pending action if action was yielded
             if pending_action:
                 self.db.save_pending_action(session.business_id, pending_action)
 

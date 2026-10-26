@@ -6,19 +6,29 @@ and business-aware prompt construction.
 
 from dataclasses import dataclass
 import json
+import logging
+import random
+import time
 from typing import List, Dict, Any, Optional
 import groq
 from groq import Groq
 from backend.config import get_settings
 
+logger = logging.getLogger(__name__)
+
 
 @dataclass
 class LLMResponse:
-    """Standardized response from the Groq LLM service."""
+    """Standardized response from the Groq LLM service with observability metrics."""
     content: Optional[str] = None
     tool_calls: Optional[List[Dict[str, Any]]] = None
     error: Optional[str] = None
     success: bool = True
+    prompt_tokens: int = 0
+    completion_tokens: int = 0
+    total_tokens: int = 0
+    latency_ms: float = 0.0
+    model: Optional[str] = None
 
 
 def convert_tool_definition_to_groq_schema(tool: Any) -> Dict[str, Any]:
@@ -253,63 +263,96 @@ class GroqService:
             if tool_choice:
                 kwargs["tool_choice"] = tool_choice
 
-        try:
-            response = self.client.chat.completions.create(**kwargs)
-            choice = response.choices[0]
-            message = choice.message
-            content = getattr(message, "content", None)
+        max_retries = get_settings().LLM_MAX_RETRIES
+        for attempt in range(max_retries + 1):
+            try:
+                t0 = time.time()
+                response = self.client.chat.completions.create(**kwargs)
+                latency_ms = (time.time() - t0) * 1000.0
 
-            # Check for tool call requests
-            tool_calls_payload = None
-            raw_tool_calls = getattr(message, "tool_calls", None)
-            if raw_tool_calls:
-                tool_calls_payload = []
-                for tc in raw_tool_calls:
-                    tc_id = getattr(tc, "id", None) or (tc.get("id") if isinstance(tc, dict) else None)
-                    fn = getattr(tc, "function", None) or (tc.get("function") if isinstance(tc, dict) else None)
-                    fn_name = getattr(fn, "name", None) or (fn.get("name") if isinstance(fn, dict) else None)
-                    fn_args = getattr(fn, "arguments", None) or (fn.get("arguments") if isinstance(fn, dict) else None)
-                    tool_calls_payload.append({
-                        "id": tc_id,
-                        "type": "function",
-                        "function": {
-                            "name": fn_name,
-                            "arguments": fn_args if isinstance(fn_args, str) else json.dumps(fn_args),
-                        },
-                    })
+                choice = response.choices[0]
+                message = choice.message
+                content = getattr(message, "content", None)
 
-            return LLMResponse(content=content, tool_calls=tool_calls_payload, success=True)
+                # Check for tool call requests
+                tool_calls_payload = None
+                raw_tool_calls = getattr(message, "tool_calls", None)
+                if raw_tool_calls:
+                    tool_calls_payload = []
+                    for tc in raw_tool_calls:
+                        tc_id = getattr(tc, "id", None) or (tc.get("id") if isinstance(tc, dict) else None)
+                        fn = getattr(tc, "function", None) or (tc.get("function") if isinstance(tc, dict) else None)
+                        fn_name = getattr(fn, "name", None) or (fn.get("name") if isinstance(fn, dict) else None)
+                        fn_args = getattr(fn, "arguments", None) or (fn.get("arguments") if isinstance(fn, dict) else None)
+                        tool_calls_payload.append({
+                            "id": tc_id,
+                            "type": "function",
+                            "function": {
+                                "name": fn_name,
+                                "arguments": fn_args if isinstance(fn_args, str) else json.dumps(fn_args),
+                            },
+                        })
 
-        except groq.AuthenticationError:
-            return LLMResponse(
-                success=False,
-                error="Authentication failed: Invalid Groq API key. Please check GROQ_API_KEY in your .env file.",
-            )
-        except groq.RateLimitError:
-            return LLMResponse(
-                success=False,
-                error="Groq API rate limit exceeded. Please wait a moment before sending another message.",
-            )
-        except groq.APIConnectionError:
-            return LLMResponse(
-                success=False,
-                error="Network connection error: Unable to reach the Groq API. Please check your internet connection.",
-            )
-        except groq.APIStatusError as status_err:
-            return LLMResponse(
-                success=False,
-                error=f"Groq API error (HTTP {status_err.status_code}). Please try again later.",
-            )
-        except groq.GroqError:
-            return LLMResponse(
-                success=False,
-                error="An error occurred while communicating with the Groq API. Please try again.",
-            )
-        except Exception as exc:
-            return LLMResponse(
-                success=False,
-                error="An unexpected service error occurred while generating the receptionist response.",
-            )
+                # Extract token usage telemetry safely
+                usage = getattr(response, "usage", None)
+                prompt_tokens = getattr(usage, "prompt_tokens", 0) if usage else 0
+                completion_tokens = getattr(usage, "completion_tokens", 0) if usage else 0
+                total_tokens = getattr(usage, "total_tokens", 0) if usage else 0
+
+                logger.debug(
+                    "Groq completion succeeded (model=%s, latency=%.1fms, tokens=%d)",
+                    target_model,
+                    latency_ms,
+                    total_tokens,
+                )
+
+                return LLMResponse(
+                    content=content,
+                    tool_calls=tool_calls_payload,
+                    success=True,
+                    prompt_tokens=prompt_tokens,
+                    completion_tokens=completion_tokens,
+                    total_tokens=total_tokens,
+                    latency_ms=latency_ms,
+                    model=target_model,
+                )
+
+            except groq.AuthenticationError:
+                return LLMResponse(
+                    success=False,
+                    error="Authentication failed: Invalid Groq API key. Please check GROQ_API_KEY in your .env file.",
+                )
+            except (groq.RateLimitError, groq.APIConnectionError) as transient_err:
+                if attempt < max_retries:
+                    backoff = (0.3 * (2 ** attempt)) + random.uniform(0.05, 0.15)
+                    logger.warning("Transient Groq error (%s). Retrying in %.2fs (attempt %d/%d)...", type(transient_err).__name__, backoff, attempt + 1, max_retries + 1)
+                    time.sleep(backoff)
+                    continue
+                if isinstance(transient_err, groq.RateLimitError):
+                    return LLMResponse(
+                        success=False,
+                        error="Groq API rate limit exceeded. Please wait a moment before sending another message.",
+                    )
+                return LLMResponse(
+                    success=False,
+                    error="Network connection error: Unable to reach the Groq API. Please check your internet connection.",
+                )
+            except groq.APIStatusError as status_err:
+                return LLMResponse(
+                    success=False,
+                    error=f"Groq API error (HTTP {status_err.status_code}). Please try again later.",
+                )
+            except groq.GroqError:
+                return LLMResponse(
+                    success=False,
+                    error="An error occurred while communicating with the Groq API. Please try again.",
+                )
+            except Exception as exc:
+                logger.error("Unexpected error in Groq completion: %s", str(exc), exc_info=True)
+                return LLMResponse(
+                    success=False,
+                    error="An unexpected service error occurred while generating the receptionist response.",
+                )
 
 
 # Singleton instance cache

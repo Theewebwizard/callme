@@ -5,7 +5,7 @@ Repository for Phase B Pending Actions requiring human confirmation.
 from typing import Optional, Dict, Any
 from datetime import datetime, timedelta, timezone
 from sqlalchemy.orm import Session
-from sqlalchemy import select, desc
+from sqlalchemy import select, desc, update
 
 from backend.database.models import PendingAction, utcnow
 from backend.database.repositories.base import BaseRepository
@@ -86,24 +86,45 @@ class PendingActionRepository(BaseRepository):
     ) -> bool:
         """
         Safely transition action status (e.g. from pending_confirmation to executed or cancelled).
-        Strictly enforces tenant ownership and prevents duplicate execution replay.
+        Strictly enforces tenant ownership and prevents duplicate execution replay via atomic SQL UPDATE.
         """
-        action = self.get(action_id)
-        if not action:
-            return False
-        if action.business_id != business_id:
-            return False
-        if action.status != "pending_confirmation":
-            return False  # Already executed, cancelled, or expired
-
-        action.status = new_status
+        values: Dict[str, Any] = {"status": new_status}
         if execution_reference:
-            action.execution_reference = execution_reference
+            values["execution_reference"] = execution_reference
         if new_status == "executed":
-            action.executed_at = utcnow()
+            values["executed_at"] = utcnow()
 
+        stmt = (
+            update(PendingAction)
+            .where(
+                PendingAction.id == action_id,
+                PendingAction.business_id == business_id,
+                PendingAction.status == "pending_confirmation",
+            )
+            .values(**values)
+        )
+        result = self.session.execute(stmt)
         self.session.flush()
-        return True
+        return (result.rowcount or 0) > 0
+
+    def set_execution_reference(
+        self,
+        business_id: str,
+        action_id: str,
+        execution_reference: str,
+    ) -> bool:
+        """Record external execution reference on an executed action record."""
+        stmt = (
+            update(PendingAction)
+            .where(
+                PendingAction.id == action_id,
+                PendingAction.business_id == business_id,
+            )
+            .values(execution_reference=execution_reference)
+        )
+        result = self.session.execute(stmt)
+        self.session.flush()
+        return (result.rowcount or 0) > 0
 
     def cancel_all_pending(self, business_id: str) -> int:
         """Cancel all pending confirmation actions for a tenant."""

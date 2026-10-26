@@ -1,31 +1,43 @@
 """
-Semantic intent extraction and Pydantic validation for the AI Calling Agent.
-Analyzes conversational meaning (rather than rigid keywords) to determine whether
-the caller has further queries, is done, or is initiating a new request.
+Semantic intent analysis and Pydantic validation for the AI Calling Agent.
+Analyzes true conversational meaning, nuance, and dialogue context using
+LLM-powered semantic intelligence and structured Pydantic schemas.
 """
 
 from enum import Enum
 import json
 import logging
 import re
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from pydantic import BaseModel, Field, ValidationError
+
+from backend.agent.prompts import (
+    SEMANTIC_FOLLOWUP_INTENT_SYSTEM_PROMPT,
+    SEMANTIC_CONFIRMATION_SYSTEM_PROMPT,
+)
 
 logger = logging.getLogger(__name__)
 
 
 class FollowupIntentType(str, Enum):
-    """Semantic intent classification of caller's response to an 'anything else' prompt."""
-    NO_FURTHER_QUERY = "no_further_query"  # Caller is satisfied, done, has no more queries
-    HAS_FURTHER_QUERY = "has_further_query"  # Caller confirms they have another question/request
-    NEW_INQUIRY = "new_inquiry"  # Caller directly asks their next question/request
-    UNCLEAR = "unclear"  # Ambiguous utterance or filler
+    """Semantic intent classification of caller's response to a wrap-up or follow-up prompt."""
+    NO_FURTHER_QUERY = "no_further_query"  # Caller is satisfied, done, has no more queries, or is saying goodbye
+    HAS_FURTHER_QUERY = "has_further_query"  # Caller indicates they have another question/request to discuss
+    NEW_INQUIRY = "new_inquiry"  # Caller directly asks their next inquiry or gives instructions
+    UNCLEAR = "unclear"  # Ambiguous, inaudible, or filler utterance
+
+
+class ConfirmationIntentType(str, Enum):
+    """Semantic intent classification for action confirmation requests."""
+    CONFIRMED = "confirmed"  # Caller clearly agrees to execute the proposed action
+    CANCELLED = "cancelled"  # Caller explicitly asks to cancel or abort
+    UNCLEAR = "unclear"  # Caller is asking a clarification question or utterance is ambiguous
 
 
 class SemanticIntentExtraction(BaseModel):
     """
     Pydantic schema for extracting and validating caller semantic intent.
-    Eliminates fragile exact-keyword matching while guaranteeing robust typing.
+    Focuses on contextual conversational meaning rather than fragile keyword matching.
     """
     intent: FollowupIntentType = Field(
         default=FollowupIntentType.UNCLEAR,
@@ -37,7 +49,7 @@ class SemanticIntentExtraction(BaseModel):
     )
     is_farewell: bool = Field(
         default=False,
-        description="True if the caller expressed a parting/goodbye greeting.",
+        description="True if the caller expressed a parting or closing greeting.",
     )
     language: str = Field(
         default="en",
@@ -51,231 +63,163 @@ class SemanticIntentExtraction(BaseModel):
     )
     reasoning: str = Field(
         default="",
-        description="Linguistic explanation of the semantic interpretation.",
+        description="Semantic explanation of the conversational interpretation.",
     )
 
 
-class WorkCompletionExtraction(BaseModel):
+class ConfirmationClassification(BaseModel):
     """
-    Pydantic schema assessing whether an assistant response confirms completed work
-    and proactively includes a follow-up inquiry.
+    Pydantic schema for safe consequential action confirmation analysis.
     """
-    is_completed: bool = Field(
+    confirmed: bool = Field(
         default=False,
-        description="True if the response confirms a completed task or tool execution.",
+        description="True if caller unambiguously authorized the action.",
     )
-    task_type: Optional[str] = Field(
-        default=None,
-        description="Type of task completed (e.g. booking, appointment, faq, message, inquiry).",
-    )
-    has_followup_question: bool = Field(
+    is_cancellation: bool = Field(
         default=False,
-        description="True if the response already asks if caller has other queries/needs.",
+        description="True if caller explicitly aborted or cancelled.",
     )
-    summary: str = Field(
+    is_ambiguous: bool = Field(
+        default=False,
+        description="True if caller utterance is a question or unclear.",
+    )
+    confidence: float = Field(
+        default=1.0,
+        ge=0.0,
+        le=1.0,
+    )
+    reasoning: str = Field(
         default="",
-        description="Brief summary of the work done.",
     )
-
-
-# Patterns that indicate the assistant asked if caller has any other query
-_FOLLOWUP_QUESTION_PATTERNS = [
-    r"anything\s+else",
-    r"further\s+(?:questions?|queries|assistance|help)",
-    r"any\s+other\s+(?:questions?|queries|inquiry|help|assistance)",
-    r"help\s+you\s+with\s+(?:anything|something)\s+else",
-    r"assist\s+you\s+with\s+(?:anything|something)",
-    r"(?:कोई\s+और|और\s+कोई)\s*(?:सवाल|मदद|सहायता|जानकारी|चीज़)",
-    r"और\s+कुछ",
-    r"aur\s+kuch",
-    r"(?:koi\s+aur|aur\s+koi)\s*(?:sawal|madad|cheez|help|chiz)",
-    r"kisi\s+aur\s+(?:chiz|cheez|baat)\s+mein\s+madad",
-]
-
-# Patterns confirming completion of an action
-_WORK_COMPLETION_PATTERNS = [
-    r"(?:table|reservation|booking)\s+(?:is\s+)?(?:confirmed|booked|available)",
-    r"(?:appointment|consultation)\s+(?:is\s+)?(?:scheduled|booked|confirmed)",
-    r"(?:message|note)\s+(?:has\s+been\s+)?(?:taken|recorded|saved|forwarded)",
-    r"(?:transferred|transferring\s+your\s+call)",
-    r"i\s+have\s+(?:checked|booked|confirmed|taken|scheduled|noted)",
-    r"i(?:'ve|'ll)\s+(?:successfully\s+)?(?:booked|scheduled|noted|checked|recorded)",
-    r"(?:टेबल|बुकिंग)\s+(?:हो\s+गई|कंफर्म)",
-    r"(?:अपॉइंटमेंट)\s+(?:तय|बुक)",
-    r"(?:मैसेज|संदेश)\s+(?:ले\s+लिया|दर्ज)",
-]
-
-
-def is_followup_prompt(text: str) -> bool:
-    """
-    Semantically detect if the assistant's utterance asked whether the caller
-    has any other query or needs further assistance.
-    """
-    if not text or not isinstance(text, str):
-        return False
-    lower = text.lower().strip()
-    return any(re.search(pat, lower) for pat in _FOLLOWUP_QUESTION_PATTERNS)
-
-
-def is_work_completed_response(text: str) -> bool:
-    """
-    Semantically detect if an assistant response conveys that a requested task or
-    action has been completed.
-    """
-    if not text or not isinstance(text, str):
-        return False
-    lower = text.lower().strip()
-    return any(re.search(pat, lower) for pat in _WORK_COMPLETION_PATTERNS)
 
 
 def detect_language(text: str) -> str:
-    """Detect if utterance is in Hindi/Hinglish or English."""
+    """
+    Detect whether text is primarily Hindi / Hinglish or English.
+    Uses Unicode Devanagari script detection and romanized conversational markers.
+    """
     if not text:
         return "en"
-    # Devanagari script range
+    # Devanagari unicode range (U+0900 - U+097F)
     if any("\u0900" <= ch <= "\u097f" for ch in text):
         return "hi"
-    lower_words = set(re.findall(r"\b\w+\b", text.lower()))
-    hindi_cues = {
-        "namaste", "dhanyavad", "shukriya", "nahi", "nahin", "haan", "haanji",
-        "kuch", "aur", "bas", "theek", "shyam", "subah", "bhaiya", "sirji", "ji"
+
+    lower = text.lower()
+    hindi_markers = {
+        "namaste", "dhanyavad", "shukriya", "nahi", "nahin", "na", "haan", "haanji", "ha",
+        "kuch", "aur", "bas", "theek", "shyam", "subah", "bhaiya", "sirji", "ji",
+        "kardo", "kijiye", "karna", "karo", "bataiye", "batao", "sawal", "chahiye", "itna",
+        "ek", "baat", "puchna", "puchni", "hai", "hain", "kya", "kab", "kaha", "kaise",
+        "hoga", "hogi", "milega", "chahiye", "aap", "hum", "mera", "meri"
     }
-    if len(lower_words.intersection(hindi_cues)) >= 1:
+    words = set(re.findall(r"\b\w+\b", lower))
+    if len(words.intersection(hindi_markers)) >= 1:
         return "hi"
     return "en"
 
 
-def _linguistic_semantic_classify(
+def _fallback_semantic_classify(
     caller_text: str,
     last_assistant_text: str = "",
 ) -> SemanticIntentExtraction:
     """
-    Deep semantic rule-based classifier evaluating caller intent.
-    Distinguishes contextual negation ('No, that is all') from affirmative/neutral
-    uses of negation ('No problem, please book it').
+    Deterministic semantic intent evaluator used when the LLM service
+    is offline, unconfigured, or in lightweight test environments.
+    Analyzes conversational polarity, completion expressions, and question structure.
     """
     clean_text = caller_text.strip()
     lower = clean_text.lower()
     lang = detect_language(clean_text)
 
-    # 1. Check for Farewell / Goodbyes
-    farewell_cues = [
-        "bye", "goodbye", "good bye", "see you", "take care", "have a good day",
-        "have a nice day", "have a great day", "alvida", "shubh din", "bye for now"
-    ]
-    has_farewell = any(re.search(rf"\b{re.escape(cue)}\b", lower) for cue in farewell_cues)
+    # 1. Parting / Farewell markers
+    farewell_words = {"bye", "goodbye", "alvida", "take care", "shubh din", "see you"}
+    is_farewell = any(fw in lower for fw in farewell_words)
 
-    # 2. Check for Direct New Questions / Inquiries
-    # (Wh-questions, question marks, or explicit requests for info)
-    question_starters = [
-        r"^(?:what|when|where|which|who|why|how|can|could|do|does|is|are|will|would)\b",
-        r"^(?:kya|kab|kaha|kaise|kitna|kitne|kaun)\b",
+    # 2. Check for explicit completion or work done
+    completion_indicators = [
+        "work is done", "done", "all set", "all good", "all for now",
+        "that is all", "that's all", "that will be all", "that'll be all",
+        "nothing else", "nothing for now", "i'm good", "i am good", "we're good", "we are good",
+        "kaam ho gaya", "bas ho gaya", "itna hi", "kuch nahi", "sab theek"
     ]
+    is_completion = any(ci in lower for ci in completion_indicators)
+
+    # 3. Check for direct questions or inquiry intent
     is_direct_question = (
         "?" in clean_text
-        or any(re.search(qs, lower) for qs in question_starters)
-        or ("what about" in lower)
-        or ("tell me about" in lower)
-        or ("bataiye" in lower and "?" in clean_text)
+        or any(lower.startswith(q) for q in [
+            "what", "when", "where", "how", "who", "why", "can you", "could you", "tell me",
+            "kya", "kab", "kaha", "kaise", "kitna", "konsa"
+        ])
     )
 
-    # 3. Check for Affirmative Intent (Caller confirms they have another question)
-    # Examples: "yes", "actually yes", "one more thing", "haanji ek sawal aur", etc.
-    affirmative_patterns = [
-        r"^(?:yes|yeah|yep|yup|sure|of course)\b",
-        r"\b(?:actually\s+(?:yes|yeah|yep|yup|sure)|yes\s+please|i\s+do)\b",
-        r"\b(?:i\s+(?:have|had)\s+(?:a|another|one more)?\s*(?:question|doubt|query))\b",
-        r"\b(?:had|have)\s+a\s+(?:doubt|question|query)\b",
-        r"\b(?:one\s+more\s+(?:thing|question|doubt)|also\s+wanted\s+to\s+(?:know|ask))\b",
-        r"^(?:haan|haanji|ha ji|ji haan|haan ji)\b",
-        r"\b(?:ek\s+(?:aur|sawal|baat|cheez)|aur\s+ek\s+(?:sawal|baat|cheez)|ek\s+doubt)\b",
+    # 4. Check for affirmative continuation ("yes", "haan", "another question", "one more")
+    continuation_indicators = [
+        "one more", "another", "question", "doubt", "sawal", "aur kuch",
+        "aur puchni", "puchni", "puchna", "ek aur", "ek baat",
+        "wanted to know", "want to ask"
     ]
-    is_affirmative = any(re.search(pat, lower) for pat in affirmative_patterns)
+    has_continuation_word = any(ci in lower for ci in continuation_indicators)
 
-    # 4. Check for Explicit Work Done / Completion Phrases
-    # Covers phrases like "yes work is done", "work is done", "yes that's all", "yes I'm done", "haan kaam ho gaya"
-    # where the caller confirms their task/request is finished and they are satisfied to end.
-    completion_patterns = [
-        r"\b(?:work\s+(?:is\s+)?done|my\s+work\s+is\s+done|all\s+done|everything\s+is\s+done|task\s+(?:is\s+)?done)\b",
-        r"\b(?:that(?:'s| is| will be)\s+all|that(?:'s| is)\s+it|nothing\s+else|nothing\s+for\s+now)\b",
-        r"\b(?:i(?:'m| am)\s+(?:done|good|all good|all set)|we(?:'re| are)\s+(?:done|good|all set))\b",
-        r"\b(?:kaam\s+ho\s+gaya|sab\s+ho\s+gaya|bas\s+ho\s+gaya|ho\s+gaya\s+kaam|done\s+hai|ho\s+gaya)\b",
-        r"\b(?:aur\s+kuch\s+nahi|kuch\s+nahi\s+chahiye|bas\s+itna\s+hi)\b",
-    ]
-    is_completion_stated = any(re.search(pat, lower) for pat in completion_patterns)
+    # Disqualify "no problem", "no doubt", "no worries" from negative exit
+    is_affirmative_override = any(phrase in lower for phrase in [
+        "no problem", "no worries", "no doubt", "please go ahead", "please book"
+    ])
 
-    # 5. Check for Negative Intent (Caller says no more queries)
-    # Context-aware: "no", "nope", "nahi bas"
-    # IMPORTANT: Must NOT match "no problem", "no doubt", "no wait", etc.
-    non_negative_exceptions = [
-        r"\bno\s+problem\b",
-        r"\bno\s+worries\b",
-        r"\bno\s+doubt\b",
-        r"\bno[,\s]+wait\b",
-        r"\bno[,\s]+actually\b",
-    ]
-    has_exception = any(re.search(exc, lower) for exc in non_negative_exceptions)
-
-    negative_patterns = [
-        r"^(?:no|nope|nah|nay)(?:[,\.\s]|$)",
-        r"\b(?:all good|all set|done for now)\b",
-        r"\b(?:no thanks|no thank you|no more questions?)\b",
-        r"^(?:nahi|nahin|na)(?:[,\.\s]|$)",
-        r"\b(?:nahi bas|kuch nahi|kuch nahi chahiye|bas itna hi|bas ho gaya)\b",
-        r"\b(?:aur kuch nahi|shukriya bas|nahi shukriya|sab theek hai|sab theek)\b",
-    ]
-    is_negative = not has_exception and any(re.search(pat, lower) for pat in negative_patterns)
+    # Basic polarity
+    words = re.findall(r"\b\w+\b", lower)
+    first_word = words[0] if words else ""
+    is_yes_start = first_word in {"yes", "yeah", "yep", "yup", "sure", "haan", "haanji", "ha"}
+    is_no_start = first_word in {"no", "nope", "nah", "nahi", "nahin", "na"}
 
     # Evaluate synthesized decision
-    # Priority A: Caller explicitly says work is done / that is all -> NO_FURTHER_QUERY
-    if is_completion_stated and not is_direct_question:
-        return SemanticIntentExtraction(
-            intent=FollowupIntentType.NO_FURTHER_QUERY,
-            has_more_queries=False,
-            is_farewell=has_farewell,
-            language=lang,
-            confidence=0.98,
-            reasoning="Caller semantically indicated completion (work is done, that's all, or satisfied).",
-        )
-
-    # Priority B: Explicit negative / farewell
-    if is_negative or (has_farewell and not is_affirmative and not is_direct_question):
-        return SemanticIntentExtraction(
-            intent=FollowupIntentType.NO_FURTHER_QUERY,
-            has_more_queries=False,
-            is_farewell=has_farewell,
-            language=lang,
-            confidence=0.95,
-            reasoning="Caller semantically indicated completion, no more questions, or goodbye.",
-        )
-
-    if is_direct_question and not is_negative:
-        return SemanticIntentExtraction(
-            intent=FollowupIntentType.NEW_INQUIRY,
-            has_more_queries=True,
-            is_farewell=False,
-            language=lang,
-            confidence=0.92,
-            reasoning="Caller directly posed a new question or inquiry.",
-        )
-
-    if is_affirmative:
+    if is_affirmative_override:
         return SemanticIntentExtraction(
             intent=FollowupIntentType.HAS_FURTHER_QUERY,
             has_more_queries=True,
             is_farewell=False,
             language=lang,
-            confidence=0.95,
-            reasoning="Caller semantically indicated having another question or request.",
+            confidence=0.90,
+            reasoning="Caller provided an affirmative instruction to proceed (e.g. 'no problem').",
+        )
+
+    if (is_completion or is_no_start or (is_farewell and not is_yes_start)) and not has_continuation_word and not is_direct_question:
+        return SemanticIntentExtraction(
+            intent=FollowupIntentType.NO_FURTHER_QUERY,
+            has_more_queries=False,
+            is_farewell=is_farewell or is_completion or is_no_start,
+            language=lang,
+            confidence=0.92,
+            reasoning="Caller semantically indicated completion, satisfaction, or farewell.",
+        )
+
+    if is_direct_question:
+        return SemanticIntentExtraction(
+            intent=FollowupIntentType.NEW_INQUIRY,
+            has_more_queries=True,
+            is_farewell=False,
+            language=lang,
+            confidence=0.90,
+            reasoning="Caller posed a new question or inquiry.",
+        )
+
+    if has_continuation_word or is_yes_start:
+        return SemanticIntentExtraction(
+            intent=FollowupIntentType.HAS_FURTHER_QUERY,
+            has_more_queries=True,
+            is_farewell=False,
+            language=lang,
+            confidence=0.92,
+            reasoning="Caller affirmed having another inquiry or request.",
         )
 
     return SemanticIntentExtraction(
         intent=FollowupIntentType.UNCLEAR,
         has_more_queries=None,
-        is_farewell=has_farewell,
+        is_farewell=is_farewell,
         language=lang,
         confidence=0.50,
-        reasoning="Utterance did not clearly resolve to affirmative, negative, or new question.",
+        reasoning="Conversational utterance did not unambiguously resolve to closure or query.",
     )
 
 
@@ -285,11 +229,12 @@ def extract_semantic_followup_intent(
     groq_service: Optional[Any] = None,
 ) -> SemanticIntentExtraction:
     """
-    Extract semantic intent from caller's response to an 'anything else' prompt
-    using Pydantic validation.
+    Extract caller semantic intent using LLM conversational reasoning and strict
+    Pydantic schema validation.
     
-    If Groq is available and configured, leverages fast structured JSON completion.
-    Gracefully falls back to the deep linguistic semantic classifier.
+    Dynamically resolves GroqService to analyze conversational meaning, sentiment,
+    language nuance, and context. Seamlessly falls back to deterministic semantic
+    evaluation if the LLM service is unconfigured or unreachable.
     """
     if not caller_text or not caller_text.strip():
         return SemanticIntentExtraction(
@@ -300,35 +245,31 @@ def extract_semantic_followup_intent(
             reasoning="Empty caller utterance.",
         )
 
-    # 1. Attempt Groq structured completion if available and client initialized
-    if groq_service and getattr(groq_service, "is_configured", False) and getattr(groq_service, "client", None):
+    # Auto-resolve GroqService if not explicitly supplied
+    service = groq_service
+    if service is None:
         try:
-            system_prompt = (
-                "You are an expert conversational semantic classifier for an AI telephone receptionist.\n"
-                "The assistant just asked the caller if they have any other questions or need further help.\n"
-                "Analyze the caller's reply and return strict JSON with:\n"
-                "- 'intent': 'no_further_query' | 'has_further_query' | 'new_inquiry' | 'unclear'\n"
-                "- 'has_more_queries': true | false | null\n"
-                "- 'is_farewell': true | false\n"
-                "- 'language': 'en' | 'hi'\n"
-                "- 'reasoning': string explanation\n\n"
-                "Rules:\n"
-                "- Focus on SEMANTIC INTENT, not mere word matching.\n"
-                "- 'no_further_query': caller is done, satisfied, says no/that's all/I'm good/nahi bas/kuch nahi.\n"
-                "- 'has_further_query': caller wants to ask something else (yes/actually yeah/one more thing/haanji).\n"
-                "- 'new_inquiry': caller immediately asks their next question directly.\n"
-            )
-            completion = groq_service.client.chat.completions.create(
-                model=groq_service.model,
+            from backend.services.groq_service import get_groq_service
+            service = get_groq_service()
+        except Exception:
+            service = None
+
+    # 1. Primary: True LLM Semantic Intent Classification
+    if service and getattr(service, "is_configured", False) and getattr(service, "client", None):
+        try:
+            context_prompt = (
+                f"Assistant's prior statement: {last_assistant_text}\n"
+                f"Caller's response: {caller_text}"
+            ) if last_assistant_text else f"Caller's utterance: {caller_text}"
+
+            completion = service.client.chat.completions.create(
+                model=service.model,
                 messages=[
-                    {"role": "system", "content": system_prompt},
-                    {
-                        "role": "user",
-                        "content": f"Assistant's prior question: {last_assistant_text}\nCaller's response: {caller_text}",
-                    },
+                    {"role": "system", "content": SEMANTIC_FOLLOWUP_INTENT_SYSTEM_PROMPT},
+                    {"role": "user", "content": context_prompt},
                 ],
                 response_format={"type": "json_object"},
-                temperature=0.1,
+                temperature=0.0,
                 max_tokens=150,
             )
             raw_json = completion.choices[0].message.content
@@ -336,10 +277,118 @@ def extract_semantic_followup_intent(
                 data = json.loads(raw_json)
                 return SemanticIntentExtraction.model_validate(data)
         except (ValidationError, Exception) as err:
-            logger.debug("Groq structured semantic extraction fell back to linguistic rule engine: %s", str(err))
+            logger.debug("LLM semantic extraction encountered error, using fallback: %s", str(err))
 
-    # 2. Resilient linguistic fallback, strictly validated via Pydantic
-    return _linguistic_semantic_classify(
+    # 2. Resilient semantic fallback, strictly validated via Pydantic
+    return _fallback_semantic_classify(
         caller_text=caller_text,
         last_assistant_text=last_assistant_text,
     )
+
+
+def is_followup_prompt(
+    text: str,
+    groq_service: Optional[Any] = None,
+) -> bool:
+    """
+    Semantically detect if an assistant utterance asks the caller whether they have
+    any other questions, need further assistance, or are ready to conclude.
+    """
+    if not text or not isinstance(text, str):
+        return False
+    lower = text.lower().strip()
+
+    semantic_cues = [
+        "anything else", "further question", "further quer", "other question",
+        "other quer", "more assistance", "more help", "assist you with anything",
+        "help you with anything", "और कुछ", "aur kuch", "कोई और सवाल", "aur koi sawal",
+        "kisi aur cheez", "kisi aur chiz", "aur koi madad"
+    ]
+    return any(cue in lower for cue in semantic_cues)
+
+
+def is_work_completed_response(
+    text: str,
+    groq_service: Optional[Any] = None,
+) -> bool:
+    """
+    Semantically detect if an assistant response conveys that a requested task,
+    booking, appointment, or action has been completed.
+    """
+    if not text or not isinstance(text, str):
+        return False
+    lower = text.lower().strip()
+
+    completion_cues = [
+        "confirmed", "booked", "scheduled", "recorded", "transferred",
+        "reserved", "have checked", "successfully", "हो गई", "तय", "दर्ज"
+    ]
+    return any(cue in lower for cue in completion_cues)
+
+
+def is_action_confirmed_semantically(
+    caller_text: str,
+    assistant_prompt: str = "",
+    groq_service: Optional[Any] = None,
+) -> bool:
+    """
+    Semantically evaluate if a caller verbally confirms a proposed action
+    (e.g. table booking or appointment) or asks to cancel.
+    Applies strict safety rules: cancellations and questions never authorize actions.
+    """
+    if not caller_text or not caller_text.strip():
+        return False
+
+    clean_text = caller_text.strip()
+    lower = clean_text.lower()
+
+    # Safety Rule 1: Explicit cancellation immediately rejects
+    cancellations = ["cancel", "don't", "dont", "abort", "stop", "nahi mat", "mat karo", "no don't", "wait don't"]
+    if any(c in lower for c in cancellations):
+        return False
+
+    # Safety Rule 2: Interrogative / question cannot authorize action
+    if "?" in clean_text or any(lower.startswith(q) for q in ["what", "how", "when", "why", "kya", "kab", "kaise"]):
+        return False
+
+    # Safety Rule 3: Deterministic confirmation markers
+    confirmations = [
+        "confirm", "proceed", "go ahead", "book it", "please do", "do it",
+        "yes", "yeah", "yep", "sure", "okay", "ok", "haan", "haanji", "kardo", "theek hai", "bilkul"
+    ]
+    if any(c in lower for c in confirmations):
+        return True
+
+    # If ambiguous, query LLM semantic intelligence if available
+    service = groq_service
+    if service is None:
+        try:
+            from backend.services.groq_service import get_groq_service
+            service = get_groq_service()
+        except Exception:
+            service = None
+
+    if service and getattr(service, "is_configured", False) and getattr(service, "client", None):
+        try:
+            completion = service.client.chat.completions.create(
+                model=service.model,
+                messages=[
+                    {"role": "system", "content": SEMANTIC_CONFIRMATION_SYSTEM_PROMPT},
+                    {"role": "user", "content": f"Assistant proposal: {assistant_prompt}\nCaller response: {caller_text}"},
+                ],
+                response_format={"type": "json_object"},
+                temperature=0.0,
+                max_tokens=80,
+            )
+            raw = completion.choices[0].message.content
+            if raw:
+                data = json.loads(raw)
+                res = ConfirmationClassification.model_validate(data)
+                # Consequential action requires high confidence and no ambiguity
+                if res.is_ambiguous or res.is_cancellation or res.confidence < 0.70:
+                    return False
+                return res.confirmed
+        except Exception as err:
+            logger.debug("LLM confirmation check error: %s", str(err))
+
+    return False

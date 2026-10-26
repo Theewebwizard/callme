@@ -77,6 +77,23 @@ class ToolDefinition(BaseModel):
     is_implemented: bool = True
     execution_mode: ToolExecutionMode = ToolExecutionMode.MOCK
     handler: Optional[Callable[[BaseModel, Dict[str, Any]], ToolExecutionResult]] = None
+    friendly_name: Optional[str] = None
+    confirmation_formatter: Optional[Callable[[Dict[str, Any]], str]] = None
+
+    def format_confirmation_summary(self, args: Dict[str, Any]) -> str:
+        """Generate human-readable summary of action arguments for confirmation dialog."""
+        if self.confirmation_formatter:
+            try:
+                return self.confirmation_formatter(args)
+            except Exception:
+                pass
+        # Resilient default formatter using title-cased field names
+        lines = []
+        for k, v in args.items():
+            if v is not None and v != "":
+                label = k.replace("_", " ").title()
+                lines.append(f"• {label}: {v}")
+        return "\n".join(lines) if lines else "• Action details confirmed."
 
     def is_allowed_for_industry(self, industry: Optional[str]) -> bool:
         """

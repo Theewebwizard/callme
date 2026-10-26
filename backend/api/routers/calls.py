@@ -20,8 +20,7 @@ def get_call_history(
 ) -> CallHistoryResponse:
     """Retrieve audited call records for a business tenant with pagination and outcome filtering."""
     db_service = get_database_service()
-    profile = db_service.get_business_profile(business_id)
-    if not profile:
+    if not db_service.business_exists(business_id):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Business tenant '{business_id}' not found.",

@@ -41,13 +41,18 @@ class DatabaseService:
         self._engine = engine
         self._session_factory = session_factory
         self._profile_cache: Dict[str, Tuple[float, Dict[str, Any]]] = {}
+        self._calls_cache: Dict[str, Tuple[float, Tuple[List[Dict[str, Any]], int]]] = {}
 
     def invalidate_profile_cache(self, business_id: Optional[str] = None) -> None:
-        """Clear cached business profile for real-time consistency."""
+        """Clear cached business profile and calls for real-time consistency."""
         if business_id:
             self._profile_cache.pop(business_id, None)
+            keys_to_del = [k for k in self._calls_cache if k.startswith(f"{business_id}:")]
+            for k in keys_to_del:
+                self._calls_cache.pop(k, None)
         else:
             self._profile_cache.clear()
+            self._calls_cache.clear()
 
     @property
     def session_factory(self) -> sessionmaker:
@@ -93,6 +98,14 @@ class DatabaseService:
             if profile:
                 self._profile_cache[business_id] = (time.time(), profile)
             return profile
+
+    def business_exists(self, business_id: str) -> bool:
+        """Check if business exists, using cached profile or fast primary key lookup."""
+        if business_id in self._profile_cache:
+            return True
+        with session_scope(self.session_factory) as session:
+            repo = BusinessRepository(session)
+            return repo.exists(business_id)
 
     def get_business_by_email(self, email: str) -> Optional[Dict[str, Any]]:
         """Retrieve full profile for a business by owner Gmail address."""
@@ -254,7 +267,14 @@ class DatabaseService:
         limit: int = 100,
         offset: int = 0,
     ) -> tuple[List[Dict[str, Any]], int]:
-        """Retrieve audited call history records and total count in a single database session."""
+        """Retrieve audited call history records and total count with in-memory caching."""
+        cache_key = f"{business_id}:{outcome_filter}:{limit}:{offset}"
+        cached = self._calls_cache.get(cache_key)
+        if cached:
+            ts, val = cached
+            if (time.time() - ts) < 60.0:
+                return val
+
         with session_scope(self.session_factory) as session:
             call_repo = CallRepository(session)
             total = call_repo.count_for_business(business_id=business_id, outcome_filter=outcome_filter)
@@ -264,7 +284,9 @@ class DatabaseService:
                 limit=limit,
                 offset=offset,
             )
-            return calls, total
+            res = (calls, total)
+            self._calls_cache[cache_key] = (time.time(), res)
+            return res
 
     def get_call_history(
         self,
@@ -307,6 +329,7 @@ class DatabaseService:
         duration_formatted: Optional[str] = None,
         is_simulated: bool = True,
         call_id: Optional[str] = None,
+        transcript: Optional[List[Dict[str, Any]]] = None,
     ) -> Dict[str, Any]:
         """Record an inbound call audit log."""
         with session_scope(self.session_factory) as session:
@@ -321,7 +344,12 @@ class DatabaseService:
                 tools_used=tools_used,
                 is_simulated=is_simulated,
                 call_id=call_id,
+                transcript=transcript,
             )
+            # Invalidate calls cache for real-time visibility
+            keys_to_del = [k for k in self._calls_cache if k.startswith(f"{business_id}:")]
+            for k in keys_to_del:
+                self._calls_cache.pop(k, None)
             return call.to_dict()
 
     def get_conversation_messages(
@@ -417,6 +445,21 @@ class DatabaseService:
                 business_id=business_id,
                 action_id=action_id,
                 new_status=new_status,
+                execution_reference=execution_reference,
+            )
+
+    def set_pending_action_reference(
+        self,
+        business_id: str,
+        action_id: str,
+        execution_reference: str,
+    ) -> bool:
+        """Record external execution reference on an executed action record."""
+        with session_scope(self.session_factory) as session:
+            pending_repo = PendingActionRepository(session)
+            return pending_repo.set_execution_reference(
+                business_id=business_id,
+                action_id=action_id,
                 execution_reference=execution_reference,
             )
 

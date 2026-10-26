@@ -117,3 +117,15 @@ def handle_create_table_booking(
             f"Booking reference: {ref_code}. A confirmation will be shared with the guest."
         ),
     )
+
+
+def format_dining_reservation_summary(args: Dict[str, Any]) -> str:
+    """Format human-readable summary of a dining reservation for confirmation."""
+    notes = f"\n• Special Requests: {args['special_requests']}" if args.get("special_requests") else ""
+    return (
+        f"• Action: Dining Table Reservation\n"
+        f"• Guest Contact: {args.get('customer_name')} ({args.get('customer_phone')})\n"
+        f"• Party Size: {args.get('party_size')} guests\n"
+        f"• Reservation Date & Time: {args.get('date')} at {args.get('time')}"
+        f"{notes}"
+    )

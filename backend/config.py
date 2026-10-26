@@ -23,6 +23,15 @@ class Settings(BaseSettings):
     # Groq API Configuration
     GROQ_API_KEY: Optional[str] = None
     GROQ_MODEL: str = "qwen/qwen3.8-27b"
+    LLM_TIMEOUT_SECONDS: float = 25.0
+    LLM_MAX_RETRIES: int = 2
+
+    # Receptionist Agent & Workflow Execution Limits
+    AGENT_MAX_ITERATIONS: int = 5
+    AGENT_MAX_TOOL_ROUNDS: int = 5
+    AGENT_MAX_EXECUTION_SECONDS: float = 60.0
+    CONFIRMATION_EXPIRY_SECONDS: int = 3600
+    LOG_LEVEL: str = "INFO"
 
     # Database Configuration (Supabase PostgreSQL)
     DATABASE_URL: Optional[str] = None

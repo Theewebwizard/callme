@@ -7,33 +7,53 @@ import {
   Clock,
   Wrench,
   CheckCircle,
+  MessageSquare,
+  User,
+  Bot,
+  Sparkles,
 } from 'lucide-react';
 import { api } from '../api';
 
 const OUTCOMES = ['All', 'Booking Completed', 'Inquiry Resolved', 'Transferred to Staff', 'Message Recorded'];
 
-export default function CallHistory({ business }) {
-  const [calls, setCalls] = useState([]);
-  const [loading, setLoading] = useState(false);
+export default function CallHistory({ business, initialCalls = [], onCallsUpdated }) {
+  const [calls, setCalls] = useState(initialCalls);
+  const [loading, setLoading] = useState(initialCalls.length === 0);
   const [selectedOutcome, setSelectedOutcome] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCallDetail, setActiveCallDetail] = useState(null);
 
-  // Fetch all business calls once when business mounts
+  const [error, setError] = useState(null);
+
+  // Sync state if parent passes new calls
+  useEffect(() => {
+    if (initialCalls && initialCalls.length > 0 && calls.length === 0) {
+      setCalls(initialCalls);
+      setLoading(false);
+    }
+  }, [initialCalls]);
+
+  // Fetch or refresh business calls
   useEffect(() => {
     if (business?.id) {
-      loadAllCalls();
+      loadAllCalls(calls.length === 0);
     }
   }, [business?.id]);
 
-  const loadAllCalls = async () => {
-    setLoading(true);
+  const loadAllCalls = async (showSpinner = true) => {
+    if (showSpinner) setLoading(true);
+    setError(null);
     try {
       // Load full call history once so tab switching & searches are instantaneous (< 1ms)
       const res = await api.getCallHistory(business.id, 'All');
-      setCalls(res.calls || []);
+      const loaded = res.calls || [];
+      setCalls(loaded);
+      if (onCallsUpdated) onCallsUpdated(loaded);
     } catch (err) {
       console.error('Failed to load calls:', err);
+      if (calls.length === 0) {
+        setError(err.message || 'Failed to connect to backend server. Please retry.');
+      }
     } finally {
       setLoading(false);
     }
@@ -137,6 +157,17 @@ export default function CallHistory({ business }) {
         {loading ? (
           <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--slate-500)' }}>
             Loading call history records...
+          </div>
+        ) : error ? (
+          <div style={{ padding: '3rem', textAlign: 'center', color: '#be123c' }}>
+            <p style={{ fontWeight: 600, marginBottom: '0.75rem' }}>{error}</p>
+            <button
+              className="btn-primary"
+              style={{ padding: '0.4rem 1rem', fontSize: '0.85rem' }}
+              onClick={loadAllCalls}
+            >
+              🔄 Retry Fetching Records
+            </button>
           </div>
         ) : filteredCalls.length > 0 ? (
           <div className="table-wrapper" style={{ border: 'none' }}>
@@ -254,16 +285,16 @@ export default function CallHistory({ business }) {
         >
           <div
             className="card"
-            style={{ width: '100%', maxWidth: '620px', maxHeight: '90vh', overflowY: 'auto', padding: '1.75rem' }}
+            style={{ width: '100%', maxWidth: '780px', maxHeight: '90vh', overflowY: 'auto', padding: '1.75rem' }}
             onClick={(e) => e.stopPropagation()}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', borderBottom: '1px solid var(--slate-100)', paddingBottom: '0.85rem' }}>
-              <div className="card-title" style={{ fontSize: '1.15rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <PhoneCall size={20} color="var(--sky-600)" /> Call Details & Audit Report
+              <div className="card-title" style={{ fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 800 }}>
+                <PhoneCall size={22} color="var(--sky-600)" /> Call Details & Audit Report
               </div>
               <button
                 className="btn-secondary"
-                style={{ padding: '0.3rem 0.7rem', fontSize: '0.8rem' }}
+                style={{ padding: '0.35rem 0.85rem', fontSize: '0.82rem', fontWeight: 600 }}
                 onClick={() => setActiveCallDetail(null)}
               >
                 ✕ Close
@@ -296,20 +327,25 @@ export default function CallHistory({ business }) {
 
             {/* Executive Call Summary */}
             <div style={{ marginBottom: '1.25rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', marginBottom: '0.4rem' }}>
-                <CheckCircle size={15} color="var(--emerald-600)" />
-                <strong style={{ fontSize: '0.9rem', color: 'var(--slate-800)' }}>Executive Call Summary:</strong>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', marginBottom: '0.45rem' }}>
+                <Sparkles size={16} color="var(--sky-600)" />
+                <strong style={{ fontSize: '0.92rem', color: 'var(--slate-800)' }}>Executive Call Summary:</strong>
               </div>
-              <div style={{ background: 'white', border: '1px solid var(--sky-200)', padding: '1rem', borderRadius: 'var(--radius-md)', fontSize: '0.88rem', lineHeight: 1.6, color: 'var(--slate-800)', boxShadow: '0 2px 6px rgba(14, 165, 233, 0.05)' }}>
+              <div style={{ background: '#f8fafc', border: '1px solid #bae6fd', padding: '1rem 1.25rem', borderRadius: 'var(--radius-md)', fontSize: '0.9rem', lineHeight: 1.6, color: 'var(--slate-800)', boxShadow: '0 2px 8px rgba(14, 165, 233, 0.04)' }}>
                 {activeCallDetail.summary || 'Standard call completed successfully. Full turn transcripts are archived in database.'}
               </div>
             </div>
 
             {/* Tools Interventions */}
-            <div style={{ marginBottom: '0.5rem' }}>
+            <div style={{ marginBottom: '1.25rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', marginBottom: '0.5rem' }}>
-                <Wrench size={15} color="var(--sky-600)" />
-                <strong style={{ fontSize: '0.9rem', color: 'var(--slate-800)' }}>Autonomous Tools Interventions:</strong>
+                <Wrench size={16} color="var(--sky-600)" />
+                <strong style={{ fontSize: '0.92rem', color: 'var(--slate-800)' }}>Autonomous Tools Interventions:</strong>
+                {activeCallDetail.tools_used && activeCallDetail.tools_used.length > 0 && (
+                  <span style={{ fontSize: '0.72rem', background: 'var(--sky-100)', color: 'var(--sky-800)', padding: '2px 8px', borderRadius: 'var(--radius-full)', fontWeight: 700 }}>
+                    {activeCallDetail.tools_used.length} {activeCallDetail.tools_used.length === 1 ? 'Tool' : 'Tools'} Executed
+                  </span>
+                )}
               </div>
               {activeCallDetail.tools_used && activeCallDetail.tools_used.length > 0 ? (
                 <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
@@ -317,22 +353,23 @@ export default function CallHistory({ business }) {
                     <div
                       key={idx}
                       style={{
-                        background: 'var(--sky-50)',
+                        background: 'white',
                         border: '1px solid var(--sky-200)',
-                        padding: '0.5rem 0.85rem',
+                        padding: '0.55rem 0.95rem',
                         borderRadius: 'var(--radius-md)',
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '0.5rem',
-                        fontSize: '0.84rem',
-                        fontWeight: 600,
-                        color: 'var(--sky-800)',
+                        gap: '0.55rem',
+                        fontSize: '0.86rem',
+                        fontWeight: 700,
+                        color: 'var(--sky-900)',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
                       }}
                     >
-                      <span style={{ fontSize: '1rem' }}>🔧</span>
+                      <span style={{ fontSize: '1.05rem' }}>🔧</span>
                       <span>{typeof t === 'string' ? t.replace(/_/g, ' ') : String(t)}</span>
-                      <span style={{ fontSize: '0.72rem', background: 'var(--emerald-100)', color: 'var(--emerald-700)', padding: '2px 6px', borderRadius: '4px', fontWeight: 700 }}>
-                        Executed
+                      <span style={{ fontSize: '0.72rem', background: '#ecfdf5', color: '#047857', border: '1px solid #a7f3d0', padding: '2px 7px', borderRadius: '4px', fontWeight: 700 }}>
+                        ✓ Executed
                       </span>
                     </div>
                   ))}
@@ -340,6 +377,83 @@ export default function CallHistory({ business }) {
               ) : (
                 <div style={{ background: 'var(--slate-50)', border: '1px solid var(--slate-200)', padding: '0.75rem 1rem', borderRadius: 'var(--radius-sm)', fontSize: '0.84rem', color: 'var(--slate-500)', fontStyle: 'italic' }}>
                   No automated external tool invocations were required for this inquiry (handled through direct dialogue & knowledge base).
+                </div>
+              )}
+            </div>
+
+            {/* Detailed Conversation Dialogue (Exact Words Transcript) */}
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.6rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                  <MessageSquare size={16} color="var(--sky-600)" />
+                  <strong style={{ fontSize: '0.92rem', color: 'var(--slate-800)' }}>Detailed Conversation Dialogue (Exact Words Transcript):</strong>
+                </div>
+                {activeCallDetail.transcript && activeCallDetail.transcript.length > 0 && (
+                  <span style={{ fontSize: '0.72rem', color: 'var(--slate-500)', fontWeight: 600 }}>
+                    {activeCallDetail.transcript.length} turns recorded
+                  </span>
+                )}
+              </div>
+
+              {activeCallDetail.transcript && activeCallDetail.transcript.length > 0 ? (
+                <div
+                  style={{
+                    background: '#f8fafc',
+                    border: '1px solid var(--slate-200)',
+                    borderRadius: 'var(--radius-md)',
+                    padding: '1rem',
+                    maxHeight: '360px',
+                    overflowY: 'auto',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.85rem',
+                  }}
+                >
+                  {activeCallDetail.transcript.map((turn, tIdx) => {
+                    const isUser = turn.role === 'user';
+                    return (
+                      <div
+                        key={tIdx}
+                        style={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: isUser ? 'flex-start' : 'flex-start',
+                          paddingLeft: isUser ? '0' : '0.75rem',
+                          borderLeft: isUser ? '3px solid var(--sky-400)' : '3px solid var(--emerald-400)',
+                          padding: '0.4rem 0.75rem',
+                          background: isUser ? 'rgba(240, 249, 255, 0.7)' : 'white',
+                          borderRadius: '4px',
+                          border: isUser ? '1px solid #e0f2fe' : '1px solid #e2e8f0',
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', marginBottom: '0.2rem' }}>
+                          {isUser ? (
+                            <>
+                              <User size={13} color="var(--sky-600)" />
+                              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--sky-800)' }}>Customer / Caller</span>
+                            </>
+                          ) : (
+                            <>
+                              <Bot size={13} color="var(--emerald-600)" />
+                              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--emerald-800)' }}>AI Receptionist Host</span>
+                            </>
+                          )}
+                          {turn.timestamp && (
+                            <span style={{ fontSize: '0.68rem', color: 'var(--slate-400)', marginLeft: 'auto' }}>
+                              {turn.timestamp}
+                            </span>
+                          )}
+                        </div>
+                        <div style={{ fontSize: '0.86rem', color: 'var(--slate-800)', lineHeight: 1.5, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                          {turn.content}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div style={{ background: 'var(--slate-50)', border: '1px solid var(--slate-200)', padding: '1rem', borderRadius: 'var(--radius-sm)', fontSize: '0.84rem', color: 'var(--slate-500)', fontStyle: 'italic', textAlign: 'center' }}>
+                  No turn-by-turn dialogue messages were recorded for this session.
                 </div>
               )}
             </div>
