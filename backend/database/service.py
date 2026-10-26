@@ -110,28 +110,28 @@ class DatabaseService:
             repo = BusinessRepository(session)
             target = email_or_identifier.strip().lower()
 
-            from sqlalchemy.orm import selectinload
+            from sqlalchemy.orm import joinedload
             from backend.database.models import Business
             stmt = (
                 select(Business)
-                .options(selectinload(Business.faqs), selectinload(Business.tool_configs))
+                .options(joinedload(Business.faqs), joinedload(Business.tool_configs))
                 .where(func.lower(Business.owner_email) == target)
                 .limit(1)
             )
-            biz = session.scalars(stmt).first()
+            biz = session.scalars(stmt).unique().first()
 
             # 2. Look up by business ID or Name if email lookup misses
             if not biz:
                 id_stmt = (
                     select(Business)
-                    .options(selectinload(Business.faqs), selectinload(Business.tool_configs))
+                    .options(joinedload(Business.faqs), joinedload(Business.tool_configs))
                     .where(
                         (func.lower(Business.id) == target)
                         | (func.lower(Business.name) == target)
                     )
                     .limit(1)
                 )
-                biz = session.scalars(id_stmt).first()
+                biz = session.scalars(id_stmt).unique().first()
 
             if not biz:
                 return None
@@ -141,8 +141,8 @@ class DatabaseService:
                 return None
 
             base_dict = biz.to_dict()
-            base_dict["faqs"] = [faq.to_dict() for faq in biz.faqs]
-            base_dict["enabled_tools"] = {tc.tool_id: tc.is_enabled for tc in biz.tool_configs}
+            base_dict["faqs"] = [faq.to_dict() for faq in (biz.faqs or [])]
+            base_dict["enabled_tools"] = {tc.tool_id: tc.is_enabled for tc in (biz.tool_configs or [])}
             base_dict["stats"] = {
                 "active_status": "Active",
                 "total_calls": 0,
