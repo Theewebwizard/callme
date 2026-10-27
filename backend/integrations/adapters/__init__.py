@@ -31,6 +31,11 @@ from backend.integrations.adapters.builtin_booking_adapter import (
 )
 from backend.integrations.adapters.freshdesk_support_adapter import FreshdeskSupportAdapter
 from backend.integrations.adapters.razorpay_adapter import RazorpayAdapter
+from backend.integrations.adapters.builtin_support_adapters import (
+    BuiltinKnowledgeBaseAdapter,
+    BuiltinMessagingAdapter,
+    SimulatedEscalationAdapter,
+)
 
 __all__ = [
     "BuiltinBookingAdapter",
@@ -42,6 +47,9 @@ __all__ = [
     "ServiceItemConfig",
     "BuiltinDiningAdapter",
     "BuiltinClinicAdapter",
+    "BuiltinKnowledgeBaseAdapter",
+    "BuiltinMessagingAdapter",
+    "SimulatedEscalationAdapter",
     "GoogleCalendarAdapter",
     "OutlookCalendarAdapter",
     "OpenTableAdapter",

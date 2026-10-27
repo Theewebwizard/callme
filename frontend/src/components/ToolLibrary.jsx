@@ -699,8 +699,11 @@ export default function ToolLibrary({ business }) {
                   value={newResourceType}
                   onChange={(e) => setNewResourceType(e.target.value)}
                 >
-                  <option value="table">Dining Table</option>
-                  <option value="room">Clinical Suite / Room</option>
+                  <option value="table">Dining Table (Restaurant)</option>
+                  <option value="room">Hotel Room / Suite</option>
+                  <option value="clinic_room">Clinical Suite / Consultation Room</option>
+                  <option value="practitioner">Practitioner / Doctor</option>
+                  <option value="service_staff">Service Staff / Stylist</option>
                   <option value="desk">Service Desk</option>
                 </select>
               </div>

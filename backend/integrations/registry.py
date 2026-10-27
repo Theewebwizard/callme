@@ -34,6 +34,9 @@ from backend.integrations.adapters import (
     FreshdeskSupportAdapter,
     RazorpayAdapter,
     BuiltinBookingAdapter,
+    BuiltinKnowledgeBaseAdapter,
+    BuiltinMessagingAdapter,
+    SimulatedEscalationAdapter,
 )
 
 logger = logging.getLogger(__name__)
@@ -70,6 +73,9 @@ class IntegrationRegistry:
             GmailAdapter,
             FreshdeskSupportAdapter,
             BuiltinBookingAdapter,
+            BuiltinKnowledgeBaseAdapter,
+            BuiltinMessagingAdapter,
+            SimulatedEscalationAdapter,
         ]
 
         for adapter_cls in adapters:

@@ -227,6 +227,13 @@ class DatabaseService:
             created = faq_repo.replace_all_for_business(business_id, faqs)
             return [f.to_dict() for f in created]
 
+    def list_faqs(self, business_id: str) -> List[Dict[str, Any]]:
+        """List all FAQs configured for a business tenant."""
+        with session_scope(self.session_factory) as session:
+            faq_repo = FAQRepository(session)
+            faqs = faq_repo.list_for_business(business_id)
+            return [f.to_dict() for f in faqs]
+
     def set_tool_status(
         self,
         business_id: str,

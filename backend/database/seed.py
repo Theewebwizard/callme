@@ -1,21 +1,27 @@
 """
-Idempotent database seeder for initial sample tenants.
-Seeds 'biz_spice_garden' and 'biz_apex_dental' with profile data, FAQs, tool configurations,
-and representative call records without duplicating records or destroying existing user edits.
+Idempotent database seeder for initial sample tenants and operational capabilities.
+Seeds sample businesses across hospitality, healthcare, hotel resort, and service/wellness domains:
+- 'biz_spice_garden' (Fine Dining Restaurant)
+- 'biz_apex_dental' (Healthcare Clinic)
+- 'biz_grand_hotel' (Luxury Resort & Hotel)
+- 'biz_glow_salon' (Aesthetic Lounge & Spa)
+Ensures every tenant has complete profile data, FAQs, reservable resource inventory,
+verified tool capabilities with ready status and valid prerequisite configurations,
+and representative call audit telemetry without destroying existing user edits.
 """
 
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 import logging
 from sqlalchemy.orm import Session
 from sqlalchemy import Engine
 
 from backend.database.engine import (
     get_engine,
-    get_session_factory,
     session_scope,
     init_db_schema,
     DatabaseConfigurationError,
 )
+from backend.database.models import utcnow
 from backend.database.repositories import (
     BusinessRepository,
     FAQRepository,
@@ -28,6 +34,95 @@ from backend.database.seed_data import INITIAL_BUSINESSES, INITIAL_TOOLS, MOCK_C
 
 logger = logging.getLogger(__name__)
 
+# Canonical resource definitions per tenant ensuring all booking tools have authoritative inventory
+DOMAIN_RESERVABLE_RESOURCES: Dict[str, List[Dict[str, Any]]] = {
+    "biz_spice_garden": [
+        {"name": "Table 1 (Window)", "capacity": 2, "min_party_size": 1, "max_party_size": 2, "resource_type": "table", "section": "Window"},
+        {"name": "Table 2 (Main Hall)", "capacity": 4, "min_party_size": 2, "max_party_size": 4, "resource_type": "table", "section": "Main Dining"},
+        {"name": "Table 3 (Garden Patio)", "capacity": 4, "min_party_size": 2, "max_party_size": 4, "resource_type": "table", "section": "Garden Patio"},
+        {"name": "Table 4 (Family Booth)", "capacity": 6, "min_party_size": 4, "max_party_size": 8, "resource_type": "table", "section": "Family Section"},
+        {"name": "Table 5 (VIP Dining Room)", "capacity": 10, "min_party_size": 6, "max_party_size": 12, "resource_type": "table", "section": "VIP Lounge"},
+    ],
+    "biz_apex_dental": [
+        {"name": "Dental Suite 1 (Consultation)", "capacity": 1, "min_party_size": 1, "max_party_size": 2, "resource_type": "room", "section": "1st Floor"},
+        {"name": "Dental Suite 2 (Procedures & Scaling)", "capacity": 1, "min_party_size": 1, "max_party_size": 2, "resource_type": "room", "section": "1st Floor"},
+        {"name": "Dental Surgery Suite (Orthodontics & Implants)", "capacity": 1, "min_party_size": 1, "max_party_size": 2, "resource_type": "room", "section": "2nd Floor"},
+        {"name": "Dr. Sharma (Senior Orthodontist)", "capacity": 1, "min_party_size": 1, "max_party_size": 1, "resource_type": "practitioner", "section": "Specialists"},
+        {"name": "Dr. Ananya Rao (Pediatric Dental Specialist)", "capacity": 1, "min_party_size": 1, "max_party_size": 1, "resource_type": "practitioner", "section": "Specialists"},
+    ],
+    "biz_grand_hotel": [
+        {"name": "Room 101 - Deluxe King (Garden View)", "capacity": 2, "min_party_size": 1, "max_party_size": 3, "resource_type": "room", "section": "East Wing"},
+        {"name": "Room 102 - Deluxe Twin (Garden View)", "capacity": 2, "min_party_size": 1, "max_party_size": 3, "resource_type": "room", "section": "East Wing"},
+        {"name": "Suite 201 - Executive Oceanfront Suite", "capacity": 4, "min_party_size": 2, "max_party_size": 4, "resource_type": "room", "section": "Ocean Wing"},
+        {"name": "Suite 202 - Azure Penthouse Suite", "capacity": 4, "min_party_size": 2, "max_party_size": 6, "resource_type": "room", "section": "Ocean Wing"},
+        {"name": "Villa 1 - Private Pool Beach Villa", "capacity": 6, "min_party_size": 2, "max_party_size": 8, "resource_type": "room", "section": "Beachfront"},
+        {"name": "Azure Pavilion - Table 1 (Ocean View)", "capacity": 4, "min_party_size": 2, "max_party_size": 4, "resource_type": "table", "section": "Azure Pavilion"},
+        {"name": "Azure Pavilion - Table 2 (Terrace)", "capacity": 6, "min_party_size": 4, "max_party_size": 8, "resource_type": "table", "section": "Azure Pavilion"},
+    ],
+    "biz_glow_salon": [
+        {"name": "Styling Station 1 - Master Hair Artist", "capacity": 1, "min_party_size": 1, "max_party_size": 1, "resource_type": "room", "section": "Salon Floor"},
+        {"name": "Styling Station 2 - Senior Colorist", "capacity": 1, "min_party_size": 1, "max_party_size": 1, "resource_type": "room", "section": "Salon Floor"},
+        {"name": "Therapy Suite A - Aromatherapy & Deep Tissue", "capacity": 1, "min_party_size": 1, "max_party_size": 2, "resource_type": "room", "section": "Wellness Wing"},
+        {"name": "Therapy Suite B - Facial & Aesthetic Skincare", "capacity": 1, "min_party_size": 1, "max_party_size": 2, "resource_type": "room", "section": "Wellness Wing"},
+        {"name": "Maya Patel (Master Stylist & Aesthetician)", "capacity": 1, "min_party_size": 1, "max_party_size": 1, "resource_type": "practitioner", "section": "Therapists"},
+    ],
+}
+
+
+def _get_default_tool_metadata(tool_id: str, business_data: Dict[str, Any]) -> Dict[str, Any]:
+    """Return canonical option ID and non-secret configuration meeting all tool prerequisites."""
+    tz = business_data.get("timezone", "Asia/Kolkata")
+    phone = business_data.get("phone_number", "+91 80 4123 5678")
+    email = business_data.get("owner_email", "manager@example.com")
+
+    if tool_id in ("check_table_availability", "create_table_booking"):
+        return {
+            "selected_option_id": "builtin_dining",
+            "configuration": {
+                "reservation_duration_minutes": 90,
+                "buffer_minutes": 15,
+                "advance_booking_days": 30,
+                "timezone": tz,
+            },
+        }
+    elif tool_id in ("check_appointment_availability", "create_appointment"):
+        return {
+            "selected_option_id": "builtin_clinic",
+            "configuration": {
+                "slot_duration_minutes": 30,
+                "buffer_minutes": 10,
+                "advance_booking_days": 30,
+                "timezone": tz,
+            },
+        }
+    elif tool_id == "answer_faq":
+        return {
+            "selected_option_id": "builtin_knowledge_base",
+            "configuration": {
+                "strict_business_hours_only": False,
+            },
+        }
+    elif tool_id == "take_message":
+        return {
+            "selected_option_id": "builtin_messaging",
+            "configuration": {
+                "urgent_notification_email": email,
+                "urgent_notification_phone": phone,
+            },
+        }
+    elif tool_id == "transfer_call":
+        return {
+            "selected_option_id": "simulated_escalation",
+            "configuration": {
+                "destination_number": phone,
+                "transfer_timeout_seconds": 30,
+            },
+        }
+    return {
+        "selected_option_id": None,
+        "configuration": {},
+    }
+
 
 def seed_database(
     engine: Optional[Engine] = None,
@@ -36,13 +131,14 @@ def seed_database(
 ) -> Dict[str, Any]:
     """
     Idempotent seeding operation for initial platform businesses.
-    Ensures 'biz_spice_garden' and 'biz_apex_dental' exist with complete profiles,
-    canonical tool enablement, FAQs, and simulated call audit logs.
+    Ensures businesses exist with complete profiles, authoritative resources,
+    canonical tool configurations with fulfilled prerequisites, FAQs, and simulated call audit logs.
     """
     stats = {
         "businesses_created": 0,
         "businesses_existing": 0,
         "faqs_created": 0,
+        "resources_created": 0,
         "tools_configured": 0,
         "calls_seeded": 0,
     }
@@ -53,6 +149,7 @@ def seed_database(
         tool_repo = ToolConfigRepository(sess)
         call_repo = CallRepository(sess)
         conv_repo = ConversationRepository(sess)
+        res_repo = ResourceRepository(sess)
 
         for b_id, b_data in INITIAL_BUSINESSES.items():
             biz = biz_repo.get(b_id)
@@ -60,7 +157,7 @@ def seed_database(
                 # 1. Create Business
                 biz = biz_repo.create(b_data)
                 stats["businesses_created"] += 1
-                logger.info(f"Seeded new business: {b_id} ({b_data['name']})")
+                logger.info("Seeded new business: %s (%s)", b_id, b_data["name"])
 
                 # 2. Seed FAQs
                 for faq_item in b_data.get("faqs", []):
@@ -72,12 +169,88 @@ def seed_database(
                     )
                     stats["faqs_created"] += 1
 
-                # 3. Seed Tool Statuses
-                for t_id, enabled in b_data.get("enabled_tools", {}).items():
-                    tool_repo.set_tool_status(b_id, t_id, enabled)
-                    stats["tools_configured"] += 1
+                # 3. Seed Initial Greeting Message in Conversation
+                conv_repo.add_message(
+                    business_id=b_id,
+                    role="assistant",
+                    content=b_data["greeting_message"],
+                    is_simulated=True,
+                )
 
-                # 4. Seed Mock Call Records
+            else:
+                stats["businesses_existing"] += 1
+                logger.info("Business already exists, ensuring complete configuration: %s", b_id)
+
+                if force_update_profile:
+                    biz_repo.update(b_id, b_data)
+                else:
+                    updates = {}
+                    if not biz.password_hash and b_data.get("password_hash"):
+                        updates["password_hash"] = b_data["password_hash"]
+                    if not biz.owner_email and b_data.get("owner_email"):
+                        updates["owner_email"] = b_data["owner_email"]
+                    if updates:
+                        biz_repo.update(b_id, updates)
+
+                # Ensure FAQs exist if missing
+                existing_faqs = faq_repo.list_for_business(b_id)
+                if not existing_faqs:
+                    for faq_item in b_data.get("faqs", []):
+                        faq_repo.create(
+                            business_id=b_id,
+                            question=faq_item["question"],
+                            answer=faq_item["answer"],
+                            category="General",
+                        )
+                        stats["faqs_created"] += 1
+
+            # 4. Seed Reservable Resources for this business if not yet seeded
+            existing_resources = res_repo.list_resources(b_id)
+            if not existing_resources and b_id in DOMAIN_RESERVABLE_RESOURCES:
+                for r in DOMAIN_RESERVABLE_RESOURCES[b_id]:
+                    res_repo.create_resource(
+                        business_id=b_id,
+                        name=r["name"],
+                        capacity=r.get("capacity", 4),
+                        min_party_size=r.get("min_party_size", 1),
+                        max_party_size=r.get("max_party_size", 4),
+                        resource_type=r.get("resource_type", "table"),
+                        section=r.get("section"),
+                    )
+                    stats["resources_created"] += 1
+                logger.info("Seeded %d reservable resources for tenant %s", len(DOMAIN_RESERVABLE_RESOURCES[b_id]), b_id)
+
+            # 5. Seed / Update Tool Capabilities with Prerequisites Fulfilled
+            enabled_map = b_data.get("enabled_tools", {})
+            now = utcnow()
+            for t_id in INITIAL_TOOLS:
+                is_enabled = bool(enabled_map.get(t_id, False))
+                meta = _get_default_tool_metadata(t_id, b_data)
+
+                if is_enabled:
+                    tool_repo.set_tool_capability(
+                        business_id=b_id,
+                        tool_id=t_id,
+                        is_enabled=True,
+                        status="ready",
+                        selected_option_id=meta["selected_option_id"],
+                        configuration=meta["configuration"],
+                        last_validated_at=now,
+                    )
+                else:
+                    tool_repo.set_tool_capability(
+                        business_id=b_id,
+                        tool_id=t_id,
+                        is_enabled=False,
+                        status="not_configured",
+                        selected_option_id=meta["selected_option_id"],
+                        configuration=meta["configuration"],
+                    )
+                stats["tools_configured"] += 1
+
+            # 6. Seed Mock Call Records if none exist
+            existing_calls = call_repo.list_for_business(b_id, limit=1)
+            if not existing_calls:
                 calls = MOCK_CALL_HISTORY.get(b_id, [])
                 for c in calls:
                     call_repo.log_call(
@@ -93,75 +266,10 @@ def seed_database(
                     )
                     stats["calls_seeded"] += 1
 
-                # 5. Seed Initial Greeting Message in Conversation
-                conv_repo.add_message(
-                    business_id=b_id,
-                    role="assistant",
-                    content=b_data["greeting_message"],
-                    is_simulated=True,
-                )
-
-            else:
-                stats["businesses_existing"] += 1
-                logger.info(f"Business already exists, preserving user edits: {b_id}")
-
-                if force_update_profile:
-                    biz_repo.update(b_id, b_data)
-                else:
-                    # If existing business has no password_hash or owner_email, backfill them safely
-                    updates = {}
-                    if not biz.password_hash and b_data.get("password_hash"):
-                        updates["password_hash"] = b_data["password_hash"]
-                    if not biz.owner_email and b_data.get("owner_email"):
-                        updates["owner_email"] = b_data["owner_email"]
-                    if updates:
-                        biz_repo.update(b_id, updates)
-
-                # Ensure any newly introduced canonical tools are configured if missing
-                current_tools = tool_repo.get_tool_statuses(b_id)
-                for t_id in INITIAL_TOOLS:
-                    if t_id not in current_tools:
-                        default_enabled = b_data.get("enabled_tools", {}).get(t_id, False)
-                        tool_repo.set_tool_status(b_id, t_id, default_enabled)
-                        stats["tools_configured"] += 1
-
-                # If no call history records exist for this business, seed initial calls
-                existing_calls = call_repo.list_for_business(b_id, limit=1)
-                if not existing_calls:
-                    calls = MOCK_CALL_HISTORY.get(b_id, [])
-                    for c in calls:
-                        call_repo.log_call(
-                            business_id=b_id,
-                            caller_number=c["caller_number"],
-                            duration_seconds=120,
-                            duration_formatted=c.get("duration", "2m 00s"),
-                            outcome=c["outcome"],
-                            summary=c["summary"],
-                            tools_used=c.get("tools_used", []),
-                            is_simulated=True,
-                            call_id=c["id"],
-                        )
-                        stats["calls_seeded"] += 1
-
-        # Seed Reservable Resources for Built-in Booking if not yet seeded
-        res_repo = ResourceRepository(sess)
-        for b_id in INITIAL_BUSINESSES:
-            existing_res = res_repo.list_resources(b_id)
-            if not existing_res:
-                if b_id == "biz_spice_garden":
-                    res_repo.create_resource(b_id, name="Table 1 (Window)", capacity=2, min_party_size=1, max_party_size=2, section="Window")
-                    res_repo.create_resource(b_id, name="Table 2 (Main Hall)", capacity=4, min_party_size=2, max_party_size=4, section="Main Dining")
-                    res_repo.create_resource(b_id, name="Table 3 (Patio)", capacity=4, min_party_size=2, max_party_size=4, section="Garden Patio")
-                    res_repo.create_resource(b_id, name="Table 4 (Family Booth)", capacity=6, min_party_size=4, max_party_size=8, section="Family Section")
-                elif b_id == "biz_apex_dental":
-                    res_repo.create_resource(b_id, name="Dental Suite 1 (Consultation)", capacity=1, min_party_size=1, max_party_size=2, resource_type="room", section="1st Floor")
-                    res_repo.create_resource(b_id, name="Dental Suite 2 (Procedures)", capacity=1, min_party_size=1, max_party_size=2, resource_type="room", section="1st Floor")
-
     if session is not None:
         _execute_seed(session)
     else:
         eng = engine or get_engine()
-        # Ensure schema tables exist before seeding
         init_db_schema(eng)
         with session_scope(engine=eng) as sess:
             _execute_seed(sess)

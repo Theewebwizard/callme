@@ -99,6 +99,9 @@ INDUSTRY_NORMALIZATION_MAP: Dict[str, str] = {
     "eatery": "restaurant",
     "pub": "restaurant",
     "hospitality": "restaurant",
+    "hotel": "restaurant",
+    "resort": "restaurant",
+    "hotel & resort": "restaurant",
     "catering": "restaurant",
     "bakery": "restaurant",
 
@@ -116,6 +119,8 @@ INDUSTRY_NORMALIZATION_MAP: Dict[str, str] = {
     "physiotherapy": "clinic",
 
     # Professional & Personal Services -> "services"
+    "service": "services",
+    "services": "services",
     "salon": "services",
     "spa": "services",
     "salon & spa": "services",

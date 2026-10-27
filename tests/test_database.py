@@ -333,9 +333,12 @@ def test_pending_action_lifecycle_and_duplicate_protection(test_session_factory)
 
 def test_seed_database_idempotency(test_engine):
     """Verify that re-running seed_database creates zero duplicates and preserves existing edits."""
+    from backend.database.seed_data import INITIAL_BUSINESSES
+    expected_count = len(INITIAL_BUSINESSES)
+
     # First seed
     res1 = seed_database(engine=test_engine)
-    assert res1["businesses_created"] == 2
+    assert res1["businesses_created"] == expected_count
     assert res1["faqs_created"] >= 6
     assert res1["tools_configured"] >= 14
     assert res1["calls_seeded"] >= 10
@@ -343,7 +346,7 @@ def test_seed_database_idempotency(test_engine):
     # Second seed must be a no-op for creation
     res2 = seed_database(engine=test_engine)
     assert res2["businesses_created"] == 0
-    assert res2["businesses_existing"] == 2
+    assert res2["businesses_existing"] == expected_count
     assert res2["faqs_created"] == 0
     assert res2["calls_seeded"] == 0
 

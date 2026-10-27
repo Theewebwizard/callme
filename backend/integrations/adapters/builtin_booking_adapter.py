@@ -413,7 +413,8 @@ class BuiltinBookingAdapter(ReservationAdapterInterface):
 
     def connect(self, credentials: Dict[str, Any]) -> ReadinessCheckResult:
         """Built-in adapter uses local transactional database. Verifies DB connectivity."""
-        db_ok = check_database_connection()
+        conn_res = check_database_connection()
+        db_ok = bool(conn_res.get("connected", False)) if isinstance(conn_res, dict) else bool(conn_res)
         return ReadinessCheckResult(
             check_id="builtin_database_connection",
             name="Database Connection",
@@ -424,7 +425,9 @@ class BuiltinBookingAdapter(ReservationAdapterInterface):
 
     def test_connection(self) -> ReadinessCheckResult:
         """Probe local database and verify tenant has registered reservable resources."""
-        if not check_database_connection():
+        conn_res = check_database_connection()
+        db_ok = bool(conn_res.get("connected", False)) if isinstance(conn_res, dict) else bool(conn_res)
+        if not db_ok:
             return ReadinessCheckResult(
                 check_id="builtin_test_probe",
                 name="Authoritative Inventory Probe",
@@ -442,6 +445,57 @@ class BuiltinBookingAdapter(ReservationAdapterInterface):
             passed=True,
             details=f"Database operational. Tenant has {count} active reservable resource(s).",
             severity="critical",
+        )
+
+    def assess_readiness(self, db_service: Any = None) -> ReadinessReport:
+        """Run all mandatory readiness checks for built-in booking engine."""
+        checks: List[ReadinessCheckResult] = []
+        svc = db_service or get_database_service()
+
+        # 1. DB connection check
+        conn_res = check_database_connection()
+        db_ok = bool(conn_res.get("connected", False)) if isinstance(conn_res, dict) else bool(conn_res)
+        checks.append(
+            ReadinessCheckResult(
+                check_id="db_connection",
+                name="Database Connection",
+                passed=db_ok,
+                details="Connected to transactional reservation store" if db_ok else "Database connection is offline",
+                severity="critical",
+            )
+        )
+
+        # 2. Config validation
+        checks.append(self.validate_configuration(self.configuration))
+
+        # 3. Reservable resources inventory check
+        try:
+            resources = svc.get_resources(self.business_id, active_only=True)
+            has_resources = len(resources) > 0
+        except Exception:
+            resources = []
+            has_resources = False
+
+        checks.append(
+            ReadinessCheckResult(
+                check_id="resource_inventory",
+                name="Authoritative Resource Inventory",
+                passed=has_resources,
+                details=f"Found {len(resources)} active reservable resource(s) configured" if has_resources else "No reservable resources configured for this business",
+                severity="critical",
+            )
+        )
+
+        all_critical_passed = all(c.passed for c in checks if c.severity == "critical")
+        status = CapabilityStatus.READY if all_critical_passed else (CapabilityStatus.NEEDS_INPUT if not has_resources else CapabilityStatus.FAILED)
+        missing_reqs = [c.name for c in checks if not c.passed]
+
+        return ReadinessReport(
+            is_ready=all_critical_passed,
+            status=status,
+            checks=checks,
+            missing_requirements=missing_reqs,
+            checked_at=datetime.now(timezone.utc).isoformat(),
         )
 
     def discover_resources(self, resource_type: str = "") -> List[DiscoveredResource]:

@@ -180,9 +180,19 @@ def resolve_tool_adapter(
             credentials=credentials,
         )
 
-    if tool_id == "transfer_call":
+    if tool_id == "answer_faq":
         return registry.create_adapter(
-            provider_id="exotel",
+            provider_id="builtin_knowledge_base",
+            business_id=business_id,
+            tool_id=tool_id,
+            configuration=configuration,
+            credentials=credentials,
+        )
+
+    if tool_id == "transfer_call":
+        prov = "exotel" if credentials.get("account_sid") else "simulated_escalation"
+        return registry.create_adapter(
+            provider_id=prov,
             business_id=business_id,
             tool_id=tool_id,
             configuration=configuration,
@@ -190,8 +200,9 @@ def resolve_tool_adapter(
         )
 
     if tool_id == "take_message":
+        prov = "twilio" if credentials.get("account_sid") else "builtin_messaging"
         return registry.create_adapter(
-            provider_id="twilio",
+            provider_id=prov,
             business_id=business_id,
             tool_id=tool_id,
             configuration=configuration,
