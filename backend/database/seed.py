@@ -22,6 +22,7 @@ from backend.database.repositories import (
     ToolConfigRepository,
     CallRepository,
     ConversationRepository,
+    ResourceRepository,
 )
 from backend.database.seed_data import INITIAL_BUSINESSES, INITIAL_TOOLS, MOCK_CALL_HISTORY
 
@@ -99,6 +100,7 @@ def seed_database(
                     content=b_data["greeting_message"],
                     is_simulated=True,
                 )
+
             else:
                 stats["businesses_existing"] += 1
                 logger.info(f"Business already exists, preserving user edits: {b_id}")
@@ -140,6 +142,20 @@ def seed_database(
                             call_id=c["id"],
                         )
                         stats["calls_seeded"] += 1
+
+        # Seed Reservable Resources for Built-in Booking if not yet seeded
+        res_repo = ResourceRepository(sess)
+        for b_id in INITIAL_BUSINESSES:
+            existing_res = res_repo.list_resources(b_id)
+            if not existing_res:
+                if b_id == "biz_spice_garden":
+                    res_repo.create_resource(b_id, name="Table 1 (Window)", capacity=2, min_party_size=1, max_party_size=2, section="Window")
+                    res_repo.create_resource(b_id, name="Table 2 (Main Hall)", capacity=4, min_party_size=2, max_party_size=4, section="Main Dining")
+                    res_repo.create_resource(b_id, name="Table 3 (Patio)", capacity=4, min_party_size=2, max_party_size=4, section="Garden Patio")
+                    res_repo.create_resource(b_id, name="Table 4 (Family Booth)", capacity=6, min_party_size=4, max_party_size=8, section="Family Section")
+                elif b_id == "biz_apex_dental":
+                    res_repo.create_resource(b_id, name="Dental Suite 1 (Consultation)", capacity=1, min_party_size=1, max_party_size=2, resource_type="room", section="1st Floor")
+                    res_repo.create_resource(b_id, name="Dental Suite 2 (Procedures)", capacity=1, min_party_size=1, max_party_size=2, resource_type="room", section="1st Floor")
 
     if session is not None:
         _execute_seed(session)

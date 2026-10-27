@@ -25,6 +25,9 @@ from backend.database.repositories import (
     PendingActionRepository,
     VoiceSessionRepository,
     ToolDemandRepository,
+    ResourceRepository,
+    ReservationRepository,
+    ReservationConflictError,
 )
 
 logger = logging.getLogger(__name__)
@@ -156,6 +159,7 @@ class DatabaseService:
             base_dict = biz.to_dict()
             base_dict["faqs"] = [faq.to_dict() for faq in (biz.faqs or [])]
             base_dict["enabled_tools"] = {tc.tool_id: tc.is_enabled for tc in (biz.tool_configs or [])}
+            base_dict["tool_configs"] = {tc.tool_id: tc.to_dict() for tc in (biz.tool_configs or [])}
             base_dict["stats"] = {
                 "active_status": "Active",
                 "total_calls": 0,
@@ -234,6 +238,490 @@ class DatabaseService:
         with session_scope(self.session_factory) as session:
             tool_repo = ToolConfigRepository(session)
             tool_repo.set_tool_status(business_id, tool_id, is_enabled)
+
+    def get_tool_config(self, business_id: str, tool_id: str) -> Optional[Dict[str, Any]]:
+        """Fetch detailed tool capability configuration for a tenant."""
+        with session_scope(self.session_factory) as session:
+            tool_repo = ToolConfigRepository(session)
+            cfg = tool_repo.get_tool_config(business_id, tool_id)
+            return cfg.to_dict() if cfg else None
+
+    def list_tool_configs(self, business_id: str) -> List[Dict[str, Any]]:
+        """Fetch all tool capability configurations for a tenant."""
+        with session_scope(self.session_factory) as session:
+            tool_repo = ToolConfigRepository(session)
+            configs = tool_repo.list_tool_configs(business_id)
+            return [c.to_dict() for c in configs]
+
+    def set_tool_capability(
+        self,
+        business_id: str,
+        tool_id: str,
+        is_enabled: Optional[bool] = None,
+        status: Optional[str] = None,
+        selected_option_id: Optional[str] = None,
+        configuration: Optional[Dict[str, Any]] = None,
+        readiness_details: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        """Update tool capability state, configuration, and readiness verification."""
+        self.invalidate_profile_cache(business_id)
+        with session_scope(self.session_factory) as session:
+            tool_repo = ToolConfigRepository(session)
+            cfg = tool_repo.set_tool_capability(
+                business_id=business_id,
+                tool_id=tool_id,
+                is_enabled=is_enabled,
+                status=status,
+                selected_option_id=selected_option_id,
+                configuration=configuration,
+                readiness_details=readiness_details,
+            )
+            return cfg.to_dict()
+
+    # ---------------------------------------------------------------------------
+    # Capability Setup Wizard Sessions & Credentials
+    # ---------------------------------------------------------------------------
+
+    def save_setup_session(
+        self,
+        business_id: str,
+        tool_id: str,
+        session_id: Optional[str] = None,
+        selected_option_id: Optional[str] = None,
+        current_step: str = "select_option",
+        step_data: Optional[Dict[str, Any]] = None,
+        status: str = "needs_input",
+        validation_errors: Optional[List[Dict[str, Any]]] = None,
+    ) -> Dict[str, Any]:
+        """Create or update a resumable capability setup session."""
+        with session_scope(self.session_factory) as session:
+            tool_repo = ToolConfigRepository(session)
+            sess = tool_repo.save_setup_session(
+                business_id=business_id,
+                tool_id=tool_id,
+                session_id=session_id,
+                selected_option_id=selected_option_id,
+                current_step=current_step,
+                step_data=step_data,
+                status=status,
+                validation_errors=validation_errors,
+            )
+            return sess.to_dict()
+
+    def get_setup_session(self, session_id: str, business_id: Optional[str] = None) -> Optional[Dict[str, Any]]:
+        """Fetch setup session by ID."""
+        with session_scope(self.session_factory) as session:
+            tool_repo = ToolConfigRepository(session)
+            sess = tool_repo.get_setup_session(session_id, business_id=business_id)
+            return sess.to_dict() if sess else None
+
+    def get_setup_session_by_tool(self, business_id: str, tool_id: str) -> Optional[Dict[str, Any]]:
+        """Fetch latest setup session for a tool."""
+        with session_scope(self.session_factory) as session:
+            tool_repo = ToolConfigRepository(session)
+            sess = tool_repo.get_setup_session_by_tool(business_id, tool_id)
+            return sess.to_dict() if sess else None
+
+    def delete_setup_session(self, session_id: str, business_id: Optional[str] = None) -> bool:
+        """Purge completed setup session."""
+        with session_scope(self.session_factory) as session:
+            tool_repo = ToolConfigRepository(session)
+            return tool_repo.delete_setup_session(session_id, business_id=business_id)
+
+    def save_credential(
+        self,
+        business_id: str,
+        tool_id: str,
+        option_id: Optional[str] = None,
+        encrypted_secrets: str = "",
+        key_fingerprint: str = "",
+        scopes: Optional[List[str]] = None,
+        provider_name: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Store encrypted integration secrets."""
+        effective_option = option_id or provider_name or "default"
+        with session_scope(self.session_factory) as session:
+            tool_repo = ToolConfigRepository(session)
+            cred = tool_repo.save_credential(
+                business_id=business_id,
+                tool_id=tool_id,
+                option_id=effective_option,
+                encrypted_secrets=encrypted_secrets,
+                key_fingerprint=key_fingerprint,
+                scopes=scopes,
+            )
+            return cred.to_dict()
+
+    save_credential_encrypted = save_credential
+
+    def get_credential_raw(self, business_id: str, tool_id: str) -> Optional[Dict[str, Any]]:
+        """Fetch raw credential record (including encrypted secrets for internal decryption)."""
+        with session_scope(self.session_factory) as session:
+            tool_repo = ToolConfigRepository(session)
+            cred = tool_repo.get_credential(business_id, tool_id)
+            if not cred:
+                return None
+            return {
+                "id": cred.id,
+                "business_id": cred.business_id,
+                "tool_id": cred.tool_id,
+                "option_id": cred.option_id,
+                "encrypted_secrets": cred.encrypted_secrets,
+                "key_fingerprint": cred.key_fingerprint,
+                "scopes": cred.scopes or [],
+                "expires_at": cred.expires_at,
+            }
+
+    def delete_credential(self, business_id: str, tool_id: str) -> bool:
+        """Purge credentials for a tool integration."""
+        with session_scope(self.session_factory) as session:
+            tool_repo = ToolConfigRepository(session)
+            return tool_repo.delete_credential(business_id, tool_id)
+
+    def record_capability_audit(
+        self,
+        business_id: str,
+        tool_id: str,
+        event_type: str,
+        details: Optional[Dict[str, Any]] = None,
+        correlation_id: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Record operational audit telemetry."""
+        with session_scope(self.session_factory) as session:
+            tool_repo = ToolConfigRepository(session)
+            event = tool_repo.record_audit_event(
+                business_id=business_id,
+                tool_id=tool_id,
+                event_type=event_type,
+                details=details,
+                correlation_id=correlation_id,
+            )
+            return event.to_dict()
+
+    def list_capability_audits(
+        self,
+        business_id: str,
+        tool_id: Optional[str] = None,
+        limit: int = 50,
+    ) -> List[Dict[str, Any]]:
+        """List audit events for a tenant capability."""
+        with session_scope(self.session_factory) as session:
+            tool_repo = ToolConfigRepository(session)
+            events = tool_repo.list_audit_events(business_id, tool_id=tool_id, limit=limit)
+            return [e.to_dict() for e in events]
+
+    list_capability_audit_events = list_capability_audits
+
+    # ---------------------------------------------------------------------------
+    # First-Party Reservable Resources & Reservations
+    # ---------------------------------------------------------------------------
+
+    def list_resources(
+        self,
+        business_id: str,
+        resource_type: Optional[str] = None,
+        is_active: Optional[bool] = None,
+    ) -> List[Dict[str, Any]]:
+        """List reservable resources (tables, rooms) for a business."""
+        with session_scope(self.session_factory) as session:
+            res_repo = ResourceRepository(session)
+            items = res_repo.list_resources(business_id, resource_type=resource_type, is_active=is_active)
+            return [r.to_dict() for r in items]
+
+    def get_resources(
+        self,
+        business_id: str,
+        resource_type: Optional[str] = None,
+        active_only: bool = False,
+    ) -> List[Dict[str, Any]]:
+        """Query resources for a business with optional active filter."""
+        return self.list_resources(
+            business_id=business_id,
+            resource_type=resource_type,
+            is_active=True if active_only else None,
+        )
+
+    def get_resource(self, resource_id: str, business_id: Optional[str] = None) -> Optional[Dict[str, Any]]:
+        """Fetch a specific resource."""
+        with session_scope(self.session_factory) as session:
+            res_repo = ResourceRepository(session)
+            res = res_repo.get_resource(resource_id, business_id=business_id)
+            return res.to_dict() if res else None
+
+    def create_resource(
+        self,
+        business_id: str,
+        name: str,
+        capacity: int = 4,
+        min_party_size: int = 1,
+        max_party_size: int = 4,
+        resource_type: str = "table",
+        section: Optional[str] = None,
+        is_active: bool = True,
+        metadata_json: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        """Register a new reservable table or room."""
+        with session_scope(self.session_factory) as session:
+            res_repo = ResourceRepository(session)
+            res = res_repo.create_resource(
+                business_id=business_id,
+                name=name,
+                capacity=capacity,
+                min_party_size=min_party_size,
+                max_party_size=max_party_size,
+                resource_type=resource_type,
+                section=section,
+                is_active=is_active,
+                metadata_json=metadata_json,
+            )
+            return res.to_dict()
+
+    def update_resource(
+        self,
+        business_id: str,
+        resource_id: str,
+        updates: Dict[str, Any],
+    ) -> Optional[Dict[str, Any]]:
+        """Update an existing resource."""
+        with session_scope(self.session_factory) as session:
+            res_repo = ResourceRepository(session)
+            res = res_repo.update_resource(business_id, resource_id, updates)
+            return res.to_dict() if res else None
+
+    def delete_resource(self, business_id: str, resource_id: str) -> bool:
+        """Delete a resource."""
+        with session_scope(self.session_factory) as session:
+            res_repo = ResourceRepository(session)
+            return res_repo.delete_resource(business_id, resource_id)
+
+    def find_available_resources(
+        self,
+        business_id: str,
+        start_time: Any,
+        end_time: Any,
+        party_size: int,
+        resource_type: str = "table",
+        section: Optional[str] = None,
+        exclude_reservation_id: Optional[str] = None,
+        buffer_minutes: int = 0,
+    ) -> List[Dict[str, Any]]:
+        """Query currently available tables/rooms for the given time slot."""
+        with session_scope(self.session_factory) as session:
+            res_repo = ReservationRepository(session)
+            available = res_repo.find_available_resources(
+                business_id=business_id,
+                start_time=start_time,
+                end_time=end_time,
+                party_size=party_size,
+                resource_type=resource_type,
+                section=section,
+                exclude_reservation_id=exclude_reservation_id,
+                buffer_minutes=buffer_minutes,
+            )
+            return [r.to_dict() for r in available]
+
+    def create_reservation_atomic(
+        self,
+        business_id: str,
+        customer_name: str,
+        customer_phone: str,
+        party_size: int,
+        start_time: Any,
+        end_time: Any,
+        resource_id: Optional[str] = None,
+        resource_type: str = "table",
+        section: Optional[str] = None,
+        special_requests: Optional[str] = None,
+        idempotency_key: Optional[str] = None,
+        status: str = "confirmed",
+        metadata: Optional[Dict[str, Any]] = None,
+        buffer_minutes: int = 0,
+    ) -> Dict[str, Any]:
+        """Atomically create a reservation with double-booking prevention and idempotency."""
+        with session_scope(self.session_factory) as session:
+            res_repo = ReservationRepository(session)
+            booking = res_repo.create_reservation_atomic(
+                business_id=business_id,
+                customer_name=customer_name,
+                customer_phone=customer_phone,
+                party_size=party_size,
+                start_time=start_time,
+                end_time=end_time,
+                resource_id=resource_id,
+                resource_type=resource_type,
+                section=section,
+                special_requests=special_requests,
+                idempotency_key=idempotency_key,
+                status=status,
+                metadata=metadata,
+                buffer_minutes=buffer_minutes,
+            )
+            return booking.to_dict()
+
+    def create_hold_atomic(
+        self,
+        business_id: str,
+        customer_name: str,
+        customer_phone: str,
+        party_size: int,
+        start_time: Any,
+        end_time: Any,
+        hold_minutes: int = 15,
+        resource_id: Optional[str] = None,
+        resource_type: str = "table",
+        section: Optional[str] = None,
+        special_requests: Optional[str] = None,
+        idempotency_key: Optional[str] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+        buffer_minutes: int = 0,
+    ) -> Dict[str, Any]:
+        """Place an expiring temporary hold on a resource."""
+        with session_scope(self.session_factory) as session:
+            res_repo = ReservationRepository(session)
+            hold = res_repo.create_hold_atomic(
+                business_id=business_id,
+                customer_name=customer_name,
+                customer_phone=customer_phone,
+                party_size=party_size,
+                start_time=start_time,
+                end_time=end_time,
+                hold_minutes=hold_minutes,
+                resource_id=resource_id,
+                resource_type=resource_type,
+                section=section,
+                special_requests=special_requests,
+                idempotency_key=idempotency_key,
+                metadata=metadata,
+                buffer_minutes=buffer_minutes,
+            )
+            return hold.to_dict()
+
+    def confirm_hold_atomic(
+        self,
+        business_id: str,
+        reservation_id: str,
+        customer_phone: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Convert an active hold into a confirmed reservation."""
+        with session_scope(self.session_factory) as session:
+            res_repo = ReservationRepository(session)
+            booking = res_repo.confirm_hold_atomic(
+                business_id=business_id,
+                reservation_id=reservation_id,
+                customer_phone=customer_phone,
+            )
+            return booking.to_dict()
+
+    def reschedule_reservation_atomic(
+        self,
+        business_id: str,
+        reservation_id: str,
+        new_start_time: Any,
+        new_end_time: Any,
+        new_resource_id: Optional[str] = None,
+        customer_phone: Optional[str] = None,
+        party_size: Optional[int] = None,
+        buffer_minutes: int = 0,
+    ) -> Dict[str, Any]:
+        """Atomically reschedule an existing reservation."""
+        with session_scope(self.session_factory) as session:
+            res_repo = ReservationRepository(session)
+            booking = res_repo.reschedule_reservation_atomic(
+                business_id=business_id,
+                reservation_id=reservation_id,
+                new_start_time=new_start_time,
+                new_end_time=new_end_time,
+                new_resource_id=new_resource_id,
+                customer_phone=customer_phone,
+                party_size=party_size,
+                buffer_minutes=buffer_minutes,
+            )
+            return booking.to_dict()
+
+    def get_reservation(self, business_id: str, reservation_id: str) -> Optional[Dict[str, Any]]:
+        """Fetch reservation details."""
+        with session_scope(self.session_factory) as session:
+            res_repo = ReservationRepository(session)
+            res = res_repo.get_reservation(reservation_id, business_id=business_id)
+            return res.to_dict() if res else None
+
+    def cancel_reservation(
+        self,
+        business_id: str,
+        reservation_id: str,
+        customer_phone: Optional[str] = None,
+        cancellation_deadline_hours: Optional[int] = None,
+        strict_cancellation: bool = False,
+        reason: Optional[str] = None,
+    ) -> bool:
+        """Cancel a reservation with optional cancellation policy check."""
+        with session_scope(self.session_factory) as session:
+            res_repo = ReservationRepository(session)
+            return res_repo.cancel_reservation(
+                business_id,
+                reservation_id,
+                customer_phone=customer_phone,
+                cancellation_deadline_hours=cancellation_deadline_hours,
+                strict_cancellation=strict_cancellation,
+                reason=reason,
+            )
+
+    def list_reservations(
+        self,
+        business_id: str,
+        start_date: Optional[Any] = None,
+        end_date: Optional[Any] = None,
+        status: Optional[str] = None,
+        resource_id: Optional[str] = None,
+    ) -> List[Dict[str, Any]]:
+        """List reservations for a business."""
+        with session_scope(self.session_factory) as session:
+            res_repo = ReservationRepository(session)
+            bookings = res_repo.list_reservations(
+                business_id,
+                start_date=start_date,
+                end_date=end_date,
+                status=status,
+                resource_id=resource_id,
+            )
+            return [b.to_dict() for b in bookings]
+
+    def add_to_waitlist(
+        self,
+        business_id: str,
+        customer_name: str,
+        customer_phone: str,
+        requested_time: Any,
+        party_size: int = 2,
+        resource_type: str = "table",
+        section: Optional[str] = None,
+        notes: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Add customer to waiting list queue."""
+        with session_scope(self.session_factory) as session:
+            res_repo = ReservationRepository(session)
+            entry = res_repo.add_to_waitlist(
+                business_id=business_id,
+                customer_name=customer_name,
+                customer_phone=customer_phone,
+                requested_time=requested_time,
+                party_size=party_size,
+                resource_type=resource_type,
+                section=section,
+                notes=notes,
+            )
+            return entry.to_dict()
+
+    def get_waitlist(
+        self,
+        business_id: str,
+        resource_type: Optional[str] = None,
+    ) -> List[Dict[str, Any]]:
+        """List active waiting list queue entries."""
+        with session_scope(self.session_factory) as session:
+            res_repo = ReservationRepository(session)
+            entries = res_repo.get_waitlist(business_id=business_id, resource_type=resource_type)
+            return [e.to_dict() for e in entries]
 
     def create_tool_demand(self, business_id: str, data: Dict[str, Any]) -> Dict[str, Any]:
         """Record a custom tool/feature request demanded by a business tenant."""

@@ -11,6 +11,8 @@ from backend.database.repositories.conversation_repo import ConversationReposito
 from backend.database.repositories.pending_action_repo import PendingActionRepository
 from backend.database.repositories.voice_session_repo import VoiceSessionRepository
 from backend.database.repositories.tool_demand_repo import ToolDemandRepository
+from backend.database.repositories.resource_repo import ResourceRepository
+from backend.database.repositories.reservation_repo import ReservationRepository, ReservationConflictError
 
 __all__ = [
     "BaseRepository",
@@ -22,4 +24,7 @@ __all__ = [
     "PendingActionRepository",
     "VoiceSessionRepository",
     "ToolDemandRepository",
+    "ResourceRepository",
+    "ReservationRepository",
+    "ReservationConflictError",
 ]

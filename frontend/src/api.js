@@ -131,6 +131,47 @@ export const api = {
       body: JSON.stringify({ session_id: sessionId }),
     }),
 
+  // Capability Setup Wizard & Integrations
+  getCapabilities: (businessId) => request(`/businesses/${businessId}/capabilities`),
+  getCapabilitySchema: (businessId, toolId) => request(`/businesses/${businessId}/capabilities/${toolId}/schema`),
+  startCapabilitySetup: (businessId, toolId, optionId) =>
+    request(`/businesses/${businessId}/capabilities/${toolId}/setup/start`, {
+      method: 'POST',
+      body: JSON.stringify({ option_id: optionId }),
+    }),
+  saveCapabilityStep: (businessId, toolId, stepName, data, isCompleted = false) =>
+    request(`/businesses/${businessId}/capabilities/${toolId}/setup/save`, {
+      method: 'POST',
+      body: JSON.stringify({ step_name: stepName, data, is_completed: isCompleted }),
+    }),
+  validateCapabilitySetup: (businessId, toolId) =>
+    request(`/businesses/${businessId}/capabilities/${toolId}/setup/validate`, { method: 'POST' }),
+  activateCapability: (businessId, toolId) =>
+    request(`/businesses/${businessId}/capabilities/${toolId}/activate`, { method: 'POST' }),
+  deactivateCapability: (businessId, toolId) =>
+    request(`/businesses/${businessId}/capabilities/${toolId}/deactivate`, { method: 'POST' }),
+  disconnectCapability: (businessId, toolId) =>
+    request(`/businesses/${businessId}/capabilities/${toolId}/integration`, { method: 'DELETE' }),
+  testCapabilityConnection: (businessId, toolId) =>
+    request(`/businesses/${businessId}/capabilities/${toolId}/test-connection`, { method: 'POST' }),
+
+  // Resource Inventory & Reservations
+  listResources: (businessId, resourceType = null) => {
+    const q = resourceType ? `?resource_type=${encodeURIComponent(resourceType)}` : '';
+    return request(`/businesses/${businessId}/resources${q}`);
+  },
+  createResource: (businessId, data) =>
+    request(`/businesses/${businessId}/resources`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  deleteResource: (businessId, resourceId) =>
+    request(`/businesses/${businessId}/resources/${resourceId}`, { method: 'DELETE' }),
+  listReservations: (businessId, status = null) => {
+    const q = status ? `?status=${encodeURIComponent(status)}` : '';
+    return request(`/businesses/${businessId}/reservations${q}`);
+  },
+
   // Admin Command Center
   getAdminOverview: () => request('/admin/overview'),
   getAdminTools: () => request('/admin/tools'),

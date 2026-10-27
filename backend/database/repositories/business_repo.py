@@ -155,9 +155,10 @@ class BusinessRepository(BaseRepository):
         faqs_list = [faq.to_dict() for faq in biz.faqs]
         base_dict["faqs"] = faqs_list
 
-        # Gather enabled tools
+        # Gather enabled tools and capability configs
         tool_map = {tc.tool_id: tc.is_enabled for tc in biz.tool_configs}
         base_dict["enabled_tools"] = tool_map
+        base_dict["tool_configs"] = {tc.tool_id: tc.to_dict() for tc in biz.tool_configs}
 
         # Attach default stats structure for prototype dashboards
         from backend.database.models import CallRecord

@@ -5,6 +5,7 @@ Safely loads and validates environment variables using Pydantic.
 
 from functools import lru_cache
 from typing import Optional
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -19,6 +20,19 @@ class Settings(BaseSettings):
     HOST: str = "0.0.0.0"
     PORT: int = 8000
     API_BASE_URL: str = "http://localhost:8000"
+
+    # Tool Execution Mode Policy (Explicit Allowlist: 'mock', 'live', 'unavailable')
+    TOOL_EXECUTION_MODE: str = "mock"
+
+    @field_validator("TOOL_EXECUTION_MODE")
+    @classmethod
+    def validate_tool_execution_mode(cls, v: str) -> str:
+        clean = v.strip().lower()
+        if clean not in ("mock", "live", "unavailable"):
+            raise ValueError(
+                f"Invalid TOOL_EXECUTION_MODE '{v}'. Must be one of: 'mock', 'live', 'unavailable'."
+            )
+        return clean
 
     # Groq API Configuration
     GROQ_API_KEY: Optional[str] = None
@@ -63,6 +77,23 @@ class Settings(BaseSettings):
     DEEPGRAM_TTS_SAMPLE_RATE: int = 8000
     DEEPGRAM_TTS_ENCODING: str = "linear16"
     VOICE_INTERTURN_TIMEOUT_SECONDS: int = 30
+
+    # Multi-Tenant Integration Adapter & Secret Vault Settings
+    CAPABILITY_ENCRYPTION_KEY: Optional[str] = None
+    TWILIO_ACCOUNT_SID: Optional[str] = None
+    TWILIO_AUTH_TOKEN: Optional[str] = None
+    STRIPE_SECRET_KEY: Optional[str] = None
+    STRIPE_WEBHOOK_SECRET: Optional[str] = None
+    HUBSPOT_ACCESS_TOKEN: Optional[str] = None
+    ZENDESK_SUBDOMAIN: Optional[str] = None
+    ZENDESK_EMAIL: Optional[str] = None
+    ZENDESK_API_TOKEN: Optional[str] = None
+
+    # Microsoft Graph / Entra ID Settings
+    MICROSOFT_CLIENT_ID: Optional[str] = None
+    MICROSOFT_CLIENT_SECRET: Optional[str] = None
+    MICROSOFT_TENANT_ID: str = "common"
+    MICROSOFT_REDIRECT_URI: Optional[str] = None
 
     @property
     def is_exotel_configured(self) -> bool:

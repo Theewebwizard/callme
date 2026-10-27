@@ -7,6 +7,7 @@ import asyncio
 import base64
 import json
 import logging
+import uuid
 from datetime import datetime, timezone
 from fastapi import APIRouter, HTTPException, Depends, Request, WebSocket, WebSocketDisconnect, status
 from pydantic import BaseModel, Field
@@ -258,8 +259,12 @@ def simulate_session_turn(
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
-        logger.error("Turn orchestration error for session %s: %s", session_id, str(e), exc_info=True)
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Turn error: {str(e)}")
+        corr_id = f"corr_{uuid.uuid4().hex[:8]}"
+        logger.error("Turn orchestration error for session %s (Correlation ID: %s): %s", session_id, corr_id, str(e), exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"An unexpected internal error occurred during turn processing. (Correlation ID: {corr_id})",
+        )
 
     return SimulateTurnResponse(
         session_id=turn_result.session_id,

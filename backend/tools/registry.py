@@ -1,9 +1,6 @@
-"""
-Modular Tool Registry and execution boundary for the AI Receptionist Platform.
-Enforces multi-tenant permissions, input validation, and two-phase confirmation.
-"""
-
-from typing import Dict, Any, List, Optional
+import logging
+import uuid
+from typing import Dict, Any, List, Optional, Set
 from pydantic import ValidationError
 
 from backend.tools.base import (
@@ -37,6 +34,14 @@ from backend.tools.implementations.communication import (
     handle_take_message,
     handle_transfer_call,
 )
+
+logger = logging.getLogger(__name__)
+
+# Explicit execution modes allowlist
+VALID_EXECUTION_MODES: Set[str] = {"mock", "live", "unavailable"}
+
+# Tools that possess verified live integrations in this repository
+LIVE_VERIFIED_TOOLS: Set[str] = {"answer_faq", "take_message"}
 
 
 class ToolRegistry:
@@ -110,7 +115,8 @@ class ToolRegistry:
     ) -> ToolExecutionResult:
         """
         Primary execution boundary for all tool actions.
-        Enforces tenant permissions, schema validation, industry eligibility, and two-phase confirmation.
+        Enforces tenant permissions, schema validation, industry eligibility,
+        execution mode policies, and two-phase confirmation.
         """
         # 1. Validate trusted business context
         if not business_config or not isinstance(business_config, dict):
@@ -118,20 +124,47 @@ class ToolRegistry:
                 tool_id=tool_id,
                 status=ToolExecutionStatus.ERROR,
                 success=False,
+                is_business_accepted=False,
+                error_code="INVALID_BUSINESS_CONTEXT",
                 message="Invalid or missing trusted business context.",
             )
 
-        # 2. Look up tool in registry
+        if business_id and business_config.get("id") and business_config.get("id") != business_id:
+            return ToolExecutionResult(
+                tool_id=tool_id,
+                status=ToolExecutionStatus.PERMISSION_DENIED,
+                success=False,
+                is_business_accepted=False,
+                error_code="BUSINESS_IDENTITY_MISMATCH",
+                message=f"Context authorization mismatch: requested business '{business_id}' does not match configuration.",
+            )
+
+        # 2. Validate execution mode against explicit allowlist
+        raw_mode = business_config.get("execution_mode", "mock")
+        if not isinstance(raw_mode, str) or raw_mode.lower() not in VALID_EXECUTION_MODES:
+            return ToolExecutionResult(
+                tool_id=tool_id,
+                status=ToolExecutionStatus.ERROR,
+                success=False,
+                is_business_accepted=False,
+                error_code="INVALID_EXECUTION_MODE",
+                message=f"Invalid execution mode '{raw_mode}'. Valid modes are: {sorted(list(VALID_EXECUTION_MODES))}.",
+            )
+        exec_mode = raw_mode.lower()
+
+        # 3. Look up tool in registry
         tool = self.get_tool(tool_id)
         if not tool:
             return ToolExecutionResult(
                 tool_id=tool_id,
                 status=ToolExecutionStatus.ERROR,
                 success=False,
+                is_business_accepted=False,
+                error_code="TOOL_NOT_FOUND",
                 message=f"Tool '{tool_id}' is not registered in the system catalogue.",
             )
 
-        # 3. Enforce industry eligibility
+        # 4. Enforce industry eligibility
         biz_industry = business_config.get("industry")
         if not tool.is_allowed_for_industry(biz_industry):
             allowed_desc = ", ".join(tool.allowed_industries)
@@ -139,33 +172,57 @@ class ToolRegistry:
                 tool_id=tool_id,
                 status=ToolExecutionStatus.DISABLED,
                 success=False,
+                is_business_accepted=False,
+                error_code="INDUSTRY_NOT_PERMITTED",
                 message=(
                     f"Tool '{tool.name}' is only available for businesses in: {allowed_desc}. "
                     f"Business '{business_id}' is in the '{biz_industry}' industry."
                 ),
             )
 
-        # 4. Enforce tenant tool permissions
+        # 5. Enforce tenant tool permissions
         enabled_tools = business_config.get("enabled_tools", {})
         if not enabled_tools.get(tool_id, False):
             return ToolExecutionResult(
                 tool_id=tool_id,
                 status=ToolExecutionStatus.DISABLED,
                 success=False,
+                is_business_accepted=False,
+                error_code="TOOL_DISABLED_FOR_TENANT",
                 message=f"Tool '{tool_id}' is not enabled for business '{business_id}'.",
             )
 
-        # 5. Check implementation readiness
+        # 6. Check implementation readiness and execution mode compliance
         if not tool.is_implemented or tool.handler is None:
             return ToolExecutionResult(
                 tool_id=tool_id,
                 status=ToolExecutionStatus.UNAVAILABLE,
                 success=False,
+                is_business_accepted=False,
                 mode=ToolExecutionMode.UNAVAILABLE,
+                error_code="TOOL_UNIMPLEMENTED",
                 message=f"Tool '{tool_id}' is registered but its execution handler is currently unavailable.",
             )
 
-        # 5. Validate input payload against tool schema
+        if exec_mode == "live":
+            tool_cfg = business_config.get("tool_configs", {}).get(tool.id, {})
+            is_capability_ready = (
+                isinstance(tool_cfg, dict)
+                and tool_cfg.get("status") == "ready"
+                and tool_cfg.get("is_enabled") is True
+            )
+            if tool.id not in LIVE_VERIFIED_TOOLS and not is_capability_ready:
+                return ToolExecutionResult(
+                    tool_id=tool_id,
+                    status=ToolExecutionStatus.UNAVAILABLE,
+                    success=False,
+                    is_business_accepted=False,
+                    mode=ToolExecutionMode.UNAVAILABLE,
+                    error_code="LIVE_INTEGRATION_NOT_CONFIGURED",
+                    message=f"Tool '{tool_id}' is simulated (mock) and no verified live integration is configured.",
+                )
+
+        # 7. Validate input payload against tool schema
         try:
             validated_input = tool.input_schema.model_validate(input_data)
         except ValidationError as val_err:
@@ -175,15 +232,18 @@ class ToolRegistry:
                 tool_id=tool_id,
                 status=ToolExecutionStatus.VALIDATION_ERROR,
                 success=False,
+                is_business_accepted=False,
+                error_code="INPUT_VALIDATION_ERROR",
                 message=f"Validation failed for field '{field_name}': {first_err['msg']}",
             )
 
-        # 6. Two-phase confirmation boundary
+        # 8. Two-phase confirmation boundary
         if tool.requires_confirmation and not confirmed:
             return ToolExecutionResult(
                 tool_id=tool_id,
                 status=ToolExecutionStatus.CONFIRMATION_REQUIRED,
                 success=False,
+                is_business_accepted=False,
                 requires_confirmation=True,
                 message=(
                     f"Action '{tool.name}' requires explicit confirmation before execution. "
@@ -191,15 +251,23 @@ class ToolRegistry:
                 ),
             )
 
-        # 7. Execute permitted handler with validated input & trusted context
+        # 9. Execute permitted handler with validated input & trusted context
         try:
             return tool.handler(validated_input, business_config)
         except Exception as exc:
+            error_id = uuid.uuid4().hex[:8]
+            logger.error(
+                "Handler exception in tool '%s' for business '%s' [Error ID %s]: %s",
+                tool_id, business_id, error_id, exc, exc_info=True
+            )
             return ToolExecutionResult(
                 tool_id=tool_id,
                 status=ToolExecutionStatus.ERROR,
                 success=False,
-                message=f"Unexpected error executing tool '{tool_id}': {str(exc)}",
+                is_business_accepted=False,
+                error_code="HANDLER_EXCEPTION",
+                internal_diagnostics=f"Exception [{error_id}] in {tool_id}: {type(exc).__name__}: {str(exc)}",
+                message=f"An unexpected error occurred while executing the action (Error ID: {error_id}). Please try again later or contact our team.",
             )
 
 
@@ -218,6 +286,7 @@ def build_default_tool_registry() -> ToolRegistry:
             category=ToolCategory.INFORMATION,
             icon="ℹ️",
             allowed_industries=["*"],
+            allowed_canonical_industries=["*"],
             input_schema=AnswerFAQInput,
             requires_confirmation=False,
             is_implemented=True,
@@ -235,6 +304,7 @@ def build_default_tool_registry() -> ToolRegistry:
             category=ToolCategory.DINING,
             icon="🍽️",
             allowed_industries=["Restaurant", "Dining & Hospitality", "Cafe", "Bistro", "Food & Beverage", "Bar & Lounge"],
+            allowed_canonical_industries=["restaurant"],
             input_schema=CheckTableAvailabilityInput,
             requires_confirmation=False,
             is_implemented=True,
@@ -252,6 +322,7 @@ def build_default_tool_registry() -> ToolRegistry:
             category=ToolCategory.DINING,
             icon="📅",
             allowed_industries=["Restaurant", "Dining & Hospitality", "Cafe", "Bistro", "Food & Beverage", "Bar & Lounge"],
+            allowed_canonical_industries=["restaurant"],
             input_schema=CreateTableBookingInput,
             requires_confirmation=True,
             is_implemented=True,
@@ -271,6 +342,7 @@ def build_default_tool_registry() -> ToolRegistry:
             category=ToolCategory.HEALTHCARE,
             icon="🩺",
             allowed_industries=["Clinic", "Doctor", "Healthcare & Services", "Hospital", "Dental", "Medical", "Salon", "Spa", "Consulting / Services", "Astrology / Spiritual", "Legal"],
+            allowed_canonical_industries=["clinic", "services"],
             input_schema=CheckAppointmentAvailabilityInput,
             requires_confirmation=False,
             is_implemented=True,
@@ -288,6 +360,7 @@ def build_default_tool_registry() -> ToolRegistry:
             category=ToolCategory.HEALTHCARE,
             icon="📋",
             allowed_industries=["Clinic", "Doctor", "Healthcare & Services", "Hospital", "Dental", "Medical", "Salon", "Spa", "Consulting / Services", "Astrology / Spiritual", "Legal"],
+            allowed_canonical_industries=["clinic", "services"],
             input_schema=CreateAppointmentInput,
             requires_confirmation=True,
             is_implemented=True,
@@ -307,6 +380,7 @@ def build_default_tool_registry() -> ToolRegistry:
             category=ToolCategory.COMMUNICATION,
             icon="📝",
             allowed_industries=["*"],
+            allowed_canonical_industries=["*"],
             input_schema=TakeMessageInput,
             requires_confirmation=False,
             is_implemented=True,
@@ -324,6 +398,7 @@ def build_default_tool_registry() -> ToolRegistry:
             category=ToolCategory.COMMUNICATION,
             icon="📞",
             allowed_industries=["*"],
+            allowed_canonical_industries=["*"],
             input_schema=TransferCallInput,
             requires_confirmation=False,
             is_implemented=True,

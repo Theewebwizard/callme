@@ -61,6 +61,8 @@ class Business(Base):
     pending_actions = relationship("PendingAction", back_populates="business", cascade="all, delete-orphan", lazy="select")
     voice_sessions = relationship("VoiceSession", back_populates="business", cascade="all, delete-orphan", lazy="select")
     tool_demands = relationship("ToolDemand", back_populates="business", cascade="all, delete-orphan", lazy="select")
+    reservable_resources = relationship("ReservableResource", back_populates="business", cascade="all, delete-orphan", lazy="select")
+    reservations = relationship("Reservation", back_populates="business", cascade="all, delete-orphan", lazy="select")
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert model to dictionary representation."""
@@ -125,6 +127,11 @@ class BusinessToolConfig(Base):
     business_id = Column(String(64), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
     tool_id = Column(String(64), nullable=False, index=True)
     is_enabled = Column(Boolean, default=False, nullable=False)
+    status = Column(String(32), default="not_configured", nullable=False)  # "not_configured", "needs_input", "awaiting_authorization", "validating", "ready", "degraded", "disconnected", "failed"
+    selected_option_id = Column(String(64), nullable=True)  # e.g. "builtin_dining", "google_calendar"
+    configuration = Column(JSON, default=dict, nullable=False)  # non-secret settings
+    readiness_details = Column(JSON, default=dict, nullable=False)  # validation checks, timestamps, diagnostic summary
+    last_validated_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
     updated_at = Column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
 
@@ -141,6 +148,11 @@ class BusinessToolConfig(Base):
             "business_id": self.business_id,
             "tool_id": self.tool_id,
             "is_enabled": self.is_enabled,
+            "status": self.status,
+            "selected_option_id": self.selected_option_id,
+            "configuration": self.configuration or {},
+            "readiness_details": self.readiness_details or {},
+            "last_validated_at": self.last_validated_at.isoformat() if self.last_validated_at else None,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }
@@ -351,5 +363,215 @@ class ToolDemand(Base):
             "integration_target": self.integration_target or "Custom API",
             "priority": self.priority,
             "status": self.status,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+        }
+
+
+class IntegrationCredential(Base):
+    """
+    Secure tenant integration credential store.
+    Stores encrypted secret material (tokens, keys, service account JSON)
+    strictly separated from ordinary tenant configuration.
+    """
+    __tablename__ = "integration_credentials"
+
+    id = Column(String(64), primary_key=True, default=lambda: f"cred_{uuid.uuid4().hex[:12]}")
+    business_id = Column(String(64), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
+    tool_id = Column(String(64), nullable=False, index=True)
+    option_id = Column(String(64), nullable=False)
+    encrypted_secrets = Column(Text, nullable=False)
+    key_fingerprint = Column(String(64), nullable=False)
+    scopes = Column(JSON, default=list, nullable=False)
+    expires_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint("business_id", "tool_id", name="uq_business_tool_cred"),
+    )
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert credential record to dictionary with encrypted secrets suppressed."""
+        return {
+            "id": self.id,
+            "business_id": self.business_id,
+            "tool_id": self.tool_id,
+            "option_id": self.option_id,
+            "key_fingerprint": self.key_fingerprint,
+            "scopes": self.scopes or [],
+            "expires_at": self.expires_at.isoformat() if self.expires_at else None,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+        }
+
+
+class ReservableResource(Base):
+    """
+    First-party reservable asset (dining table, clinical consultation room, dental chair).
+    Authoritative resource definition for built-in booking and capacity management.
+    """
+    __tablename__ = "reservable_resources"
+
+    id = Column(String(64), primary_key=True, default=lambda: f"res_{uuid.uuid4().hex[:12]}")
+    business_id = Column(String(64), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
+    resource_type = Column(String(32), default="table", nullable=False)  # "table", "room", "practitioner"
+    name = Column(String(100), nullable=False)  # e.g. "Table 4 (Garden Patio)", "Dental Suite 1"
+    capacity = Column(Integer, default=4, nullable=False)
+    min_party_size = Column(Integer, default=1, nullable=False)
+    max_party_size = Column(Integer, default=4, nullable=False)
+    section = Column(String(100), nullable=True)  # e.g. "Patio", "Main Hall", "First Floor"
+    is_active = Column(Boolean, default=True, nullable=False)
+    metadata_json = Column(JSON, default=dict, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
+
+    business = relationship("Business", back_populates="reservable_resources")
+    reservations = relationship("Reservation", back_populates="resource", cascade="all, delete-orphan", lazy="select")
+
+    __table_args__ = (
+        Index("ix_resource_business_active", "business_id", "is_active"),
+        Index("ix_resource_business_party", "business_id", "min_party_size", "max_party_size"),
+    )
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert resource to dictionary."""
+        return {
+            "id": self.id,
+            "business_id": self.business_id,
+            "resource_type": self.resource_type,
+            "name": self.name,
+            "capacity": self.capacity,
+            "min_party_size": self.min_party_size,
+            "max_party_size": self.max_party_size,
+            "section": self.section,
+            "is_active": self.is_active,
+            "metadata": self.metadata_json or {},
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+        }
+
+
+class Reservation(Base):
+    """
+    Authoritative transactional reservation or appointment record.
+    Prevents double-booking and concurrent conflict via database-level checks.
+    """
+    __tablename__ = "reservations"
+
+    id = Column(String(64), primary_key=True, default=lambda: f"BK-{uuid.uuid4().hex[:8].upper()}")
+    business_id = Column(String(64), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
+    resource_id = Column(String(64), ForeignKey("reservable_resources.id", ondelete="SET NULL"), nullable=True, index=True)
+    customer_name = Column(String(100), nullable=False)
+    customer_phone = Column(String(50), nullable=False)
+    party_size = Column(Integer, default=2, nullable=False)
+    start_time = Column(DateTime(timezone=True), nullable=False, index=True)
+    end_time = Column(DateTime(timezone=True), nullable=False, index=True)
+    status = Column(String(32), default="confirmed", nullable=False)  # "confirmed", "hold", "pending_confirmation", "rescheduled", "cancelled", "completed", "no_show", "waitlisted"
+    hold_expires_at = Column(DateTime(timezone=True), nullable=True, index=True)
+    rescheduled_from_id = Column(String(64), nullable=True)
+    metadata_json = Column(JSON, default=dict, nullable=False)
+    special_requests = Column(Text, nullable=True)
+    idempotency_key = Column(String(128), nullable=True, index=True)
+    created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
+
+    business = relationship("Business", back_populates="reservations")
+    resource = relationship("ReservableResource", back_populates="reservations")
+
+    __table_args__ = (
+        Index("ix_res_business_start", "business_id", "start_time"),
+        Index("ix_res_resource_window", "resource_id", "start_time", "end_time", "status"),
+        Index("ix_res_business_idempotency", "business_id", "idempotency_key"),
+        Index("ix_res_business_status", "business_id", "status"),
+    )
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert reservation to dictionary."""
+        return {
+            "id": self.id,
+            "business_id": self.business_id,
+            "resource_id": self.resource_id,
+            "resource_name": self.resource.name if self.resource else None,
+            "customer_name": self.customer_name,
+            "customer_phone": self.customer_phone,
+            "party_size": self.party_size,
+            "start_time": self.start_time.isoformat() if self.start_time else None,
+            "end_time": self.end_time.isoformat() if self.end_time else None,
+            "status": self.status,
+            "hold_expires_at": self.hold_expires_at.isoformat() if getattr(self, "hold_expires_at", None) else None,
+            "rescheduled_from_id": getattr(self, "rescheduled_from_id", None),
+            "metadata": getattr(self, "metadata_json", {}) or {},
+            "special_requests": self.special_requests,
+            "idempotency_key": self.idempotency_key,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+        }
+
+
+class CapabilitySetupSession(Base):
+    """
+    Server-side stateful setup session for guided capability onboarding.
+    Supports partial saving, step resumption, and credential isolation.
+    """
+    __tablename__ = "capability_setup_sessions"
+
+    id = Column(String(64), primary_key=True, default=lambda: f"sess_{uuid.uuid4().hex[:12]}")
+    business_id = Column(String(64), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
+    tool_id = Column(String(64), nullable=False, index=True)
+    selected_option_id = Column(String(64), nullable=True)
+    current_step = Column(String(64), default="select_option", nullable=False)
+    step_data = Column(JSON, default=dict, nullable=False)
+    status = Column(String(32), default="needs_input", nullable=False)  # "needs_input", "awaiting_authorization", "validating", "ready", "failed"
+    validation_errors = Column(JSON, default=list, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
+
+    __table_args__ = (
+        Index("ix_setup_sess_business_tool", "business_id", "tool_id"),
+    )
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert setup session to dictionary."""
+        return {
+            "id": self.id,
+            "business_id": self.business_id,
+            "tool_id": self.tool_id,
+            "selected_option_id": self.selected_option_id,
+            "current_step": self.current_step,
+            "step_data": self.step_data or {},
+            "status": self.status,
+            "validation_errors": self.validation_errors or [],
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+        }
+
+
+class CapabilityAuditEvent(Base):
+    """
+    Tenant-scoped audit and observability telemetry for capability lifecycle events.
+    """
+    __tablename__ = "capability_audit_events"
+
+    id = Column(String(64), primary_key=True, default=lambda: f"aud_{uuid.uuid4().hex[:12]}")
+    business_id = Column(String(64), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
+    tool_id = Column(String(64), nullable=False, index=True)
+    event_type = Column(String(64), nullable=False)  # "state_transition", "readiness_checked", "booking_created", "conflict_prevented", etc.
+    details = Column(JSON, default=dict, nullable=False)
+    correlation_id = Column(String(64), nullable=True, index=True)
+    created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False, index=True)
+
+    __table_args__ = (
+        Index("ix_cap_audit_biz_event", "business_id", "event_type"),
+    )
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert audit event to dictionary."""
+        return {
+            "id": self.id,
+            "business_id": self.business_id,
+            "tool_id": self.tool_id,
+            "event_type": self.event_type,
+            "details": self.details or {},
+            "correlation_id": self.correlation_id,
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }

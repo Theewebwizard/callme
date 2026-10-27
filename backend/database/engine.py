@@ -195,7 +195,49 @@ def check_database_connection(engine: Optional[Engine] = None) -> Dict[str, Any]
         }
 
 
+def migrate_schema_columns(engine: Engine) -> None:
+    """Safely apply non-destructive schema column migrations for existing databases."""
+    dialect = engine.dialect.name
+    try:
+        with engine.begin() as conn:
+            if dialect == "postgresql":
+                conn.execute(text("ALTER TABLE business_tool_configs ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'not_configured';"))
+                conn.execute(text("ALTER TABLE business_tool_configs ADD COLUMN IF NOT EXISTS selected_option_id VARCHAR(100);"))
+                conn.execute(text("ALTER TABLE business_tool_configs ADD COLUMN IF NOT EXISTS configuration JSONB DEFAULT '{}'::jsonb;"))
+                conn.execute(text("ALTER TABLE business_tool_configs ADD COLUMN IF NOT EXISTS readiness_details JSONB DEFAULT '{}'::jsonb;"))
+                conn.execute(text("ALTER TABLE business_tool_configs ADD COLUMN IF NOT EXISTS last_validated_at TIMESTAMPTZ;"))
+                conn.execute(text("ALTER TABLE reservations ADD COLUMN IF NOT EXISTS hold_expires_at TIMESTAMPTZ;"))
+                conn.execute(text("ALTER TABLE reservations ADD COLUMN IF NOT EXISTS rescheduled_from_id VARCHAR(64);"))
+                conn.execute(text("ALTER TABLE reservations ADD COLUMN IF NOT EXISTS metadata_json JSONB DEFAULT '{}'::jsonb;"))
+            elif dialect == "sqlite":
+                res = conn.execute(text("PRAGMA table_info(business_tool_configs);")).fetchall()
+                existing_cols = {row[1] for row in res}
+                if existing_cols:
+                    if "status" not in existing_cols:
+                        conn.execute(text("ALTER TABLE business_tool_configs ADD COLUMN status VARCHAR(50) DEFAULT 'not_configured';"))
+                    if "selected_option_id" not in existing_cols:
+                        conn.execute(text("ALTER TABLE business_tool_configs ADD COLUMN selected_option_id VARCHAR(100);"))
+                    if "configuration" not in existing_cols:
+                        conn.execute(text("ALTER TABLE business_tool_configs ADD COLUMN configuration JSON DEFAULT '{}';"))
+                    if "readiness_details" not in existing_cols:
+                        conn.execute(text("ALTER TABLE business_tool_configs ADD COLUMN readiness_details JSON DEFAULT '{}';"))
+                    if "last_validated_at" not in existing_cols:
+                        conn.execute(text("ALTER TABLE business_tool_configs ADD COLUMN last_validated_at DATETIME;"))
+                res_res = conn.execute(text("PRAGMA table_info(reservations);")).fetchall()
+                existing_res_cols = {row[1] for row in res_res}
+                if existing_res_cols:
+                    if "hold_expires_at" not in existing_res_cols:
+                        conn.execute(text("ALTER TABLE reservations ADD COLUMN hold_expires_at DATETIME;"))
+                    if "rescheduled_from_id" not in existing_res_cols:
+                        conn.execute(text("ALTER TABLE reservations ADD COLUMN rescheduled_from_id VARCHAR(64);"))
+                    if "metadata_json" not in existing_res_cols:
+                        conn.execute(text("ALTER TABLE reservations ADD COLUMN metadata_json JSON DEFAULT '{}';"))
+    except Exception as exc:
+        logger.warning(f"Schema column migration note: {exc}")
+
+
 def init_db_schema(engine: Optional[Engine] = None) -> None:
-    """Create all tables defined in Base metadata on the target database."""
+    """Create all tables defined in Base metadata and migrate missing columns."""
     eng = engine or get_engine()
     Base.metadata.create_all(bind=eng)
+    migrate_schema_columns(eng)

@@ -345,3 +345,232 @@ def test_context_cannot_be_spoofed_via_input(registry: ToolRegistry):
     )
     assert res.success is True
     assert "Spice Garden Bistro" in res.message
+
+
+# ---------------------------------------------------------------------------
+# 6. Hardened Validation, Safety, & Execution Mode Tests
+# ---------------------------------------------------------------------------
+
+def test_calendar_date_and_time_validation(registry: ToolRegistry):
+    """Verify non-existent calendar dates (e.g. Feb 31) and invalid times are rejected."""
+    restaurant_config = INITIAL_BUSINESSES["biz_spice_garden"]
+
+    # February 31 does not exist on the calendar
+    res_bad_calendar_date = registry.execute_tool(
+        business_id="biz_spice_garden",
+        business_config=restaurant_config,
+        tool_id="check_table_availability",
+        input_data={"date": "2026-02-31", "time": "19:00", "party_size": 2},
+    )
+    assert res_bad_calendar_date.status == ToolExecutionStatus.VALIDATION_ERROR
+    assert res_bad_calendar_date.success is False
+    assert "does not exist on the calendar" in res_bad_calendar_date.message
+
+    # Invalid clock time (24:00 is not a valid 24h clock time, 00:00 to 23:59)
+    res_bad_time = registry.execute_tool(
+        business_id="biz_spice_garden",
+        business_config=restaurant_config,
+        tool_id="check_table_availability",
+        input_data={"date": "2026-10-25", "time": "25:30", "party_size": 2},
+    )
+    assert res_bad_time.status == ToolExecutionStatus.VALIDATION_ERROR
+    assert res_bad_time.success is False
+
+
+def test_phone_number_validation_and_cleaning(registry: ToolRegistry):
+    """Verify phone numbers require minimum 7 digits and reject letters/garbage."""
+    restaurant_config = INITIAL_BUSINESSES["biz_spice_garden"]
+
+    # 7 characters but only 6 digits (e.g. '123-456')
+    res_short_digits = registry.execute_tool(
+        business_id="biz_spice_garden",
+        business_config=restaurant_config,
+        tool_id="create_table_booking",
+        input_data={
+            "customer_name": "Test User",
+            "customer_phone": "123-456",  # 6 digits
+            "date": "2026-10-28",
+            "time": "19:00",
+            "party_size": 2,
+        },
+        confirmed=True,
+    )
+    assert res_short_digits.status == ToolExecutionStatus.VALIDATION_ERROR
+    assert "at least 7 digits" in res_short_digits.message
+
+
+def test_business_identity_mismatch_rejection(registry: ToolRegistry):
+    """Verify registry rejects calls when business_id does not match business_config['id']."""
+    restaurant_config = INITIAL_BUSINESSES["biz_spice_garden"]
+
+    res = registry.execute_tool(
+        business_id="spoofed_business_id",
+        business_config=restaurant_config,  # has id "biz_spice_garden"
+        tool_id="check_table_availability",
+        input_data={"date": "2026-10-25", "time": "19:00", "party_size": 2},
+    )
+    assert res.status == ToolExecutionStatus.PERMISSION_DENIED
+    assert res.success is False
+    assert res.error_code == "BUSINESS_IDENTITY_MISMATCH"
+
+
+def test_strict_live_execution_mode_fails_closed(registry: ToolRegistry):
+    """Verify when business mandates live mode, simulated mock tools fail closed as UNAVAILABLE."""
+    strict_biz_config = dict(INITIAL_BUSINESSES["biz_spice_garden"])
+    strict_biz_config["execution_mode"] = "live"
+
+    res = registry.execute_tool(
+        business_id="biz_spice_garden",
+        business_config=strict_biz_config,
+        tool_id="create_table_booking",
+        input_data={
+            "customer_name": "VIP Guest",
+            "customer_phone": "+91 9876543210",
+            "date": "2026-10-28",
+            "time": "19:00",
+            "party_size": 2,
+        },
+        confirmed=True,
+    )
+    assert res.status == ToolExecutionStatus.UNAVAILABLE
+    assert res.success is False
+    assert res.mode == ToolExecutionMode.UNAVAILABLE
+    assert res.error_code == "LIVE_INTEGRATION_NOT_CONFIGURED"
+
+
+def test_handler_exception_returns_safe_error_and_diagnostics(registry: ToolRegistry):
+    """Verify unexpected handler crash returns safe error with internal diagnostics."""
+    def crashing_handler(inp, biz):
+        raise RuntimeError("Authoritative inventory database unreachable")
+
+    failing_tool = ToolDefinition(
+        id="crashing_tool",
+        name="Crashing Tool",
+        description="Tool that raises an unexpected exception",
+        category=ToolCategory.INFORMATION,
+        input_schema=AnswerFAQInput,
+        handler=crashing_handler,
+    )
+    registry.register(failing_tool)
+
+    biz_config = dict(INITIAL_BUSINESSES["biz_spice_garden"])
+    biz_config["enabled_tools"] = dict(biz_config["enabled_tools"])
+    biz_config["enabled_tools"]["crashing_tool"] = True
+
+    res = registry.execute_tool(
+        business_id="biz_spice_garden",
+        business_config=biz_config,
+        tool_id="crashing_tool",
+        input_data={"question": "Test question"},
+    )
+    assert res.status == ToolExecutionStatus.ERROR
+    assert res.success is False
+    assert res.error_code == "HANDLER_EXCEPTION"
+    assert "inventory database unreachable" in res.internal_diagnostics
+
+
+def test_operating_hours_business_declined_status(registry: ToolRegistry):
+    """Verify outside-hours queries return BUSINESS_DECLINED with success=True (system operation succeeded)."""
+    restaurant_config = INITIAL_BUSINESSES["biz_spice_garden"]
+
+    res = registry.execute_tool(
+        business_id="biz_spice_garden",
+        business_config=restaurant_config,
+        tool_id="check_table_availability",
+        input_data={"date": "2026-10-25", "time": "03:00", "party_size": 2},  # 3 AM is closed
+    )
+    assert res.status == ToolExecutionStatus.BUSINESS_DECLINED
+    assert res.success is True
+    assert res.is_business_accepted is False
+    assert res.data["available"] is False
+    assert res.data["reason"] == "outside_operating_hours"
+
+
+def test_secure_references_not_derived_from_personal_data(registry: ToolRegistry):
+    """Verify booking references use cryptographically unique UUIDs rather than personal data hashes."""
+    restaurant_config = INITIAL_BUSINESSES["biz_spice_garden"]
+    payload = {
+        "customer_name": "Arun Kumar",
+        "customer_phone": "+91 9999988888",
+        "date": "2026-10-28",
+        "time": "19:00",
+        "party_size": 2,
+    }
+
+    res1 = registry.execute_tool(
+        business_id="biz_spice_garden",
+        business_config=restaurant_config,
+        tool_id="create_table_booking",
+        input_data=payload,
+        confirmed=True,
+    )
+    res2 = registry.execute_tool(
+        business_id="biz_spice_garden",
+        business_config=restaurant_config,
+        tool_id="create_table_booking",
+        input_data=payload,
+        confirmed=True,
+    )
+
+    # Identical arguments MUST generate different reference IDs (UUIDs)
+    ref1 = res1.data["booking_reference"]
+    ref2 = res2.data["booking_reference"]
+    assert ref1 != ref2
+    assert ref1.startswith("TB-")
+    assert ref2.startswith("TB-")
+
+
+def test_ranked_faq_retrieval_and_confidence(registry: ToolRegistry):
+    """Verify ranked retrieval selects the highest-scoring candidate among multiple FAQs."""
+    custom_faqs = [
+        {"question": "What are your weekend dining hours?", "answer": "Weekends 11:30 AM to 11:30 PM."},
+        {"question": "Do you offer outdoor patio dining?", "answer": "Yes, our garden patio is open weather permitting."},
+        {"question": "Can I bring my own wine for dining?", "answer": "Corkage fee applies: Rs 500 per bottle."},
+    ]
+    biz_config = dict(INITIAL_BUSINESSES["biz_spice_garden"])
+    biz_config["faqs"] = custom_faqs
+
+    # Query targeting patio dining
+    res = registry.execute_tool(
+        business_id="biz_spice_garden",
+        business_config=biz_config,
+        tool_id="answer_faq",
+        input_data={"question": "Is outdoor patio dining available?"},
+    )
+    assert res.success is True
+    assert "garden patio" in res.data["answer"]
+    assert res.data["confidence_score"] >= 0.5
+
+
+def test_multilingual_faq_query(registry: ToolRegistry):
+    """Verify Hindi / Hinglish tokens match relevant business FAQs."""
+    restaurant_config = INITIAL_BUSINESSES["biz_spice_garden"]
+
+    # "parking" inquiry in Hinglish
+    res = registry.execute_tool(
+        business_id="biz_spice_garden",
+        business_config=restaurant_config,
+        tool_id="answer_faq",
+        input_data={"question": "kya gaadi parking ki suvidha available hai?"},
+    )
+    assert res.success is True
+    assert "valet parking" in res.data["answer"].lower()
+
+
+def test_transfer_call_live_mode_unavailability(registry: ToolRegistry):
+    """Verify call transfer fails closed when live execution mode is enforced."""
+    live_config = dict(INITIAL_BUSINESSES["biz_spice_garden"])
+    live_config["execution_mode"] = "live"
+
+    res = registry.execute_tool(
+        business_id="biz_spice_garden",
+        business_config=live_config,
+        tool_id="transfer_call",
+        input_data={"reason": "Urgent manager transfer"},
+    )
+    assert res.status == ToolExecutionStatus.UNAVAILABLE
+    assert res.success is False
+    assert res.mode == ToolExecutionMode.UNAVAILABLE
+    assert res.error_code == "LIVE_INTEGRATION_NOT_CONFIGURED"
+    assert "no verified live integration is configured" in res.message
+

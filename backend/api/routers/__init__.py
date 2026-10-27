@@ -13,12 +13,16 @@ from backend.api.routers.pending_actions import router as pending_actions_router
 from backend.api.routers.voice import router as voice_router
 from backend.api.routers.web_voice import router as web_voice_router
 from backend.api.routers.admin import router as admin_router
+from backend.api.routers.capabilities import router as capabilities_router
+from backend.api.routers.webhooks import router as webhooks_router
 
 api_router = APIRouter()
 
 api_router.include_router(businesses_router)
 api_router.include_router(faqs_router)
 api_router.include_router(tools_router)
+api_router.include_router(capabilities_router)
+api_router.include_router(webhooks_router)
 api_router.include_router(calls_router)
 api_router.include_router(playground_router)
 api_router.include_router(pending_actions_router)

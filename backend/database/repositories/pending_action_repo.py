@@ -44,8 +44,19 @@ class PendingActionRepository(BaseRepository):
         return action
 
     def get(self, action_id: str) -> Optional[PendingAction]:
-        """Fetch pending action by ID."""
-        return self.session.get(PendingAction, action_id)
+        """Fetch pending action by ID, evaluating expiration status."""
+        action = self.session.get(PendingAction, action_id)
+        if action and action.status == "pending_confirmation" and action.expires_at:
+            exp = action.expires_at
+            now = utcnow()
+            if exp.tzinfo is None and now.tzinfo is not None:
+                exp = exp.replace(tzinfo=timezone.utc)
+            elif exp.tzinfo is not None and now.tzinfo is None:
+                now = now.replace(tzinfo=timezone.utc)
+            if exp < now:
+                action.status = "expired"
+                self.session.flush()
+        return action
 
     def get_latest_pending(self, business_id: str) -> Optional[PendingAction]:
         """Fetch the most recent pending confirmation action for a tenant."""

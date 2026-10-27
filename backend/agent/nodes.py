@@ -455,6 +455,8 @@ def execute_tools_node(
             service = groq_service or get_groq_service()
             is_verbally_confirmed = _is_prior_action_confirmed(messages, tool_id, groq_service=service)
             if not is_verbally_confirmed:
+                from datetime import datetime, timezone, timedelta
+                now_utc = datetime.now(timezone.utc)
                 action_id = str(uuid.uuid4())
                 summary_text = tool_def.format_confirmation_summary(validated_dict)
                 pending_action = {
@@ -465,6 +467,8 @@ def execute_tools_node(
                     "arguments": validated_dict,
                     "summary": summary_text,
                     "status": "pending_confirmation",
+                    "created_at": now_utc.isoformat(),
+                    "expires_at": (now_utc + timedelta(minutes=15)).isoformat(),
                 }
                 friendly_name = tool_def.friendly_name or tool_def.name.lower()
                 last_caller_msg = messages[-2].get("content", "") if len(messages) >= 2 else ""
@@ -622,14 +626,46 @@ def execute_pending_action(
             tool_id=pending_action.get("tool_id", "unknown"),
             status=ToolExecutionStatus.ERROR,
             success=False,
+            is_business_accepted=False,
+            error_code="ACTION_ALREADY_PROCESSED",
             message="This action has already been processed or expired.",
         )
+
+    # Enforce action expiration
+    if pending_action.get("expires_at"):
+        try:
+            from datetime import datetime, timezone
+            exp_val = pending_action["expires_at"]
+            if isinstance(exp_val, str):
+                exp_dt = datetime.fromisoformat(exp_val)
+            elif isinstance(exp_val, datetime):
+                exp_dt = exp_val
+            else:
+                exp_dt = None
+
+            if exp_dt:
+                if exp_dt.tzinfo is None:
+                    exp_dt = exp_dt.replace(tzinfo=timezone.utc)
+                if exp_dt < datetime.now(timezone.utc):
+                    pending_action["status"] = "expired"
+                    return ToolExecutionResult(
+                        tool_id=pending_action.get("tool_id", "unknown"),
+                        status=ToolExecutionStatus.ERROR,
+                        success=False,
+                        is_business_accepted=False,
+                        error_code="ACTION_EXPIRED",
+                        message="This confirmation request has expired. Please initiate the request again.",
+                    )
+        except Exception:
+            pass
 
     if pending_action.get("business_id") != business_id:
         return ToolExecutionResult(
             tool_id=pending_action.get("tool_id", "unknown"),
             status=ToolExecutionStatus.ERROR,
             success=False,
+            is_business_accepted=False,
+            error_code="BUSINESS_IDENTITY_MISMATCH",
             message="Pending action does not belong to the currently active business.",
         )
 

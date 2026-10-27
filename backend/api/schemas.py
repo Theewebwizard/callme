@@ -217,3 +217,61 @@ class ActionConfirmResponse(BaseModel):
     reference_id: Optional[str] = None
     message: str
     error: Optional[str] = None
+
+
+# --- Capability Setup Wizard & Resource Schemas ---
+
+class StartSetupRequest(BaseModel):
+    """Initiate a capability setup session."""
+    option_id: str = Field(..., description="ID of chosen integration option (e.g. builtin_dining, google_calendar)")
+
+
+class SaveStepRequest(BaseModel):
+    """Save step payload in a setup session."""
+    step_name: str = Field(..., description="Step name, e.g. configuration or credentials")
+    data: Dict[str, Any] = Field(default_factory=dict, description="Step field key-value pairs")
+    is_completed: bool = Field(False, description="Whether this step is completed")
+
+
+class ResourceCreateRequest(BaseModel):
+    """Create a reservable resource (dining table or clinical suite)."""
+    name: str = Field(..., min_length=1, max_length=100, description="Resource identifier or label, e.g. Table 1")
+    capacity: int = Field(2, ge=1, le=50, description="Standard seating or room capacity")
+    min_party_size: int = Field(1, ge=1, le=50, description="Minimum guests/clients allowed")
+    max_party_size: int = Field(4, ge=1, le=50, description="Maximum guests/clients allowed")
+    resource_type: str = Field("table", description="Type: table or room")
+    section: Optional[str] = Field(None, max_length=100, description="Location area, e.g. Patio or 1st Floor")
+
+
+class ResourceResponse(BaseModel):
+    """Reservable resource data."""
+    id: str
+    business_id: str
+    name: str
+    capacity: int
+    min_party_size: int
+    max_party_size: int
+    resource_type: str
+    section: Optional[str] = None
+    is_active: bool = True
+    created_at: Optional[str] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ReservationResponse(BaseModel):
+    """Transactional booking or appointment record."""
+    id: str
+    business_id: str
+    resource_id: Optional[str] = None
+    resource_name: Optional[str] = None
+    customer_name: str
+    customer_phone: str
+    party_size: int
+    start_time: str
+    end_time: str
+    status: str
+    special_requests: Optional[str] = None
+    created_at: Optional[str] = None
+
+    model_config = ConfigDict(from_attributes=True)
