@@ -54,6 +54,7 @@ class PendingActionPayload(BaseModel):
     """Validated payload for an action awaiting user or staff confirmation."""
     action_id: str
     business_id: str
+    session_id: Optional[str] = None
     tool_id: str
     tool_name: str
     arguments: Dict[str, Any]
@@ -101,6 +102,7 @@ class AgentState(TypedDict, total=False):
     and bounded execution budgets.
     """
     business_id: str
+    session_id: Optional[str]
     business_config: Dict[str, Any]
     enabled_tools: Dict[str, Any]
     messages: List[Dict[str, Any]]

@@ -18,6 +18,8 @@ from backend.tools.definitions import (
     CreateAppointmentInput,
     TakeMessageInput,
     TransferCallInput,
+    CheckRoomAvailabilityInput,
+    CreateRoomBookingInput,
 )
 from backend.tools.implementations.information import handle_answer_faq
 from backend.tools.implementations.dining import (
@@ -33,6 +35,11 @@ from backend.tools.implementations.healthcare import (
 from backend.tools.implementations.communication import (
     handle_take_message,
     handle_transfer_call,
+)
+from backend.tools.implementations.hospitality import (
+    handle_check_room_availability,
+    handle_create_room_booking,
+    format_hotel_reservation_summary,
 )
 
 logger = logging.getLogger(__name__)
@@ -330,6 +337,44 @@ def build_default_tool_registry() -> ToolRegistry:
             handler=handle_create_table_booking,
             friendly_name="dining reservation",
             confirmation_formatter=format_dining_reservation_summary,
+        )
+    )
+
+    # 4. Check Room Availability (Hotel & Hospitality only)
+    registry.register(
+        ToolDefinition(
+            id="check_room_availability",
+            name="Check Room Availability",
+            description="Inspects real-time hotel room availability for requested check-in and check-out dates and room type.",
+            category=ToolCategory.HOSPITALITY,
+            icon="🏨",
+            allowed_industries=["Hotel", "Resort", "Hotel & Resort", "Hospitality & Lodging", "Hospitality", "Lodging", "Bed & Breakfast", "Inn"],
+            allowed_canonical_industries=["hotel"],
+            input_schema=CheckRoomAvailabilityInput,
+            requires_confirmation=False,
+            is_implemented=True,
+            execution_mode=ToolExecutionMode.MOCK,
+            handler=handle_check_room_availability,
+        )
+    )
+
+    # 5. Create Room Booking (Hotel & Hospitality only)
+    registry.register(
+        ToolDefinition(
+            id="create_room_booking",
+            name="Create Room Booking",
+            description="Reserves a hotel room for a guest after confirming stay dates, room type, and guest contact details.",
+            category=ToolCategory.HOSPITALITY,
+            icon="🛏️",
+            allowed_industries=["Hotel", "Resort", "Hotel & Resort", "Hospitality & Lodging", "Hospitality", "Lodging", "Bed & Breakfast", "Inn"],
+            allowed_canonical_industries=["hotel"],
+            input_schema=CreateRoomBookingInput,
+            requires_confirmation=True,
+            is_implemented=True,
+            execution_mode=ToolExecutionMode.MOCK,
+            handler=handle_create_room_booking,
+            friendly_name="hotel room reservation",
+            confirmation_formatter=format_hotel_reservation_summary,
         )
     )
 

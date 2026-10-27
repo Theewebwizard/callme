@@ -4,7 +4,8 @@ Provides payment link generation, authoritative charge status verification,
 and Stripe-Signature webhook verification with replay protection.
 """
 
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, Tuple
+import os
 import hmac
 import hashlib
 import time
@@ -71,6 +72,14 @@ class StripePaymentsAdapter(IntegrationAdapter):
             ],
             optional_setup_fields=[
                 SetupField(
+                    key="stripe_account_id",
+                    label="Stripe Connected Account ID",
+                    type=FieldType.STRING,
+                    required=False,
+                    placeholder="acct_...",
+                    description="Stripe Connect account ID for platform multi-merchant payment routing",
+                ),
+                SetupField(
                     key="webhook_secret",
                     label="Stripe Webhook Signing Secret",
                     type=FieldType.PASSWORD,
@@ -100,33 +109,87 @@ class StripePaymentsAdapter(IntegrationAdapter):
             is_mock=False,
         )
 
+    def _get_effective_auth(self) -> Tuple[Optional[str], Optional[str]]:
+        """
+        Determine effective Stripe API key and connected account ID.
+        Supports both Direct Merchant Keys (sk_live_...) and Stripe Connect (acct_... with platform key).
+        """
+        from backend.config import get_settings
+        settings = get_settings()
+
+        key = (
+            self.credentials.get("secret_key")
+            or self.configuration.get("secret_key")
+            or getattr(settings, "STRIPE_SECRET_KEY", None)
+            or os.getenv("STRIPE_SECRET_KEY")
+        )
+        account_id = (
+            self.credentials.get("stripe_account_id")
+            or self.configuration.get("stripe_account_id")
+            or self.credentials.get("stripe_account")
+            or self.configuration.get("stripe_account")
+        )
+        return key, account_id
+
     def validate_configuration(self, config: Dict[str, Any]) -> ReadinessCheckResult:
-        key = config.get("secret_key") or self.credentials.get("secret_key")
-        if not key or not (str(key).startswith("sk_live_") or str(key).startswith("sk_test_")):
+        key, account_id = self._get_effective_auth()
+        cfg_key = config.get("secret_key")
+        cfg_account = config.get("stripe_account_id") or config.get("stripe_account")
+        effective_key = cfg_key or key
+        effective_account = cfg_account or account_id
+
+        # Mode 1: Stripe Connect Connected Account
+        if effective_account:
+            if not str(effective_account).startswith("acct_"):
+                return ReadinessCheckResult(
+                    check_id="stripe_key_format",
+                    name="Stripe Connect Account Format",
+                    passed=False,
+                    details="Stripe Connected Account ID must start with 'acct_'.",
+                    severity="critical",
+                )
+            if not effective_key:
+                return ReadinessCheckResult(
+                    check_id="stripe_key_format",
+                    name="Stripe Connect Platform Key",
+                    passed=False,
+                    details="Stripe Connect requires platform STRIPE_SECRET_KEY configured in environment or credentials.",
+                    severity="critical",
+                )
+            return ReadinessCheckResult(
+                check_id="stripe_key_format",
+                name="Stripe Connect Account",
+                passed=True,
+                details=f"Valid Stripe Connect account: {str(effective_account)[:12]}...",
+                severity="critical",
+            )
+
+        # Mode 2: Direct Secret Key
+        if not effective_key or not (str(effective_key).startswith("sk_live_") or str(effective_key).startswith("sk_test_")):
             return ReadinessCheckResult(
                 check_id="stripe_key_format",
                 name="Stripe Secret Key Format",
                 passed=False,
-                details="Stripe Secret Key must start with 'sk_live_' or 'sk_test_'.",
+                details="Stripe configuration requires either 'secret_key' (sk_live_...) or 'stripe_account_id' (acct_...).",
                 severity="critical",
             )
         return ReadinessCheckResult(
             check_id="stripe_key_format",
             name="Stripe Secret Key Format",
             passed=True,
-            details=f"Valid key prefix: {str(key)[:8]}...",
+            details=f"Valid key prefix: {str(effective_key)[:8]}...",
             severity="critical",
         )
 
     def connect(self, credentials: Dict[str, Any]) -> ReadinessCheckResult:
         self.credentials.update(credentials)
-        key = self.credentials.get("secret_key")
-        if not key:
+        key, account_id = self._get_effective_auth()
+        if not key and not account_id:
             return ReadinessCheckResult(
                 check_id="stripe_auth_check",
                 name="Stripe API Key Storage",
                 passed=False,
-                details="Stripe secret key must be provided.",
+                details="Stripe secret key or connected account ID must be provided.",
                 severity="critical",
             )
         return ReadinessCheckResult(
@@ -138,7 +201,7 @@ class StripePaymentsAdapter(IntegrationAdapter):
         )
 
     def test_connection(self) -> ReadinessCheckResult:
-        key = self.configuration.get("secret_key") or self.credentials.get("secret_key")
+        key, account_id = self._get_effective_auth()
         if not key:
             return ReadinessCheckResult(
                 check_id="stripe_conn_test",
@@ -147,11 +210,15 @@ class StripePaymentsAdapter(IntegrationAdapter):
                 details="Missing Stripe secret key.",
                 severity="critical",
             )
+        if account_id:
+            details_str = f"Stripe Connect gateway probe succeeded (Connected Account: {str(account_id)[:12]}...)."
+        else:
+            details_str = f"Stripe gateway probe succeeded ({'live' if 'sk_live_' in str(key) else 'test'} mode)."
         return ReadinessCheckResult(
             check_id="stripe_conn_test",
             name="Stripe Connectivity",
             passed=True,
-            details=f"Stripe gateway probe succeeded ({'live' if 'sk_live_' in str(key) else 'test'} mode).",
+            details=details_str,
             severity="critical",
         )
 
@@ -177,8 +244,9 @@ class StripePaymentsAdapter(IntegrationAdapter):
                 desc = input_data.get("description", "Service Payment")
                 payment_id = f"pi_{uuid.uuid4().hex[:24]}"
 
+                key, account_id = self._get_effective_auth()
                 # Enforce credential existence in live mode
-                if context.execution_mode == "live" and not self.credentials.get("secret_key"):
+                if context.execution_mode == "live" and not key:
                     return CapabilityResult(
                         operation=operation,
                         outcome=ExecutionOutcome.OPERATION_FAILED,
@@ -207,6 +275,7 @@ class StripePaymentsAdapter(IntegrationAdapter):
                         "currency": currency,
                         "payment_url": checkout_url,
                         "description": desc,
+                        "stripe_account_id": account_id,
                         "authoritative_source": self.authoritative_source.value,
                     },
                     safe_message=(

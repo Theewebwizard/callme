@@ -146,11 +146,26 @@ def session_scope(
         session.close()
 
 
-def check_database_connection(engine: Optional[Engine] = None) -> Dict[str, Any]:
+import time
+import threading
+
+_DB_CONN_CACHE: Dict[str, Any] = {"result": None, "timestamp": 0.0}
+_DB_CONN_CACHE_LOCK = threading.Lock()
+_DB_CONN_CACHE_TTL = 30.0  # 30-second TTL cache for remote database probes
+
+
+def check_database_connection(engine: Optional[Engine] = None, force_refresh: bool = False) -> Dict[str, Any]:
     """
     Probe database connectivity and return structured health status.
+    Uses a 30-second thread-safe in-memory cache to prevent redundant remote DB probes.
     Never exposes passwords or sensitive credentials in error messages.
     """
+    if engine is None and not force_refresh:
+        now = time.time()
+        with _DB_CONN_CACHE_LOCK:
+            if _DB_CONN_CACHE["result"] is not None and (now - _DB_CONN_CACHE["timestamp"]) < _DB_CONN_CACHE_TTL:
+                return _DB_CONN_CACHE["result"].copy()
+
     try:
         eng = engine or get_engine()
     except DatabaseConfigurationError as cfg_err:
@@ -171,12 +186,17 @@ def check_database_connection(engine: Optional[Engine] = None) -> Dict[str, Any]
     try:
         with eng.connect() as conn:
             conn.execute(text("SELECT 1"))
-        return {
+        res = {
             "connected": True,
             "configured": True,
             "dialect": eng.dialect.name,
             "error": None,
         }
+        if engine is None:
+            with _DB_CONN_CACHE_LOCK:
+                _DB_CONN_CACHE["result"] = res
+                _DB_CONN_CACHE["timestamp"] = time.time()
+        return res
     except OperationalError as op_err:
         logger.warning(f"Database connectivity test failed: {op_err}")
         return {
@@ -196,44 +216,59 @@ def check_database_connection(engine: Optional[Engine] = None) -> Dict[str, Any]
 
 
 def migrate_schema_columns(engine: Engine) -> None:
-    """Safely apply non-destructive schema column migrations for existing databases."""
+    """
+    Safely apply non-destructive schema column migrations for local/test SQLite databases.
+    PostgreSQL schema migrations are strictly managed authoritatively by Alembic version scripts
+    to prevent unconstrained raw DDL and schema drift.
+    """
     dialect = engine.dialect.name
+    if dialect != "sqlite":
+        logger.info(
+            "Skipping dynamic schema column alteration for '%s' dialect; migrations are managed authoritatively by Alembic.",
+            dialect,
+        )
+        return
+
     try:
         with engine.begin() as conn:
-            if dialect == "postgresql":
-                conn.execute(text("ALTER TABLE business_tool_configs ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'not_configured';"))
-                conn.execute(text("ALTER TABLE business_tool_configs ADD COLUMN IF NOT EXISTS selected_option_id VARCHAR(100);"))
-                conn.execute(text("ALTER TABLE business_tool_configs ADD COLUMN IF NOT EXISTS configuration JSONB DEFAULT '{}'::jsonb;"))
-                conn.execute(text("ALTER TABLE business_tool_configs ADD COLUMN IF NOT EXISTS readiness_details JSONB DEFAULT '{}'::jsonb;"))
-                conn.execute(text("ALTER TABLE business_tool_configs ADD COLUMN IF NOT EXISTS last_validated_at TIMESTAMPTZ;"))
-                conn.execute(text("ALTER TABLE reservations ADD COLUMN IF NOT EXISTS hold_expires_at TIMESTAMPTZ;"))
-                conn.execute(text("ALTER TABLE reservations ADD COLUMN IF NOT EXISTS rescheduled_from_id VARCHAR(64);"))
-                conn.execute(text("ALTER TABLE reservations ADD COLUMN IF NOT EXISTS metadata_json JSONB DEFAULT '{}'::jsonb;"))
-            elif dialect == "sqlite":
-                res = conn.execute(text("PRAGMA table_info(business_tool_configs);")).fetchall()
-                existing_cols = {row[1] for row in res}
-                if existing_cols:
-                    if "status" not in existing_cols:
-                        conn.execute(text("ALTER TABLE business_tool_configs ADD COLUMN status VARCHAR(50) DEFAULT 'not_configured';"))
-                    if "selected_option_id" not in existing_cols:
-                        conn.execute(text("ALTER TABLE business_tool_configs ADD COLUMN selected_option_id VARCHAR(100);"))
-                    if "configuration" not in existing_cols:
-                        conn.execute(text("ALTER TABLE business_tool_configs ADD COLUMN configuration JSON DEFAULT '{}';"))
-                    if "readiness_details" not in existing_cols:
-                        conn.execute(text("ALTER TABLE business_tool_configs ADD COLUMN readiness_details JSON DEFAULT '{}';"))
-                    if "last_validated_at" not in existing_cols:
-                        conn.execute(text("ALTER TABLE business_tool_configs ADD COLUMN last_validated_at DATETIME;"))
-                res_res = conn.execute(text("PRAGMA table_info(reservations);")).fetchall()
-                existing_res_cols = {row[1] for row in res_res}
-                if existing_res_cols:
-                    if "hold_expires_at" not in existing_res_cols:
-                        conn.execute(text("ALTER TABLE reservations ADD COLUMN hold_expires_at DATETIME;"))
-                    if "rescheduled_from_id" not in existing_res_cols:
-                        conn.execute(text("ALTER TABLE reservations ADD COLUMN rescheduled_from_id VARCHAR(64);"))
-                    if "metadata_json" not in existing_res_cols:
-                        conn.execute(text("ALTER TABLE reservations ADD COLUMN metadata_json JSON DEFAULT '{}';"))
+            res = conn.execute(text("PRAGMA table_info(business_tool_configs);")).fetchall()
+            existing_cols = {row[1] for row in res}
+            if existing_cols:
+                if "status" not in existing_cols:
+                    conn.execute(text("ALTER TABLE business_tool_configs ADD COLUMN status VARCHAR(50) DEFAULT 'not_configured';"))
+                if "selected_option_id" not in existing_cols:
+                    conn.execute(text("ALTER TABLE business_tool_configs ADD COLUMN selected_option_id VARCHAR(100);"))
+                if "configuration" not in existing_cols:
+                    conn.execute(text("ALTER TABLE business_tool_configs ADD COLUMN configuration JSON DEFAULT '{}';"))
+                if "readiness_details" not in existing_cols:
+                    conn.execute(text("ALTER TABLE business_tool_configs ADD COLUMN readiness_details JSON DEFAULT '{}';"))
+                if "last_validated_at" not in existing_cols:
+                    conn.execute(text("ALTER TABLE business_tool_configs ADD COLUMN last_validated_at DATETIME;"))
+            res_res = conn.execute(text("PRAGMA table_info(reservations);")).fetchall()
+            existing_res_cols = {row[1] for row in res_res}
+            if existing_res_cols:
+                if "hold_expires_at" not in existing_res_cols:
+                    conn.execute(text("ALTER TABLE reservations ADD COLUMN hold_expires_at DATETIME;"))
+                if "rescheduled_from_id" not in existing_res_cols:
+                    conn.execute(text("ALTER TABLE reservations ADD COLUMN rescheduled_from_id VARCHAR(64);"))
+                if "metadata_json" not in existing_res_cols:
+                    conn.execute(text("ALTER TABLE reservations ADD COLUMN metadata_json JSON DEFAULT '{}';"))
+            res_cred = conn.execute(text("PRAGMA table_info(integration_credentials);")).fetchall()
+            existing_cred_cols = {row[1] for row in res_cred}
+            if existing_cred_cols:
+                if "connection_id" not in existing_cred_cols:
+                    conn.execute(text("ALTER TABLE integration_credentials ADD COLUMN connection_id VARCHAR(64);"))
+                if "lease_owner_id" not in existing_cred_cols:
+                    conn.execute(text("ALTER TABLE integration_credentials ADD COLUMN lease_owner_id VARCHAR(64);"))
+                if "lease_expires_at" not in existing_cred_cols:
+                    conn.execute(text("ALTER TABLE integration_credentials ADD COLUMN lease_expires_at DATETIME;"))
+                if "fencing_token" not in existing_cred_cols:
+                    conn.execute(text("ALTER TABLE integration_credentials ADD COLUMN fencing_token BIGINT DEFAULT 0;"))
+                if "schema_version" not in existing_cred_cols:
+                    conn.execute(text("ALTER TABLE integration_credentials ADD COLUMN schema_version INTEGER DEFAULT 1;"))
     except Exception as exc:
         logger.warning(f"Schema column migration note: {exc}")
+
 
 
 def init_db_schema(engine: Optional[Engine] = None) -> None:

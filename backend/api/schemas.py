@@ -56,6 +56,8 @@ class BusinessDetailResponse(BaseModel):
     faqs: List[FAQItem]
     enabled_tools: Dict[str, bool]
     stats: Dict[str, Any]
+    access_token: Optional[str] = None
+    token_type: Optional[str] = "bearer"
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -128,6 +130,7 @@ class ToolItemResponse(BaseModel):
     is_enabled: bool
     allowed_industries: List[str] = Field(default_factory=lambda: ["*"])
     is_industry_compatible: bool = True
+    is_implemented: bool = True
 
 
 class BusinessToolsResponse(BaseModel):
@@ -259,6 +262,20 @@ class ResourceResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class ReservationCreateRequest(BaseModel):
+    """Payload to create a booking, room night reservation, or appointment."""
+    customer_name: str = Field(..., min_length=1, max_length=150, description="Customer or guest name")
+    customer_phone: str = Field(..., min_length=3, max_length=50, description="Customer contact phone")
+    party_size: int = Field(1, ge=1, le=50, description="Number of guests")
+    start_time: str = Field(..., description="Start date/time in ISO or YYYY-MM-DD HH:MM format")
+    end_time: str = Field(..., description="End date/time in ISO or YYYY-MM-DD HH:MM format")
+    resource_id: Optional[str] = Field(None, description="Optional target room or table ID")
+    resource_type: str = Field("table", description="Type of resource: room or table")
+    section: Optional[str] = Field(None, description="Section or room category")
+    special_requests: Optional[str] = Field(None, description="Special guest requirements")
+    status: str = Field("confirmed", description="Booking status: confirmed or hold")
+
+
 class ReservationResponse(BaseModel):
     """Transactional booking or appointment record."""
     id: str
@@ -275,3 +292,4 @@ class ReservationResponse(BaseModel):
     created_at: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
+

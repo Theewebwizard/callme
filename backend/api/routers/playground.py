@@ -3,15 +3,20 @@ Agent Playground conversation endpoint.
 Orchestrates dialogue turns through the shared LangGraph conversation workflow.
 """
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Depends
 
+from backend.auth import verify_business_access
 from backend.api.schemas import PlaygroundMessageRequest, PlaygroundMessageResponse
 from backend.database.service import get_database_service
 from backend.services.groq_service import get_groq_service
 from backend.agent import invoke_receptionist_workflow
 from backend.tools.registry import get_tool_registry
 
-router = APIRouter(prefix="/businesses/{business_id}/playground", tags=["Playground"])
+router = APIRouter(
+    prefix="/businesses/{business_id}/playground",
+    tags=["Playground"],
+    dependencies=[Depends(verify_business_access)],
+)
 
 
 @router.post("/messages", response_model=PlaygroundMessageResponse)

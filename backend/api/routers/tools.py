@@ -3,8 +3,9 @@ Business Tool Configuration endpoints.
 """
 
 from typing import List, Dict
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Depends
 
+from backend.auth import verify_business_access
 from backend.api.schemas import (
     BusinessToolsResponse,
     ToolItemResponse,
@@ -15,7 +16,11 @@ from backend.api.schemas import (
 from backend.database.service import get_database_service
 from backend.tools.registry import get_tool_registry
 
-router = APIRouter(prefix="/businesses/{business_id}/tools", tags=["Tools"])
+router = APIRouter(
+    prefix="/businesses/{business_id}/tools",
+    tags=["Tools"],
+    dependencies=[Depends(verify_business_access)],
+)
 
 
 @router.get("", response_model=BusinessToolsResponse)
@@ -52,6 +57,7 @@ def get_business_tools(business_id: str) -> BusinessToolsResponse:
                 is_enabled=enabled_map.get(t_id, False),
                 allowed_industries=tool_def.allowed_industries,
                 is_industry_compatible=True,
+                is_implemented=getattr(tool_def, "is_implemented", True),
             )
         )
 

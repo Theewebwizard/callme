@@ -1574,3 +1574,43 @@ input, select, textarea {
   }
 }
 
+/* ==========================================================================
+   Interactive Booking Calendar & Modal Utility Styles
+   ========================================================================== */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.modal-card {
+  background: white;
+  border-radius: var(--radius-lg);
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.28);
+  display: flex;
+  flex-direction: column;
+  padding: 1.5rem;
+  border: 1px solid var(--slate-200);
+}
+
+.calendar-empty-slot:hover {
+  background: var(--sky-50) !important;
+  color: var(--sky-600) !important;
+}
+
+.calendar-empty-slot:hover span {
+  opacity: 1 !important;
+  font-weight: 700 !important;
+}
+
+

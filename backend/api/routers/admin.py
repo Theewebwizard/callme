@@ -5,13 +5,18 @@ master canonical tools repository, and cross-tenant tool usage.
 """
 
 from typing import List, Dict, Any, Optional
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Depends
 from pydantic import BaseModel, Field
 
+from backend.auth import verify_admin_key
 from backend.database.service import get_database_service
 from backend.tools.registry import get_tool_registry
 
-router = APIRouter(prefix="/admin", tags=["Admin Command Center"])
+router = APIRouter(
+    prefix="/admin",
+    tags=["Admin Command Center"],
+    dependencies=[Depends(verify_admin_key)],
+)
 
 
 class DemandStatusUpdateRequest(BaseModel):

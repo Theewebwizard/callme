@@ -5,14 +5,16 @@ and first-party resource inventory management.
 """
 
 from typing import List, Dict, Any, Optional
+from datetime import datetime, timezone
 import logging
-from fastapi import APIRouter, HTTPException, status, Query
+from fastapi import APIRouter, HTTPException, status, Query, Depends
 
 from backend.api.schemas import (
     StartSetupRequest,
     SaveStepRequest,
     ResourceCreateRequest,
     ResourceResponse,
+    ReservationCreateRequest,
     ReservationResponse,
 )
 from backend.capabilities.wizard import get_setup_wizard
@@ -20,10 +22,15 @@ from backend.capabilities.specs import get_capability_spec, list_all_capability_
 from backend.capabilities.models import CapabilityStatus
 from backend.integrations.resolver import resolve_tool_adapter
 from backend.database.service import get_database_service
+from backend.auth import verify_business_access
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/businesses/{business_id}", tags=["Capabilities & Setup Wizard"])
+router = APIRouter(
+    prefix="/businesses/{business_id}",
+    tags=["Capabilities & Setup Wizard"],
+    dependencies=[Depends(verify_business_access)],
+)
 
 
 def _verify_tenant(business_id: str) -> Dict[str, Any]:
@@ -279,6 +286,57 @@ def list_reservations(
     return [ReservationResponse.model_validate(r) for r in reservations]
 
 
+@router.post("/reservations", response_model=ReservationResponse)
+def create_reservation(
+    business_id: str,
+    payload: ReservationCreateRequest,
+) -> ReservationResponse:
+    """Create a confirmed booking, room night reservation, or appointment."""
+    _verify_tenant(business_id)
+    db_service = get_database_service()
+    try:
+        start_dt = datetime.fromisoformat(payload.start_time.replace("Z", "+00:00"))
+        if start_dt.tzinfo is None:
+            start_dt = start_dt.replace(tzinfo=timezone.utc)
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid start_time format: {payload.start_time}",
+        )
+
+    try:
+        end_dt = datetime.fromisoformat(payload.end_time.replace("Z", "+00:00"))
+        if end_dt.tzinfo is None:
+            end_dt = end_dt.replace(tzinfo=timezone.utc)
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid end_time format: {payload.end_time}",
+        )
+
+    try:
+        booking = db_service.create_reservation_atomic(
+            business_id=business_id,
+            customer_name=payload.customer_name,
+            customer_phone=payload.customer_phone,
+            party_size=payload.party_size,
+            start_time=start_dt,
+            end_time=end_dt,
+            resource_id=payload.resource_id,
+            resource_type=payload.resource_type,
+            section=payload.section,
+            special_requests=payload.special_requests,
+            status=payload.status,
+        )
+        return ReservationResponse.model_validate(booking)
+    except Exception as e:
+        logger.error(f"Failed to create reservation: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        )
+
+
 @router.delete("/reservations/{reservation_id}")
 def cancel_reservation(
     business_id: str,
@@ -295,3 +353,4 @@ def cancel_reservation(
             detail=f"Reservation '{reservation_id}' not found or already cancelled.",
         )
     return {"success": True, "reservation_id": reservation_id, "status": "cancelled"}
+

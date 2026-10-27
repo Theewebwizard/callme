@@ -161,13 +161,37 @@ export default function CallHistory({ business, initialCalls = [], onCallsUpdate
         ) : error ? (
           <div style={{ padding: '3rem', textAlign: 'center', color: '#be123c' }}>
             <p style={{ fontWeight: 600, marginBottom: '0.75rem' }}>{error}</p>
-            <button
-              className="btn-primary"
-              style={{ padding: '0.4rem 1rem', fontSize: '0.85rem' }}
-              onClick={loadAllCalls}
-            >
-              🔄 Retry Fetching Records
-            </button>
+            {error.toLowerCase().includes('token') || error.toLowerCase().includes('authentication') || error.toLowerCase().includes('credentials') ? (
+              <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', marginTop: '0.75rem' }}>
+                <button
+                  className="btn-secondary"
+                  style={{ padding: '0.4rem 1rem', fontSize: '0.85rem', cursor: 'pointer' }}
+                  onClick={() => {
+                    localStorage.removeItem('callme_token');
+                    localStorage.removeItem('callme_active_business_id');
+                    localStorage.removeItem('callme_role');
+                    window.location.reload();
+                  }}
+                >
+                  🔑 Sign In Again
+                </button>
+                <button
+                  className="btn-primary"
+                  style={{ padding: '0.4rem 1rem', fontSize: '0.85rem', cursor: 'pointer' }}
+                  onClick={loadAllCalls}
+                >
+                  🔄 Retry Fetching Records
+                </button>
+              </div>
+            ) : (
+              <button
+                className="btn-primary"
+                style={{ padding: '0.4rem 1rem', fontSize: '0.85rem', cursor: 'pointer' }}
+                onClick={loadAllCalls}
+              >
+                🔄 Retry Fetching Records
+              </button>
+            )}
           </div>
         ) : filteredCalls.length > 0 ? (
           <div className="table-wrapper" style={{ border: 'none' }}>

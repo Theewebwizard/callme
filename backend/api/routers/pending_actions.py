@@ -2,13 +2,18 @@
 Pending Action human-in-the-loop confirmation endpoints.
 """
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Depends
 
+from backend.auth import verify_business_access
 from backend.api.schemas import ActionConfirmResponse
 from backend.database.service import get_database_service
 from backend.agent import execute_pending_action
 
-router = APIRouter(prefix="/businesses/{business_id}/pending-actions", tags=["Pending Actions"])
+router = APIRouter(
+    prefix="/businesses/{business_id}/pending-actions",
+    tags=["Pending Actions"],
+    dependencies=[Depends(verify_business_access)],
+)
 
 
 @router.post("/{action_id}/confirm", response_model=ActionConfirmResponse)

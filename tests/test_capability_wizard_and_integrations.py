@@ -595,7 +595,10 @@ def test_e2e_capability_wizard_api(seeded_db_service, monkeypatch):
     monkeypatch.setattr(res_mod, "get_database_service", lambda: seeded_db_service)
     monkeypatch.setattr(cap_mod, "get_setup_wizard", lambda: CapabilitySetupWizard(seeded_db_service))
 
+    from backend.auth import create_access_token
+    token = create_access_token(subject="biz_test_restaurant", role="business_owner", business_id="biz_test_restaurant")
     client = TestClient(app)
+    client.headers.update({"Authorization": f"Bearer {token}"})
 
     # 1. GET /api/businesses/biz_test_restaurant/capabilities
     caps_resp = client.get("/api/businesses/biz_test_restaurant/capabilities")
@@ -666,3 +669,50 @@ def test_e2e_capability_wizard_api(seeded_db_service, monkeypatch):
     disc_resp = client.delete("/api/businesses/biz_test_restaurant/capabilities/check_table_availability/integration")
     assert disc_resp.status_code == 200
     assert disc_resp.json()["status"] == "disconnected"
+
+
+def test_list_reservations_with_limit_and_pagination(seeded_db_service, monkeypatch):
+    """Verify list_reservations endpoint with limit parameter works without TypeError."""
+    import backend.database.service as db_mod
+    import backend.api.routers.capabilities as cap_mod
+    from datetime import datetime, timezone, timedelta
+    from backend.auth import create_access_token
+
+    monkeypatch.setattr(db_mod, "get_database_service", lambda: seeded_db_service)
+    monkeypatch.setattr(cap_mod, "get_database_service", lambda: seeded_db_service)
+
+    # Register table resource
+    seeded_db_service.create_resource(
+        business_id="biz_test_restaurant",
+        name="Table 1",
+        capacity=4,
+        min_party_size=1,
+        max_party_size=4,
+        resource_type="table",
+    )
+
+    # Create dummy reservation
+    start = datetime.now(timezone.utc) + timedelta(days=1)
+    end = start + timedelta(hours=2)
+    seeded_db_service.create_reservation_atomic(
+        business_id="biz_test_restaurant",
+        customer_name="Alice Smith",
+        customer_phone="+919876543210",
+        party_size=2,
+        start_time=start,
+        end_time=end,
+    )
+
+    token = create_access_token(subject="biz_test_restaurant", role="business_owner", business_id="biz_test_restaurant")
+    client = TestClient(app)
+
+    # Query with limit parameter
+    resp = client.get(
+        "/api/businesses/biz_test_restaurant/reservations?limit=10",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert isinstance(data, list)
+    assert len(data) >= 1
+    assert data[0]["customer_name"] == "Alice Smith"

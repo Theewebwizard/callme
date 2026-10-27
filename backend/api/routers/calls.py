@@ -3,12 +3,17 @@ Call History and Auditing endpoints.
 """
 
 from typing import Optional
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, HTTPException, Query, status, Depends
 
+from backend.auth import verify_business_access
 from backend.api.schemas import CallHistoryResponse, CallRecordResponse
 from backend.database.service import get_database_service
 
-router = APIRouter(prefix="/businesses/{business_id}/calls", tags=["Call History"])
+router = APIRouter(
+    prefix="/businesses/{business_id}/calls",
+    tags=["Call History"],
+    dependencies=[Depends(verify_business_access)],
+)
 
 
 @router.get("", response_model=CallHistoryResponse)

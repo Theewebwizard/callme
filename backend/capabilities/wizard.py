@@ -9,6 +9,22 @@ from datetime import datetime, timezone
 import logging
 import uuid
 import re
+import time
+import threading
+import concurrent.futures
+
+_CAPABILITY_LIST_CACHE: Dict[str, Any] = {}
+_CAPABILITY_LIST_CACHE_LOCK = threading.Lock()
+_CAPABILITY_LIST_CACHE_TTL = 30.0  # 30-second TTL cache for capability list readiness summaries
+
+
+def invalidate_capability_cache(business_id: Optional[str] = None):
+    """Invalidate cached capability summaries when configuration or tool status changes."""
+    with _CAPABILITY_LIST_CACHE_LOCK:
+        if business_id:
+            _CAPABILITY_LIST_CACHE.pop(business_id, None)
+        else:
+            _CAPABILITY_LIST_CACHE.clear()
 
 from backend.capabilities.models import (
     CapabilityStatus,
@@ -26,8 +42,10 @@ from backend.capabilities.specs import (
 )
 from backend.capabilities.credentials import (
     encrypt_credentials,
+    decrypt_credentials,
     redact_credential_dict,
 )
+from backend.capabilities.oauth_refresh import revoke_oauth_provider_credentials
 from backend.database.service import DatabaseService, get_database_service
 
 logger = logging.getLogger(__name__)
@@ -79,27 +97,56 @@ class CapabilitySetupWizard:
             readiness_report=readiness,
         )
 
-    def list_capabilities(self, business_id: str) -> List[CapabilityStateSummary]:
+    def list_capabilities(self, business_id: str, force_refresh: bool = False) -> List[CapabilityStateSummary]:
         """List all capabilities available for the tenant's industry with readiness states."""
+        if not force_refresh:
+            now = time.time()
+            with _CAPABILITY_LIST_CACHE_LOCK:
+                cached = _CAPABILITY_LIST_CACHE.get(business_id)
+                if cached and (now - cached["timestamp"]) < _CAPABILITY_LIST_CACHE_TTL:
+                    return cached["data"]
+
         profile = self.db.get_business_profile(business_id)
         biz_industry = profile.get("industry") if profile else None
 
         from backend.tools.base import normalize_industry_name
         canonical_ind = normalize_industry_name(biz_industry)
 
-        summaries = []
+        compatible_tools = []
         for tool_id, spec in TOOL_CAPABILITY_SPECS.items():
-            # Check industry compatibility
             is_compatible = (
                 "*" in spec.allowed_canonical_industries
                 or canonical_ind in spec.allowed_canonical_industries
             )
-            if not is_compatible:
-                continue
+            if is_compatible:
+                compatible_tools.append(tool_id)
 
-            summary = self.get_capability_summary(business_id, tool_id)
-            if summary:
-                summaries.append(summary)
+        # Run readiness checks concurrently across thread pool to avoid sequential latency
+        summaries = []
+        with concurrent.futures.ThreadPoolExecutor(max_workers=min(len(compatible_tools) or 1, 8)) as executor:
+            future_to_tool = {
+                executor.submit(self.get_capability_summary, business_id, tool_id): tool_id
+                for tool_id in compatible_tools
+            }
+            results_by_tool = {}
+            for future in concurrent.futures.as_completed(future_to_tool):
+                tool_id = future_to_tool[future]
+                try:
+                    summary = future.result()
+                    if summary:
+                        results_by_tool[tool_id] = summary
+                except Exception as exc:
+                    logger.warning("Error fetching capability summary for %s: %s", tool_id, exc)
+
+        for tool_id in compatible_tools:
+            if tool_id in results_by_tool:
+                summaries.append(results_by_tool[tool_id])
+
+        with _CAPABILITY_LIST_CACHE_LOCK:
+            _CAPABILITY_LIST_CACHE[business_id] = {
+                "data": summaries,
+                "timestamp": time.time(),
+            }
 
         return summaries
 
@@ -417,11 +464,93 @@ class CapabilitySetupWizard:
         }
 
     def disconnect_integration(self, business_id: str, tool_id: str) -> Dict[str, Any]:
-        """Disconnect external provider, purge credentials, and mark disconnected."""
-        # 1. Purge credentials
+        """Disconnect external provider, attempt upstream revocation, purge credentials, and mark disconnected."""
+        cfg = self.db.get_tool_config(business_id, tool_id)
+        selected_option = cfg.get("selected_option_id") if cfg else None
+        spec = get_capability_spec(tool_id)
+
+        # 1. Gather all connection IDs linked to this capability or provider
+        connection_ids = set()
+        if cfg:
+            conn_id_cfg = cfg.get("connection_id") or (cfg.get("configuration", {}).get("connection_id"))
+            if conn_id_cfg:
+                connection_ids.add(conn_id_cfg)
+
+        candidate_providers = set()
+        if selected_option:
+            candidate_providers.add(selected_option)
+        elif spec:
+            for opt in spec.supported_options:
+                candidate_providers.add(opt.option_id)
+
+        tool_cred = self.db.get_credential_raw(business_id, tool_id)
+        if tool_cred:
+            if tool_cred.get("connection_id"):
+                connection_ids.add(tool_cred["connection_id"])
+            if tool_cred.get("option_id"):
+                candidate_providers.add(tool_cred["option_id"])
+
+        for p_id in candidate_providers:
+            try:
+                conns = self.db.list_connections(business_id=business_id, provider_id=p_id)
+                for conn in conns:
+                    cid = conn.get("id") if isinstance(conn, dict) else getattr(conn, "id", None)
+                    if cid:
+                        connection_ids.add(cid)
+            except Exception as exc:
+                logger.warning("Error querying connections for provider %s: %s", p_id, exc)
+
+        revoked_connection_ids = set()
+
+        # 2. Revoke and purge connection-scoped credentials
+        for conn_id in connection_ids:
+            revoked_connection_ids.add(conn_id)
+            conn_cred = self.db.get_connection_credential_raw(business_id, conn_id)
+            if conn_cred and conn_cred.get("encrypted_secrets"):
+                try:
+                    decrypted = decrypt_credentials(conn_cred["encrypted_secrets"])
+                    provider_to_revoke = conn_cred.get("option_id") or selected_option or ""
+                    revoke_oauth_provider_credentials(
+                        provider_id=provider_to_revoke,
+                        credentials=decrypted,
+                    )
+                except Exception as exc:
+                    logger.warning("Provider revocation hook error for connection %s: %s", conn_id, exc)
+
+            self.db.update_connection_status(
+                connection_id=conn_id,
+                status="disconnected",
+                business_id=business_id,
+            )
+            self.db.delete_connection_credential(connection_id=conn_id, business_id=business_id)
+
+        # 3. Handle standalone tool-level credentials if not already revoked
+        if tool_cred and tool_cred.get("encrypted_secrets"):
+            if not tool_cred.get("connection_id") or tool_cred["connection_id"] not in revoked_connection_ids:
+                try:
+                    decrypted = decrypt_credentials(tool_cred["encrypted_secrets"])
+                    revoke_oauth_provider_credentials(
+                        provider_id=tool_cred.get("option_id", "") or (selected_option or ""),
+                        credentials=decrypted,
+                    )
+                except Exception as exc:
+                    logger.warning("Provider revocation hook error during disconnect for %s: %s", tool_id, exc)
+
+            if tool_cred.get("connection_id"):
+                self.db.update_connection_status(
+                    connection_id=tool_cred["connection_id"],
+                    status="disconnected",
+                    business_id=business_id,
+                )
+                self.db.delete_connection_credential(
+                    connection_id=tool_cred["connection_id"],
+                    business_id=business_id,
+                )
+
+        # 4. Purge tool-level credentials from vault
         self.db.delete_credential(business_id, tool_id)
 
-        # 2. Deactivate and mark disconnected
+        # 3. Deactivate and mark disconnected
         cfg = self.db.set_tool_capability(
             business_id=business_id,
             tool_id=tool_id,

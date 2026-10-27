@@ -54,6 +54,7 @@ from backend.voice.providers.exotel import (
     build_exotel_clear_message,
 )
 from backend.voice.utils import mask_phone_number
+from backend.auth import get_current_principal, AuthenticatedPrincipal
 
 logger = logging.getLogger(__name__)
 
@@ -195,12 +196,19 @@ def get_voice_capabilities() -> VoiceCapabilitiesResponse:
 def simulate_inbound_call(
     req: SimulateInboundCallRequest,
     call_router: InboundCallRouter = Depends(get_call_router),
+    principal: AuthenticatedPrincipal = Depends(get_current_principal),
 ) -> SimulateInboundCallResponse:
     """
     Simulate an inbound phone call to a business tenant.
     Resolves tenant, validates number status, rejects unassigned or mismatched calls,
     and returns initial receptionist greeting.
     """
+    if not principal.is_admin and req.claimed_business_id and principal.business_id != req.claimed_business_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Forbidden: Cannot simulate inbound call for another tenant.",
+        )
+
     event = InboundCallEvent(
         provider_call_id=f"sim_call_{datetime.now(timezone.utc).timestamp()}",
         provider_name=req.provider_name,
@@ -226,6 +234,13 @@ def simulate_inbound_call(
         logger.error("Unexpected error routing inbound call: %s", str(e), exc_info=True)
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal call routing failure.")
 
+    # Verify authenticated tenant identity matches resolved business
+    if not principal.is_admin and principal.business_id != route_res.business["id"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Forbidden: Not authorized to simulate calls for another tenant's phone number.",
+        )
+
     return SimulateInboundCallResponse(
         session_id=route_res.session.session_id,
         business_id=route_res.business["id"],
@@ -242,11 +257,23 @@ def simulate_session_turn(
     session_id: str,
     req: SimulateTurnRequest,
     orchestrator: VoiceTurnOrchestrator = Depends(get_orchestrator),
+    session_manager: VoiceSessionManager = Depends(get_session_manager),
+    principal: AuthenticatedPrincipal = Depends(get_current_principal),
 ) -> SimulateTurnResponse:
     """
     Process an inbound user transcript turn through the shared LangGraph receptionist.
     Serializes concurrent turns, ensures session isolation, and records full turn history.
     """
+    session = session_manager.get_session(session_id)
+    if not session:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Voice session '{session_id}' not found.")
+
+    if not principal.is_admin and principal.business_id != session.business_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Forbidden: You do not have permission to execute turns for another tenant's session.",
+        )
+
     transcript = TranscriptEvent(
         session_id=session_id,
         text=req.text,
@@ -284,67 +311,65 @@ def terminate_session(
     req: TerminateSessionRequest,
     session_manager: VoiceSessionManager = Depends(get_session_manager),
     orchestrator: VoiceTurnOrchestrator = Depends(get_orchestrator),
+    principal: AuthenticatedPrincipal = Depends(get_current_principal),
 ) -> TerminateSessionResponse:
     """
     Hang up and terminate a voice session idempotently.
     Logs permanent CallRecord audit and releases resources.
     """
-    session = session_manager.terminate_session(
+    session = session_manager.get_session(session_id)
+    if not session:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Voice session '{session_id}' not found.")
+
+    if not principal.is_admin and principal.business_id != session.business_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Forbidden: You do not have permission to terminate another tenant's session.",
+        )
+
+    terminated_session = session_manager.terminate_session(
         session_id=session_id,
         reason=req.reason,
         summary=req.summary,
     )
-    if not session:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Voice session '{session_id}' not found.")
 
     # Clean up serialization locks
     orchestrator.release_session_lock(session_id)
 
     duration = 0
-    if session.ended_at and session.started_at:
-        duration = max(0, int((session.ended_at - session.started_at).total_seconds()))
+    if terminated_session and terminated_session.ended_at and terminated_session.started_at:
+        duration = max(0, int((terminated_session.ended_at - terminated_session.started_at).total_seconds()))
+
+    status_val = terminated_session.status if terminated_session else "completed"
+    ended_at_val = terminated_session.ended_at.isoformat() if terminated_session and terminated_session.ended_at else None
 
     return TerminateSessionResponse(
-        session_id=session.session_id,
-        status=session.status,
+        session_id=session_id,
+        status=status_val,
         duration_seconds=duration,
-        ended_at=session.ended_at.isoformat() if session.ended_at else None,
-        message=f"Session successfully finalized with status '{session.status}'.",
+        ended_at=ended_at_val,
+        message=f"Session successfully finalized with status '{status_val}'.",
     )
 
 
 @router.get("/sessions/{session_id}", response_model=VoiceSessionDetailResponse)
 def get_voice_session_details(
     session_id: str,
-    business_id: Optional[str] = None,
-    request: Request = None,
+    principal: AuthenticatedPrincipal = Depends(get_current_principal),
     session_manager: VoiceSessionManager = Depends(get_session_manager),
 ) -> VoiceSessionDetailResponse:
     """
     Retrieve full details and conversation message history of a voice session.
     Enforces tenant authorization and prevents unauthorized public transcript disclosure.
     """
-    settings = get_settings()
     session = session_manager.get_session(session_id)
     if not session:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Voice session '{session_id}' not found.")
 
-    # Check tenant authorization from parameter or X-Business-ID header
-    auth_biz_id = business_id
-    if not auth_biz_id and request:
-        auth_biz_id = request.headers.get("x-business-id") or request.headers.get("X-Business-ID")
-
-    if auth_biz_id and auth_biz_id != session.business_id:
+    if not principal.is_admin and principal.business_id != session.business_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Tenant authorization mismatch: Not authorized to view session for another business.",
-        )
-
-    # In production environment, require tenant authentication to inspect transcripts
-    if settings.ENVIRONMENT == "production" and not auth_biz_id:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authentication required: Provide tenant business ID to inspect session transcripts.",
         )
 
     history = session_manager.get_session_history(

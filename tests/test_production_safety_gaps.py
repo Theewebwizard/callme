@@ -571,21 +571,21 @@ def test_pending_action_tenant_binding():
 def test_untrusted_input_cannot_inject_confirmed_boolean():
     """Verify LLM or untrusted caller cannot pass confirmed=True in input schema."""
     with pytest.raises(ValidationError, match="Extra inputs are not permitted"):
-        CreateTableBookingInput(
-            customer_name="Malicious Actor",
-            customer_phone="+91 99999 88888",
-            date="2026-10-30",
-            time="20:00",
-            party_size=2,
-            confirmed=True,  # Extra field injected!
-        )
+        CreateTableBookingInput.model_validate({
+            "customer_name": "Malicious Actor",
+            "customer_phone": "+91 99999 88888",
+            "date": "2026-10-30",
+            "time": "20:00",
+            "party_size": 2,
+            "confirmed": True,  # Extra field injected!
+        })
 
     with pytest.raises(ValidationError, match="Extra inputs are not permitted"):
-        CreateAppointmentInput(
-            patient_name="Malicious Actor",
-            patient_phone="+91 99999 88888",
-            service_or_department="Consultation",
-            appointment_date="2026-10-30",
-            appointment_time="11:00",
-            confirmed=True,  # Extra field injected!
-        )
+        CreateAppointmentInput.model_validate({
+            "patient_name": "Malicious Actor",
+            "patient_phone": "+91 99999 88888",
+            "service_or_department": "Consultation",
+            "appointment_date": "2026-10-30",
+            "appointment_time": "11:00",
+            "confirmed": True,  # Extra field injected!
+        })

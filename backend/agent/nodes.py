@@ -462,6 +462,7 @@ def execute_tools_node(
                 pending_action = {
                     "action_id": action_id,
                     "business_id": biz_id,
+                    "session_id": state.get("session_id"),
                     "tool_id": tool_id,
                     "tool_name": tool_def.name,
                     "arguments": validated_dict,

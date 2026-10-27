@@ -158,6 +158,10 @@ class ReservationRepository(BaseRepository):
         Handles idempotent retries and domain prefixes.
         """
         # Ensure UTC timezone awareness
+        if isinstance(start_time, str):
+            start_time = datetime.fromisoformat(start_time.replace("Z", "+00:00"))
+        if isinstance(end_time, str):
+            end_time = datetime.fromisoformat(end_time.replace("Z", "+00:00"))
         if start_time.tzinfo is None:
             start_time = start_time.replace(tzinfo=timezone.utc)
         if end_time.tzinfo is None:
@@ -534,8 +538,10 @@ class ReservationRepository(BaseRepository):
         end_date: Optional[datetime] = None,
         status: Optional[str] = None,
         resource_id: Optional[str] = None,
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
     ) -> List[Reservation]:
-        """List reservations for business with optional date, status, and resource filters."""
+        """List reservations for business with optional date, status, resource, and pagination filters."""
         stmt = (
             select(Reservation)
             .where(Reservation.business_id == business_id)
@@ -549,6 +555,10 @@ class ReservationRepository(BaseRepository):
             stmt = stmt.where(Reservation.status == status)
         if resource_id:
             stmt = stmt.where(Reservation.resource_id == resource_id)
+        if offset is not None:
+            stmt = stmt.offset(offset)
+        if limit is not None:
+            stmt = stmt.limit(limit)
 
         return list(self.session.scalars(stmt).all())
 

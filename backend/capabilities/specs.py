@@ -405,6 +405,106 @@ TOOL_CAPABILITY_SPECS: Dict[str, ToolCapabilityRequirement] = {
     ),
 
     # ---------------------------------------------------------------------------
+    # Hotel Room Availability
+    # ---------------------------------------------------------------------------
+    "check_room_availability": ToolCapabilityRequirement(
+        tool_id="check_room_availability",
+        version="1.0.0",
+        name="Check Room Availability",
+        description="Inspect available hotel rooms and suites for given stay dates, party size, and room type.",
+        category="Hospitality & Lodging",
+        allowed_canonical_industries=["hotel"],
+        failure_behavior=FailureBehavior.FAIL_CLOSED,
+        requires_confirmation=False,
+        supported_options=[
+            IntegrationOption(
+                option_id="builtin_booking",
+                name="Built-in Room & Lodging Manager",
+                description="Transactional first-party hotel room inventory manager built into CallMe.",
+                is_built_in=True,
+                requires_external_connection=False,
+                authoritative_source=AuthoritativeSource.BUILTIN_DATABASE,
+                setup_fields=[
+                    SetupField(
+                        key="check_in_time",
+                        label="Standard Check-in Time",
+                        type=FieldType.STRING,
+                        required=True,
+                        default_value="14:00",
+                        description="Default daily arrival time for guest room readiness (HH:MM).",
+                    ),
+                    SetupField(
+                        key="check_out_time",
+                        label="Standard Check-out Time",
+                        type=FieldType.STRING,
+                        required=True,
+                        default_value="11:00",
+                        description="Standard departure time for daily housekeeping turnaround (HH:MM).",
+                    ),
+                    SetupField(
+                        key="business_type",
+                        label="Business Domain Type",
+                        type=FieldType.STRING,
+                        required=True,
+                        default_value="hotel",
+                        description="Domain type identifier for inventory lookups.",
+                    ),
+                ],
+                instructions_markdown=(
+                    "### Built-in Room Inventory\n"
+                    "Inspects active room inventory, floor allocations, and verified stay reservations in your database."
+                ),
+            ),
+        ],
+    ),
+
+    # ---------------------------------------------------------------------------
+    # Hotel Room Booking
+    # ---------------------------------------------------------------------------
+    "create_room_booking": ToolCapabilityRequirement(
+        tool_id="create_room_booking",
+        version="1.0.0",
+        name="Create Room Booking",
+        description="Reserve a hotel room, capture guest contact details, and record stay requests. Requires confirmation.",
+        category="Hospitality & Lodging",
+        allowed_canonical_industries=["hotel"],
+        failure_behavior=FailureBehavior.FAIL_CLOSED,
+        requires_confirmation=True,
+        supported_options=[
+            IntegrationOption(
+                option_id="builtin_booking",
+                name="Built-in Room & Lodging Manager",
+                description="Transactional first-party hotel booking engine with multi-night stay lock protection.",
+                is_built_in=True,
+                requires_external_connection=False,
+                authoritative_source=AuthoritativeSource.BUILTIN_DATABASE,
+                setup_fields=[
+                    SetupField(
+                        key="business_type",
+                        label="Business Domain Type",
+                        type=FieldType.STRING,
+                        required=True,
+                        default_value="hotel",
+                        description="Domain type identifier for reservations.",
+                    ),
+                    SetupField(
+                        key="max_stay_nights",
+                        label="Maximum Consecutive Nights",
+                        type=FieldType.INTEGER,
+                        required=True,
+                        default_value=30,
+                        description="Maximum duration of automated voice receptionist room bookings.",
+                    ),
+                ],
+                instructions_markdown=(
+                    "### Built-in Room Reservation\n"
+                    "Allocates rooms and generates booking confirmation codes directly in your tenant database."
+                ),
+            ),
+        ],
+    ),
+
+    # ---------------------------------------------------------------------------
     # 3. Healthcare / Clinic Appointment Availability
     # ---------------------------------------------------------------------------
     "check_appointment_availability": ToolCapabilityRequirement(

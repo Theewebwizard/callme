@@ -239,6 +239,7 @@ def invoke_receptionist_workflow(
     messages: Optional[List[Dict[str, Any]]] = None,
     groq_service: Optional[GroqService] = None,
     tool_registry: Optional[ToolRegistry] = None,
+    session_id: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     Convenience function to execute the receptionist conversation workflow for a tenant.
@@ -252,6 +253,7 @@ def invoke_receptionist_workflow(
 
     initial_state: AgentState = {
         "business_id": business_id,
+        "session_id": session_id,
         "business_config": business_config,
         "enabled_tools": enabled_tools if enabled_tools is not None else business_config.get("enabled_tools", {}),
         "messages": messages or [],

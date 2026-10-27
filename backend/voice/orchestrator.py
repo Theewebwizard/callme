@@ -134,6 +134,7 @@ class VoiceTurnOrchestrator:
                     messages=history,
                     groq_service=self.groq_service,
                     tool_registry=self.tool_registry,
+                    session_id=session_id,
                 )
                 llm_duration_ms = (time.perf_counter() - t_start) * 1000
 
@@ -179,7 +180,7 @@ class VoiceTurnOrchestrator:
 
             # 9. Persist pending action if action was yielded
             if pending_action:
-                self.db.save_pending_action(session.business_id, pending_action)
+                self.db.save_pending_action(session.business_id, pending_action, session_id=session_id)
 
             # 9. Synthesize speech audio frame if TTS provider is configured
             audio_payload: Optional[bytes] = None

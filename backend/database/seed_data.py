@@ -54,6 +54,20 @@ INITIAL_TOOLS: Dict[str, Dict[str, Any]] = {
         "category": "Communication",
         "icon": "📞",
     },
+    "check_room_availability": {
+        "id": "check_room_availability",
+        "name": "Check Room Availability",
+        "description": "Inspects real-time hotel room availability for requested check-in and check-out dates and room type.",
+        "category": "Hospitality & Lodging",
+        "icon": "🏨",
+    },
+    "create_room_booking": {
+        "id": "create_room_booking",
+        "name": "Create Room Booking",
+        "description": "Reserves a hotel room, confirms guest contact info, and records special stay requests.",
+        "category": "Hospitality & Lodging",
+        "icon": "🛏️",
+    },
 }
 
 INITIAL_BUSINESSES: Dict[str, Dict[str, Any]] = {
@@ -187,6 +201,8 @@ INITIAL_BUSINESSES: Dict[str, Dict[str, Any]] = {
         ],
         "enabled_tools": {
             "answer_faq": True,
+            "check_room_availability": True,
+            "create_room_booking": True,
             "check_table_availability": True,
             "create_table_booking": True,
             "take_message": True,

@@ -3,12 +3,17 @@ Business FAQ and Knowledge Base endpoints.
 """
 
 from typing import List
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Depends
 
+from backend.auth import verify_business_access
 from backend.api.schemas import FAQItem, FAQListUpdateRequest
 from backend.database.service import get_database_service
 
-router = APIRouter(prefix="/businesses/{business_id}/faqs", tags=["FAQs"])
+router = APIRouter(
+    prefix="/businesses/{business_id}/faqs",
+    tags=["FAQs"],
+    dependencies=[Depends(verify_business_access)],
+)
 
 
 @router.get("", response_model=List[FAQItem])

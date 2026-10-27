@@ -20,6 +20,18 @@ export default function App() {
 
   useEffect(() => {
     initApp();
+
+    const handleUnauthorized = () => {
+      localStorage.removeItem('callme_active_business_id');
+      localStorage.removeItem('callme_role');
+      localStorage.removeItem('callme_token');
+      localStorage.removeItem('callme_google_user');
+      setActiveBusiness(null);
+      setRole(null);
+    };
+
+    window.addEventListener('callme:unauthorized', handleUnauthorized);
+    return () => window.removeEventListener('callme:unauthorized', handleUnauthorized);
   }, []);
 
   const initApp = async () => {
@@ -41,18 +53,29 @@ export default function App() {
 
       const targetId = urlBizId || (savedRole === 'business' ? savedBizId : null);
       if (targetId) {
-        try {
-          const profile = await api.getBusiness(targetId);
-          setActiveBusiness(profile);
-          setRole('business');
-          localStorage.setItem('callme_role', 'business');
-          localStorage.setItem('callme_active_business_id', profile.id);
-          loadCalls(profile.id);
-        } catch {
+        const token = localStorage.getItem('callme_token');
+        if (!token || !token.trim() || token === 'undefined' || token === 'null') {
+          // Token is missing or invalid; clean session to require sign-in
           localStorage.removeItem('callme_active_business_id');
           localStorage.removeItem('callme_role');
+          localStorage.removeItem('callme_token');
           setRole(null);
           setActiveBusiness(null);
+        } else {
+          try {
+            const profile = await api.getBusiness(targetId);
+            setActiveBusiness(profile);
+            setRole('business');
+            localStorage.setItem('callme_role', 'business');
+            localStorage.setItem('callme_active_business_id', profile.id);
+            loadCalls(profile.id);
+          } catch {
+            localStorage.removeItem('callme_active_business_id');
+            localStorage.removeItem('callme_role');
+            localStorage.removeItem('callme_token');
+            setRole(null);
+            setActiveBusiness(null);
+          }
         }
       } else {
         // Clean start: initial page is stylish platform landing page
@@ -99,6 +122,7 @@ export default function App() {
     localStorage.removeItem('callme_role');
     localStorage.removeItem('callme_active_business_id');
     localStorage.removeItem('callme_google_user');
+    localStorage.removeItem('callme_token');
     setActiveBusiness(null);
     setRole(null);
   };

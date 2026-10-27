@@ -245,6 +245,7 @@ class DatabaseVoiceSessionManager(VoiceSessionManager):
         _GLOBAL_SESSION_HISTORY_CACHE.pop(session_id, None)
         _GLOBAL_SESSION_TOOLS_CACHE.pop(session_id, None)
 
+
         ended_at = utcnow()
         started_at = (
             datetime.fromisoformat(session_dict["started_at"])

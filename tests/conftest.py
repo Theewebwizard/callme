@@ -9,7 +9,14 @@ import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.pool import StaticPool
 
+# Configure default test environment keys before importing backend modules
+os.environ.setdefault("ADMIN_API_KEY", "test-admin-secret-key-12345")
+os.environ.setdefault("JWT_SECRET_KEY", "test-jwt-secret-key-for-testing-12345")
+os.environ.setdefault("SECRET_KEY", "test-secret-key-for-testing-12345")
+
 from backend.config import get_settings
+get_settings.cache_clear()
+
 from backend.database.engine import (
     _ENGINE_CACHE,
     _SESSION_FACTORY_CACHE,

@@ -348,3 +348,114 @@ class TransferCallInput(BaseModel):
         return v
 
     model_config = ConfigDict(extra="forbid")
+
+
+class CheckRoomAvailabilityInput(BaseModel):
+    """Input payload for inspecting hotel room availability."""
+    check_in_date: str = Field(
+        ...,
+        description="Guest check-in date in YYYY-MM-DD format (e.g., '2026-11-01').",
+    )
+    check_out_date: str = Field(
+        ...,
+        description="Guest check-out date in YYYY-MM-DD format (e.g., '2026-11-03').",
+    )
+    room_type: str = Field(
+        "any",
+        max_length=50,
+        description="Preferred room category (e.g., 'deluxe', 'suite', 'standard', 'villa', or 'any').",
+    )
+    guests_count: int = Field(
+        1,
+        ge=1,
+        le=20,
+        description="Total number of adult/child guests staying in the room.",
+    )
+
+    @field_validator("check_in_date")
+    @classmethod
+    def check_in(cls, v: str) -> str:
+        return _validate_calendar_date(v, "check_in_date")
+
+    @field_validator("check_out_date")
+    @classmethod
+    def check_out(cls, v: str) -> str:
+        return _validate_calendar_date(v, "check_out_date")
+
+    @field_validator("room_type", mode="before")
+    @classmethod
+    def clean_room(cls, v: Any) -> str:
+        return v.strip().lower() if isinstance(v, str) else "any"
+
+    model_config = ConfigDict(extra="forbid")
+
+
+class CreateRoomBookingInput(BaseModel):
+    """Input payload for creating a verified hotel room reservation."""
+    check_in_date: str = Field(
+        ...,
+        description="Guest check-in date in YYYY-MM-DD format.",
+    )
+    check_out_date: str = Field(
+        ...,
+        description="Guest check-out date in YYYY-MM-DD format.",
+    )
+    guest_name: str = Field(
+        ...,
+        min_length=2,
+        max_length=100,
+        description="Full legal name of the primary staying guest.",
+    )
+    guest_phone: str = Field(
+        ...,
+        description="Direct telephone number of the primary guest for booking confirmation.",
+    )
+    guest_email: Optional[str] = Field(
+        "",
+        max_length=150,
+        description="Optional contact email for digital confirmation and stay folio.",
+    )
+    room_type: str = Field(
+        "standard",
+        max_length=50,
+        description="Room tier/category selected for the reservation.",
+    )
+    guests_count: int = Field(
+        1,
+        ge=1,
+        le=20,
+        description="Total number of guests staying.",
+    )
+    special_requests: Optional[str] = Field(
+        "",
+        max_length=500,
+        description="Special requirements such as early check-in, high floor, quiet room, or extra bed.",
+    )
+    idempotency_key: Optional[str] = Field(
+        None,
+        max_length=64,
+        description="Idempotency key to prevent accidental duplicate booking submissions.",
+    )
+
+    @field_validator("check_in_date")
+    @classmethod
+    def check_in(cls, v: str) -> str:
+        return _validate_calendar_date(v, "check_in_date")
+
+    @field_validator("check_out_date")
+    @classmethod
+    def check_out(cls, v: str) -> str:
+        return _validate_calendar_date(v, "check_out_date")
+
+    @field_validator("guest_name", mode="before")
+    @classmethod
+    def clean_name(cls, v: Any) -> Any:
+        return v.strip() if isinstance(v, str) else v
+
+    @field_validator("guest_phone")
+    @classmethod
+    def check_phone(cls, v: str) -> str:
+        return _validate_phone_number(v, "guest_phone")
+
+    model_config = ConfigDict(extra="forbid")
+

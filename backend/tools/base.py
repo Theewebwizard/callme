@@ -21,6 +21,7 @@ class ToolCategory(str, Enum):
     DINING = "Dining & Hospitality"
     HEALTHCARE = "Healthcare & Services"
     COMMUNICATION = "Communication"
+    HOSPITALITY = "Hospitality & Lodging"
 
 
 class ToolExecutionStatus(str, Enum):
@@ -79,9 +80,24 @@ class ToolExecutionResult(BaseModel):
 
 
 # Canonical industry taxonomy and deterministic normalization mapping
-CANONICAL_INDUSTRIES: Set[str] = {"restaurant", "clinic", "services", "universal"}
+CANONICAL_INDUSTRIES: Set[str] = {"restaurant", "hotel", "clinic", "services", "universal"}
 
 INDUSTRY_NORMALIZATION_MAP: Dict[str, str] = {
+    # Lodging / Hotel sector -> "hotel"
+    "hotel": "hotel",
+    "resort": "hotel",
+    "hotel & resort": "hotel",
+    "hotel and resort": "hotel",
+    "hospitality": "hotel",
+    "hospitality & lodging": "hotel",
+    "hospitality and lodging": "hotel",
+    "lodging": "hotel",
+    "motel": "hotel",
+    "inn": "hotel",
+    "bed & breakfast": "hotel",
+    "bed and breakfast": "hotel",
+    "boutique hotel": "hotel",
+
     # Dining / Restaurant sector -> "restaurant"
     "restaurant": "restaurant",
     "dining": "restaurant",
@@ -98,10 +114,6 @@ INDUSTRY_NORMALIZATION_MAP: Dict[str, str] = {
     "food": "restaurant",
     "eatery": "restaurant",
     "pub": "restaurant",
-    "hospitality": "restaurant",
-    "hotel": "restaurant",
-    "resort": "restaurant",
-    "hotel & resort": "restaurant",
     "catering": "restaurant",
     "bakery": "restaurant",
 

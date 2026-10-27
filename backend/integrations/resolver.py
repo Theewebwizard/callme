@@ -31,6 +31,23 @@ logger = logging.getLogger(__name__)
 class UnconfiguredAdapter(BaseIntegrationAdapter):
     """Fallback adapter representing an unconfigured or uninitialized capability."""
 
+    def __init__(
+        self,
+        business_id: str = "unconfigured",
+        tool_id: str = "",
+        option_id: str = "unconfigured",
+        configuration: Optional[Dict[str, Any]] = None,
+        credentials: Optional[Dict[str, Any]] = None,
+        **kwargs: Any,
+    ) -> None:
+        super().__init__(
+            business_id=business_id,
+            tool_id=tool_id,
+            option_id=option_id,
+            configuration=configuration,
+            credentials=credentials,
+        )
+
     @property
     def authoritative_source(self) -> AuthoritativeSource:
         return AuthoritativeSource.COMMUNICATION_SERVICE
@@ -120,32 +137,70 @@ def resolve_tool_adapter(
     business_id: str,
     tool_id: str,
     db_service: Optional[Any] = None,
+    connection_id: Optional[str] = None,
 ) -> BaseIntegrationAdapter:
     """
     Resolve and instantiate the authoritative integration adapter for a tenant tool.
-    Strictly tenant-scoped; decrypts stored credentials and injects configuration.
+    Strictly tenant-scoped; supports explicit connection_id, default connection routing,
+    and legacy tool_id fallbacks. Decrypts stored credentials safely.
     """
     if db_service is None:
         db_service = get_database_service()
 
     cfg = db_service.get_tool_config(business_id, tool_id)
     selected_option = cfg.get("selected_option_id") if cfg else None
-    configuration = cfg.get("configuration", {}) if cfg else {}
+    configuration = dict(cfg.get("configuration", {}) if cfg else {})
 
-    # 1. Retrieve decrypted credentials if credential record exists
     credentials: Dict[str, Any] = {}
-    cred_rec = db_service.get_credential_raw(business_id, tool_id)
-    if cred_rec and cred_rec.get("encrypted_secrets"):
-        try:
-            credentials = decrypt_credentials(cred_rec["encrypted_secrets"])
-        except Exception as exc:
-            logger.error("Failed decrypting credentials for tenant %s tool %s: %s", business_id, tool_id, exc)
+    resolved_provider: Optional[str] = selected_option
 
-    # 2. Try registry lookup
+    # 1. Connection-scoped resolution
+    if connection_id:
+        conn = db_service.get_connection(connection_id, business_id=business_id)
+        if not conn or conn.get("status") == "disconnected":
+            logger.warning("Connection %s not found or is disconnected for business %s", connection_id, business_id)
+            return UnconfiguredAdapter(business_id=business_id, tool_id=tool_id)
+        resolved_provider = conn.get("provider_id")
+        configuration.update(conn.get("metadata", {}))
+
+        # Load credentials linked to this connection
+        conn_cred = db_service.get_connection_credential_raw(business_id, connection_id)
+        if conn_cred and conn_cred.get("encrypted_secrets"):
+            try:
+                credentials = decrypt_credentials(conn_cred["encrypted_secrets"])
+            except Exception as exc:
+                logger.error("Failed decrypting credentials for connection %s: %s", connection_id, exc)
+                return UnconfiguredAdapter(business_id=business_id, tool_id=tool_id)
+        else:
+            logger.warning("No credentials found for explicitly requested connection %s (business %s)", connection_id, business_id)
+            return UnconfiguredAdapter(business_id=business_id, tool_id=tool_id)
+    else:
+        # Check if selected provider has a default connection
+        if selected_option:
+            def_conn = db_service.get_default_connection(business_id, selected_option)
+            if def_conn:
+                configuration.update(def_conn.get("metadata", {}))
+                conn_cred = db_service.get_connection_credential_raw(business_id, def_conn["id"])
+                if conn_cred and conn_cred.get("encrypted_secrets"):
+                    try:
+                        credentials = decrypt_credentials(conn_cred["encrypted_secrets"])
+                    except Exception as exc:
+                        logger.error("Failed decrypting default connection credentials for %s: %s", selected_option, exc)
+
+        # 2. Legacy fallback only when no explicit connection was requested
+        if not credentials:
+            cred_rec = db_service.get_credential_raw(business_id, tool_id)
+            if cred_rec and cred_rec.get("encrypted_secrets"):
+                try:
+                    credentials = decrypt_credentials(cred_rec["encrypted_secrets"])
+                except Exception as exc:
+                    logger.error("Failed decrypting credentials for tenant %s tool %s: %s", business_id, tool_id, exc)
+
+    # 3. Try registry lookup
     registry = get_integration_registry()
-    if selected_option and registry.get_adapter_class(selected_option):
+    if resolved_provider and registry.get_adapter_class(resolved_provider):
         return registry.create_adapter(
-            provider_id=selected_option,
+            provider_id=resolved_provider,
             business_id=business_id,
             tool_id=tool_id,
             configuration=configuration,
@@ -171,7 +226,7 @@ def resolve_tool_adapter(
             credentials=credentials,
         )
 
-    if tool_id in ("manage_bookings", "book_resource", "book_room", "schedule_service"):
+    if tool_id in ("manage_bookings", "book_resource", "book_room", "schedule_service", "check_room_availability", "create_room_booking"):
         return registry.create_adapter(
             provider_id="builtin_booking",
             business_id=business_id,

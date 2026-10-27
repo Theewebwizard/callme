@@ -13,6 +13,7 @@ from backend.database.repositories.voice_session_repo import VoiceSessionReposit
 from backend.database.repositories.tool_demand_repo import ToolDemandRepository
 from backend.database.repositories.resource_repo import ResourceRepository
 from backend.database.repositories.reservation_repo import ReservationRepository, ReservationConflictError
+from backend.database.repositories.connection_repo import ConnectionRepository
 
 __all__ = [
     "BaseRepository",
@@ -27,4 +28,5 @@ __all__ = [
     "ResourceRepository",
     "ReservationRepository",
     "ReservationConflictError",
+    "ConnectionRepository",
 ]

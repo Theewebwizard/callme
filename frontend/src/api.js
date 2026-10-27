@@ -5,6 +5,59 @@
 
 const API_BASE = '/api';
 
+function getTokenExpiration(token) {
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+    const base64Url = parts[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split('')
+        .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+        .join('')
+    );
+    const payload = JSON.parse(jsonPayload);
+    return payload.exp ? payload.exp * 1000 : null; // Expiration in milliseconds
+  } catch {
+    return null;
+  }
+}
+
+let isRefreshingToken = false;
+let refreshPromise = null;
+
+async function tryRefreshToken() {
+  if (isRefreshingToken && refreshPromise) return refreshPromise;
+  isRefreshingToken = true;
+  refreshPromise = (async () => {
+    try {
+      const currentToken = localStorage.getItem('callme_token');
+      if (!currentToken || currentToken === 'undefined' || currentToken === 'null') return;
+      const res = await fetch(`${API_BASE}/businesses/refresh`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${currentToken.trim()}`,
+        },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.access_token) {
+          localStorage.setItem('callme_token', data.access_token);
+          return data.access_token;
+        }
+      }
+    } catch (err) {
+      console.warn('Automated token refresh failed:', err);
+    } finally {
+      isRefreshingToken = false;
+      refreshPromise = null;
+    }
+  })();
+  return refreshPromise;
+}
+
 async function request(path, options = {}) {
   const url = `${API_BASE}${path.startsWith('/') ? path : `/${path}`}`;
   const headers = {
@@ -12,13 +65,64 @@ async function request(path, options = {}) {
     ...(options.headers || {}),
   };
 
+  let token = localStorage.getItem('callme_token');
+  const adminKey = localStorage.getItem('callme_admin_key');
+
+  // Automated Token Refresh Interceptor: If within 5 minutes (300,000 ms) of expiration, refresh token proactively
+  if (token && token.trim() && token !== 'undefined' && token !== 'null' && !path.includes('/refresh')) {
+    const expMs = getTokenExpiration(token);
+    if (expMs) {
+      const timeRemaining = expMs - Date.now();
+      // Proactively refresh when less than 5 minutes remain and token hasn't already expired
+      if (timeRemaining > 0 && timeRemaining < 300000) {
+        await tryRefreshToken();
+        token = localStorage.getItem('callme_token');
+      }
+    }
+  }
+
+  if (token && token.trim() && token !== 'undefined' && token !== 'null' && !headers['Authorization']) {
+    headers['Authorization'] = `Bearer ${token.trim()}`;
+  } else if (adminKey && adminKey.trim() && !headers['Authorization']) {
+    headers['Authorization'] = `Bearer ${adminKey.trim()}`;
+    headers['X-Admin-API-Key'] = adminKey.trim();
+  }
+
   try {
     const res = await fetch(url, {
       ...options,
-      headers: options.body instanceof FormData ? options.headers : headers,
+      headers: options.body instanceof FormData ? { ...options.headers, ...(headers['Authorization'] ? { Authorization: headers['Authorization'] } : {}) } : headers,
     });
 
     if (!res.ok) {
+      if (res.status === 401 && !options._retry && !path.includes('/refresh')) {
+        const refreshedToken = await tryRefreshToken();
+        if (refreshedToken) {
+          const retryHeaders = {
+            ...headers,
+            'Authorization': `Bearer ${refreshedToken.trim()}`,
+          };
+          const retryRes = await fetch(url, {
+            ...options,
+            _retry: true,
+            headers: options.body instanceof FormData ? { ...options.headers, Authorization: retryHeaders['Authorization'] } : retryHeaders,
+          });
+          if (retryRes.ok) {
+            const ct = retryRes.headers.get('content-type') || '';
+            if (ct.includes('application/json')) return await retryRes.json();
+            return await retryRes.text();
+          }
+        }
+        localStorage.removeItem('callme_token');
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('callme:unauthorized', { detail: { path } }));
+        }
+      } else if (res.status === 401) {
+        localStorage.removeItem('callme_token');
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('callme:unauthorized', { detail: { path } }));
+        }
+      }
       let detail = `Error ${res.status}`;
       try {
         const errJson = await res.json();
@@ -49,13 +153,34 @@ export const api = {
   // Businesses (Tenants)
   listBusinesses: () => request('/businesses'),
   getBusiness: (id) => request(`/businesses/${id}`),
-  loginBusiness: (email, password) =>
-    request('/businesses/login', { method: 'POST', body: JSON.stringify({ email, password }) }),
-  accessBusiness: (identifier) =>
-    request('/businesses/access', { method: 'POST', body: JSON.stringify({ identifier }) }),
-  googleAuth: (payload) =>
-    request('/businesses/google-auth', { method: 'POST', body: JSON.stringify(payload) }),
-  createBusiness: (data) => request('/businesses', { method: 'POST', body: JSON.stringify(data) }),
+  loginBusiness: async (email, password) => {
+    const res = await request('/businesses/login', { method: 'POST', body: JSON.stringify({ email, password }) });
+    if (res && res.access_token) {
+      localStorage.setItem('callme_token', res.access_token);
+    }
+    return res;
+  },
+  accessBusiness: async (identifier) => {
+    const res = await request('/businesses/access', { method: 'POST', body: JSON.stringify({ identifier }) });
+    if (res && res.access_token) {
+      localStorage.setItem('callme_token', res.access_token);
+    }
+    return res;
+  },
+  googleAuth: async (payload) => {
+    const res = await request('/businesses/google-auth', { method: 'POST', body: JSON.stringify(payload) });
+    if (res && res.access_token) {
+      localStorage.setItem('callme_token', res.access_token);
+    }
+    return res;
+  },
+  createBusiness: async (data) => {
+    const res = await request('/businesses', { method: 'POST', body: JSON.stringify(data) });
+    if (res && res.access_token) {
+      localStorage.setItem('callme_token', res.access_token);
+    }
+    return res;
+  },
   updateBusiness: (id, data) => request(`/businesses/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteBusiness: (id) => request(`/businesses/${id}`, { method: 'DELETE' }),
 
@@ -170,6 +295,15 @@ export const api = {
   listReservations: (businessId, status = null) => {
     const q = status ? `?status=${encodeURIComponent(status)}` : '';
     return request(`/businesses/${businessId}/reservations${q}`);
+  },
+  createReservation: (businessId, data) =>
+    request(`/businesses/${businessId}/reservations`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  cancelReservation: (businessId, reservationId, phone = null) => {
+    const q = phone ? `?phone=${encodeURIComponent(phone)}` : '';
+    return request(`/businesses/${businessId}/reservations/${reservationId}${q}`, { method: 'DELETE' });
   },
 
   // Admin Command Center

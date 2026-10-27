@@ -5,6 +5,7 @@
 The **Multi-Tenant Integration Adapter Platform** enables the AI Receptionist to connect to third-party telephony carriers, calendar engines, appointment platforms, table reservation managers, CRMs, messaging channels, payment gateways, and support desks without tight coupling.
 
 ### Key Tenets
+
 1. **Provider Independence**: The AI agent never receives vendor-specific JSON payloads. All interactions occur through stable capability contracts (`check_availability`, `create_booking`, `send_message`, `create_payment_request`, etc.).
 2. **Authoritative Source-of-Truth**: Each capability is assigned a single authoritative source of truth (`AuthoritativeSource.BUILTIN_DATABASE`, `AuthoritativeSource.EXTERNAL_CALENDAR`, `AuthoritativeSource.PAYMENT_GATEWAY`, etc.). Systems with conflicting semantics are never silently merged.
 3. **Truthful Outcomes**: The system strictly differentiates among `OPERATION_COMPLETED`, `OPERATION_PENDING`, `BUSINESS_REJECTION`, `OUTCOME_UNKNOWN`, and `OPERATION_FAILED`. It never claims a payment succeeded when only a payment link was generated.
@@ -17,42 +18,45 @@ The **Multi-Tenant Integration Adapter Platform** enables the AI Receptionist to
 
 Located in `backend/integrations/contracts.py`:
 
-| Capability | Category | Side Effect | Idempotent | Timeout | Authoritative Source |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| `check_availability` | `RESERVATION` | `READ_ONLY` | Optional | 8.0s | Built-in DB / Calendar |
-| `create_booking` | `RESERVATION` | `IDEMPOTENT_WRITE` | Required | 10.0s | Built-in DB / Calendar |
-| `get_booking` | `RESERVATION` | `READ_ONLY` | Optional | 5.0s | Booking Store |
-| `reschedule_booking` | `RESERVATION` | `IDEMPOTENT_WRITE` | Required | 10.0s | Booking Store |
-| `cancel_booking` | `RESERVATION` | `IDEMPOTENT_WRITE` | Optional | 10.0s | Booking Store |
-| `create_calendar_event`| `CALENDAR` | `IDEMPOTENT_WRITE` | Required | 10.0s | External Calendar |
-| `get_customer` | `CRM` | `READ_ONLY` | Optional | 5.0s | CRM System |
-| `create_or_update_customer`| `CRM` | `IDEMPOTENT_WRITE` | Required | 8.0s | CRM System |
-| `send_message` | `MESSAGING` | `IRREVERSIBLE_WRITE`| Required | 8.0s | Messaging Provider |
-| `send_email` | `MESSAGING` | `IRREVERSIBLE_WRITE`| Required | 8.0s | Messaging Provider |
-| `initiate_call` | `TELEPHONY` | `IRREVERSIBLE_WRITE`| Required | 10.0s | Telephony Carrier |
-| `transfer_call` | `TELEPHONY` | `IRREVERSIBLE_WRITE`| Required | 8.0s | Telephony Carrier |
-| `get_call_status` | `TELEPHONY` | `READ_ONLY` | Optional | 5.0s | Telephony Carrier |
-| `create_support_ticket`| `SUPPORT` | `IDEMPOTENT_WRITE` | Required | 8.0s | Support Desk |
-| `get_payment_status` | `PAYMENT` | `READ_ONLY` | Optional | 5.0s | Payment Gateway |
-| `create_payment_request`| `PAYMENT`| `IRREVERSIBLE_WRITE`| Required | 10.0s | Payment Gateway |
+| Capability                    | Category        | Side Effect            | Idempotent | Timeout | Authoritative Source   |
+| :---------------------------- | :-------------- | :--------------------- | :--------- | :------ | :--------------------- |
+| `check_availability`        | `RESERVATION` | `READ_ONLY`          | Optional   | 8.0s    | Built-in DB / Calendar |
+| `create_booking`            | `RESERVATION` | `IDEMPOTENT_WRITE`   | Required   | 10.0s   | Built-in DB / Calendar |
+| `get_booking`               | `RESERVATION` | `READ_ONLY`          | Optional   | 5.0s    | Booking Store          |
+| `reschedule_booking`        | `RESERVATION` | `IDEMPOTENT_WRITE`   | Required   | 10.0s   | Booking Store          |
+| `cancel_booking`            | `RESERVATION` | `IDEMPOTENT_WRITE`   | Optional   | 10.0s   | Booking Store          |
+| `create_calendar_event`     | `CALENDAR`    | `IDEMPOTENT_WRITE`   | Required   | 10.0s   | External Calendar      |
+| `get_customer`              | `CRM`         | `READ_ONLY`          | Optional   | 5.0s    | CRM System             |
+| `create_or_update_customer` | `CRM`         | `IDEMPOTENT_WRITE`   | Required   | 8.0s    | CRM System             |
+| `send_message`              | `MESSAGING`   | `IRREVERSIBLE_WRITE` | Required   | 8.0s    | Messaging Provider     |
+| `send_email`                | `MESSAGING`   | `IRREVERSIBLE_WRITE` | Required   | 8.0s    | Messaging Provider     |
+| `initiate_call`             | `TELEPHONY`   | `IRREVERSIBLE_WRITE` | Required   | 10.0s   | Telephony Carrier      |
+| `transfer_call`             | `TELEPHONY`   | `IRREVERSIBLE_WRITE` | Required   | 8.0s    | Telephony Carrier      |
+| `get_call_status`           | `TELEPHONY`   | `READ_ONLY`          | Optional   | 5.0s    | Telephony Carrier      |
+| `create_support_ticket`     | `SUPPORT`     | `IDEMPOTENT_WRITE`   | Required   | 8.0s    | Support Desk           |
+| `get_payment_status`        | `PAYMENT`     | `READ_ONLY`          | Optional   | 5.0s    | Payment Gateway        |
+| `create_payment_request`    | `PAYMENT`     | `IRREVERSIBLE_WRITE` | Required   | 10.0s   | Payment Gateway        |
 
 ---
 
 ## 3. Provider Manifests & Setup Requirements
 
 ### 1. Built-in Dining Table Manager (`builtin_dining`)
+
 - **Authoritative Source**: `BUILTIN_DATABASE`
 - **Setup Fields**: `reservation_duration_minutes` (int, default 90), `max_party_size` (int, default 10).
 - **Required Resources**: At least one active `table` resource registered in the business tenant's inventory.
 - **Limitations**: Does not sync automatically with third-party restaurant POS terminals.
 
 ### 2. Built-in Clinical Scheduler (`builtin_clinic`)
+
 - **Authoritative Source**: `BUILTIN_DATABASE`
 - **Setup Fields**: `slot_duration_minutes` (int, default 30).
 - **Required Resources**: At least one active `room` (consultation suite) in the business tenant's inventory.
 - **Limitations**: Independent from hospital EHR/Epic systems.
 
 ### 3. Google Calendar (`google_calendar`)
+
 - **Authoritative Source**: `EXTERNAL_CALENDAR`
 - **Auth Method**: `SERVICE_ACCOUNT`
 - **Required Scopes**:
@@ -66,6 +70,7 @@ Located in `backend/integrations/contracts.py`:
 - **Known Limitations**: Google Calendar API rate limits (500 requests per 100 seconds per user).
 
 ### 4. Exotel Telephony (`exotel`)
+
 - **Authoritative Source**: `TELEPHONY_CARRIER`
 - **Auth Method**: API Key & Token + Account SID.
 - **Webhook Endpoint**: `POST /api/webhooks/exotel`
@@ -73,6 +78,7 @@ Located in `backend/integrations/contracts.py`:
 - **Known Limitations**: Live call transfers require active PSTN routing rules configured in the Exotel Applet builder.
 
 ### 5. Twilio Messaging (`twilio`)
+
 - **Authoritative Source**: `MESSAGING_PROVIDER`
 - **Auth Method**: Account SID & Auth Token.
 - **Webhook Endpoint**: `POST /api/webhooks/twilio`
@@ -80,6 +86,7 @@ Located in `backend/integrations/contracts.py`:
 - **Known Limitations**: Outbound SMS to US numbers requires A2P 10DLC brand and campaign registration.
 
 ### 6. Stripe Payments (`stripe`)
+
 - **Authoritative Source**: `PAYMENT_GATEWAY`
 - **Auth Method**: Secret Key (`sk_live_...` or `sk_test_...`).
 - **Webhook Endpoint**: `POST /api/webhooks/stripe`
@@ -87,12 +94,14 @@ Located in `backend/integrations/contracts.py`:
 - **Known Limitations**: Payment link creation returns `OPERATION_PENDING`. Payment is only marked `OPERATION_COMPLETED` once the `checkout.session.completed` webhook fires.
 
 ### 7. HubSpot CRM (`hubspot`)
+
 - **Authoritative Source**: `CRM_SYSTEM`
 - **Auth Method**: Private App Access Token (`pat-...`).
 - **Scopes**: `crm.objects.contacts.read`, `crm.objects.contacts.write`.
 - **Known Limitations**: Standard HubSpot API rate limit of 100 requests per 10 seconds.
 
 ### 8. Zendesk Support (`zendesk` / `zendesk_support`)
+
 - **Authoritative Source**: `AuthoritativeSource.SUPPORT_DESK`
 - **Supported Capabilities**:
   - `CREATE_SUPPORT_TICKET`: Customer escalation ticket creation and status tracking via official Zendesk REST API (v2).
@@ -123,6 +132,7 @@ Located in `backend/integrations/contracts.py`:
   - `test_connection()` safely probes `GET /api/v2/users/me.json` to verify authentication without creating dummy tickets.
 
 ### 9. Microsoft 365 / Outlook Calendar (`outlook_calendar`)
+
 - **Authoritative Source**: `EXTERNAL_CALENDAR`
 - **Auth Method**: OAuth 2.0 (Microsoft Entra ID / Microsoft Graph v1.0).
 - **API Endpoint**: `https://graph.microsoft.com/v1.0`
@@ -155,6 +165,7 @@ Located in `backend/integrations/contracts.py`:
   - Gracefully detects consent revocation (`invalid_grant`, `AADSTS65001`) and transitions status to `needs_input` or `awaiting_authorization`.
 
 ### 10. OpenTable Partner Reservation Network (`opentable`)
+
 - **Authoritative Source**: `EXTERNAL_RESERVATION_SYSTEM`
 - **Auth Method**: Partner ID (`X-OT-Partner-ID`) & Bearer API Key (`Authorization: Bearer <key>`).
 - **Endpoints**:
@@ -185,6 +196,7 @@ Located in `backend/integrations/contracts.py`:
   - HTTP 404 / `reservation_not_found` -> `ErrorCategory.RESOURCE_NOT_FOUND` (`is_retryable=False`).
 
 ### 11. SevenRooms Reservation & Guest-Management Engine (`sevenrooms` / `external_sevenrooms`)
+
 - **Authoritative Source**: `EXTERNAL_RESERVATION`
 - **Auth Method**: Bearer API Key (`Authorization: Bearer <key>`) or OAuth 2.0 Client Credentials (`client_id`, `client_secret`).
 - **Endpoints**:
@@ -215,6 +227,7 @@ Located in `backend/integrations/contracts.py`:
   - HTTP 404 / `not_found` -> `ErrorCategory.RESOURCE_NOT_FOUND` (`is_retryable=False`).
 
 ### 12. Acuity Scheduling Appointment Adapter (`acuity` / `acuity_scheduling`)
+
 - **Authoritative Source**: `EXTERNAL_CALENDAR`
 - **Auth Method**:
   - **Single Account**: HTTP Basic Auth with numeric User ID as username and secret API Key as password (`Authorization: Basic base64(user_id:api_key)`).
@@ -254,6 +267,7 @@ Located in `backend/integrations/contracts.py`:
   - HTTP 404 / `not_found` -> `ErrorCategory.RESOURCE_NOT_FOUND` (`is_retryable=False`).
 
 ### 13. Square Bookings & Appointments Engine (`square` / `square_bookings`)
+
 - **Authoritative Source**: `EXTERNAL_CALENDAR`
 - **Auth Method**: OAuth 2.0 Bearer Token (`Authorization: Bearer <access_token>`).
 - **Least-Privilege Scopes**:
@@ -305,10 +319,10 @@ Located in `backend/integrations/contracts.py`:
 
 ---
 
-
 ## 4. Tenant Integration Lifecycle State Machine
 
 Integrations cycle through 9 deterministic states:
+
 ```mermaid
 stateDiagram-v2
     [*] --> not_configured
@@ -345,6 +359,7 @@ stateDiagram-v2
 ## 6. Execution Safety & Ambiguous Timeout Handling
 
 For irreversible operations (payments, messages, call transfers):
+
 - **Exponential Backoff**: Safe retry on HTTP 429/503 up to bounded limits.
 - **Retry-After**: Adheres to downstream provider backoff headers.
 - **Ambiguous Outcome Handling**: If a network timeout occurs while awaiting confirmation of a write operation, the adapter returns `ExecutionOutcome.OUTCOME_UNKNOWN` with `is_retryable=False`. This prevents the agent or retry loop from firing a duplicate charge or reservation.
@@ -354,11 +369,12 @@ For irreversible operations (payments, messages, call transfers):
 ## 7. Sandbox Testing & Production Readiness Checklist
 
 Before activating integrations for live production tenants:
-- [x] Configure `CAPABILITY_ENCRYPTION_KEY` in environment.
-- [x] Register provider webhook endpoints with HTTPS reverse proxy.
-- [x] Ensure tenant has provisioned reservable inventory (tables or suites) before enabling booking capabilities.
-- [x] Verify partner access approval flags for enterprise providers.
-- [x] Validate webhook signature secrets in provider developer portals.
+
+- [X] Configure `CAPABILITY_ENCRYPTION_KEY` in environment.
+- [X] Register provider webhook endpoints with HTTPS reverse proxy.
+- [X] Ensure tenant has provisioned reservable inventory (tables or suites) before enabling booking capabilities.
+- [X] Verify partner access approval flags for enterprise providers.
+- [X] Validate webhook signature secrets in provider developer portals.
 
 ---
 
@@ -671,6 +687,3 @@ Before activating integrations for live production tenants:
 - **Dynamic Setup Wizard & Safe Demo Data Seeding**:
   - Tailors wizard steps to the tenant's declared business type (restaurant, hotel, clinic, service).
   - **Demo Environment Guard**: Demo data seeding (`seed_demo_data`) is strictly restricted to designated demo environments (`is_demo=True` and `environment='demo'`). Any attempt to seed demo data in production raises `PermissionError`.
-
-
-

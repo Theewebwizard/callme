@@ -34,10 +34,14 @@ class ApiClient:
         self,
         base_url: Optional[str] = None,
         client: Optional[httpx.Client] = None,
+        token: Optional[str] = None,
+        admin_key: Optional[str] = None,
     ) -> None:
         settings = get_settings()
         self.base_url = (base_url or settings.API_BASE_URL).rstrip("/")
         self._client = client
+        self.token = token
+        self.admin_key = admin_key or settings.ADMIN_API_KEY
 
     def _get_client(self) -> httpx.Client:
         if self._client is not None:
@@ -50,16 +54,25 @@ class ApiClient:
         path: str,
         json: Optional[Any] = None,
         params: Optional[Dict[str, Any]] = None,
+        headers: Optional[Dict[str, str]] = None,
     ) -> Any:
         url = path if path.startswith("/") else f"/{path}"
         client = self._get_client()
+        req_headers = {}
+        if self.token:
+            req_headers["Authorization"] = f"Bearer {self.token}"
+        elif self.admin_key:
+            req_headers["X-Admin-API-Key"] = self.admin_key
+        if headers:
+            req_headers.update(headers)
+
         try:
             # If client was provided externally, don't close it; otherwise use context manager
             if self._client is not None:
-                resp = client.request(method, url, json=json, params=params)
+                resp = client.request(method, url, json=json, params=params, headers=req_headers)
             else:
                 with client as c:
-                    resp = c.request(method, url, json=json, params=params)
+                    resp = c.request(method, url, json=json, params=params, headers=req_headers)
 
             if resp.status_code == 404:
                 err_detail = resp.json().get("detail", "Resource not found.") if resp.headers.get("content-type") == "application/json" else resp.text

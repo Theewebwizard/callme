@@ -65,6 +65,10 @@ def test_transcript_inspection_authorization_and_production_protection(monkeypat
     1. Rejects cross-tenant inspection with 403 Forbidden.
     2. In production mode, rejects anonymous requests without tenant ID with 401 Unauthorized.
     """
+    from backend.auth import create_access_token
+    token_spice = create_access_token(subject="biz_spice_garden", role="business_owner", business_id="biz_spice_garden")
+    token_apex = create_access_token(subject="biz_apex_dental", role="business_owner", business_id="biz_apex_dental")
+
     client = TestClient(app)
 
     # First, simulate a call for Spice Garden to obtain a real session_id
@@ -75,6 +79,7 @@ def test_transcript_inspection_authorization_and_production_protection(monkeypat
             "called_number": "+91 80 4123 5678",  # Spice Garden
             "caller_number": "+91 98 7654 3210",
         },
+        headers={"Authorization": f"Bearer {token_spice}"},
     )
     assert sim_resp.status_code == 200
     session_id = sim_resp.json()["session_id"]
@@ -82,25 +87,21 @@ def test_transcript_inspection_authorization_and_production_protection(monkeypat
     # 1. Cross-tenant inspection: Apex Dental attempts to inspect Spice Garden session
     cross_resp = client.get(
         f"/api/voice/sessions/{session_id}",
-        params={"business_id": "biz_apex_dental"},
+        headers={"Authorization": f"Bearer {token_apex}"},
     )
     assert cross_resp.status_code == 403
-    assert "Tenant authorization mismatch" in cross_resp.json()["detail"]
 
     # 2. Legitimate tenant inspection
     valid_resp = client.get(
         f"/api/voice/sessions/{session_id}",
-        params={"business_id": "biz_spice_garden"},
+        headers={"Authorization": f"Bearer {token_spice}"},
     )
     assert valid_resp.status_code == 200
     assert valid_resp.json()["session_id"] == session_id
 
-    # 3. Production mode anonymous inspection protection
-    settings = get_settings()
-    monkeypatch.setattr(settings, "ENVIRONMENT", "production")
+    # 3. Anonymous inspection protection
     anon_resp = client.get(f"/api/voice/sessions/{session_id}")
     assert anon_resp.status_code == 401
-    assert "Authentication required" in anon_resp.json()["detail"]
 
 
 def test_stt_multi_segment_utterance_accumulation():
@@ -203,10 +204,13 @@ def test_validate_production_configuration_fails_fast(monkeypatch):
     """
     from backend.main import validate_production_configuration
     from backend.config import Settings
+    from backend.capabilities.vault import generate_vault_key
+    valid_key = generate_vault_key()
 
     # 1. Missing keys in production mode
     prod_settings = Settings(
         ENVIRONMENT="production",
+        CAPABILITY_ENCRYPTION_KEY=valid_key,
         GROQ_API_KEY=None,
         DATABASE_URL=None,
         EXOTEL_ACCOUNT_SID=None,
@@ -226,6 +230,7 @@ def test_validate_production_configuration_fails_fast(monkeypatch):
     # 2. Database URL placeholder check
     placeholder_settings = Settings(
         ENVIRONMENT="production",
+        CAPABILITY_ENCRYPTION_KEY=valid_key,
         GROQ_API_KEY="gsk_valid_key",
         DATABASE_URL="postgresql://postgres:[YOUR-PASSWORD]@db.supabase.co:5432/postgres",
         EXOTEL_ACCOUNT_SID="AC_valid_sid",
@@ -240,6 +245,7 @@ def test_validate_production_configuration_fails_fast(monkeypatch):
     # 3. All valid production settings succeed cleanly
     valid_settings = Settings(
         ENVIRONMENT="production",
+        CAPABILITY_ENCRYPTION_KEY=valid_key,
         GROQ_API_KEY="gsk_valid_key",
         DATABASE_URL="postgresql://postgres:secretpassword@db.supabase.co:5432/postgres",
         EXOTEL_ACCOUNT_SID="AC_valid_sid",
@@ -349,6 +355,7 @@ def test_forged_tenant_claim_in_inbound_call_rejected():
             "caller_number": "+91 98 7654 3210",
             "claimed_business_id": "biz_apex_dental",  # Spoofed claim
         },
+        headers={"X-Admin-API-Key": "test-admin-secret-key-12345"},
     )
     assert resp.status_code == 403
     assert "Tenant verification failed" in resp.json()["detail"] or "does not match" in resp.json()["detail"]

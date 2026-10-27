@@ -23,6 +23,7 @@ class PendingActionRepository(BaseRepository):
         arguments: Dict[str, Any],
         summary: Optional[str] = None,
         expiry_seconds: int = 3600,
+        session_id: Optional[str] = None,
     ) -> PendingAction:
         """Create a pending confirmation record."""
         now = utcnow()
@@ -31,6 +32,7 @@ class PendingActionRepository(BaseRepository):
         action = PendingAction(
             id=action_id,
             business_id=business_id,
+            session_id=session_id,
             action_type=action_type,
             tool_name=tool_name,
             arguments=arguments or {},
@@ -58,17 +60,22 @@ class PendingActionRepository(BaseRepository):
                 self.session.flush()
         return action
 
-    def get_latest_pending(self, business_id: str) -> Optional[PendingAction]:
-        """Fetch the most recent pending confirmation action for a tenant."""
+    def get_latest_pending(
+        self,
+        business_id: str,
+        session_id: Optional[str] = None,
+    ) -> Optional[PendingAction]:
+        """Fetch the most recent pending confirmation action for a tenant, optionally scoped by session."""
         stmt = (
             select(PendingAction)
             .where(
                 PendingAction.business_id == business_id,
                 PendingAction.status == "pending_confirmation",
             )
-            .order_by(desc(PendingAction.created_at))
-            .limit(1)
         )
+        if session_id:
+            stmt = stmt.where(PendingAction.session_id == session_id)
+        stmt = stmt.order_by(desc(PendingAction.created_at)).limit(1)
         action = self.session.scalar(stmt)
         if not action:
             return None
@@ -151,3 +158,17 @@ class PendingActionRepository(BaseRepository):
             a.status = "cancelled"
         self.session.flush()
         return len(actions)
+
+    def cancel_session_pending(self, session_id: str) -> int:
+        """Cancel any active pending confirmation actions for a specific voice session."""
+        stmt = (
+            update(PendingAction)
+            .where(
+                PendingAction.session_id == session_id,
+                PendingAction.status == "pending_confirmation",
+            )
+            .values(status="cancelled", executed_at=utcnow())
+        )
+        result = self.session.execute(stmt)
+        self.session.flush()
+        return result.rowcount or 0

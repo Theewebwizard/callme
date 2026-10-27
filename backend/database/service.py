@@ -28,6 +28,7 @@ from backend.database.repositories import (
     ResourceRepository,
     ReservationRepository,
     ReservationConflictError,
+    ConnectionRepository,
 )
 
 logger = logging.getLogger(__name__)
@@ -58,10 +59,17 @@ class DatabaseService:
             self._calls_cache.clear()
 
     @property
+    def engine(self) -> Engine:
+        """Active SQLAlchemy engine."""
+        if self._engine is None:
+            self._engine = get_engine()
+        return self._engine
+
+    @property
     def session_factory(self) -> sessionmaker:
         """Lazy-loaded session factory."""
         if self._session_factory is None:
-            self._session_factory = get_session_factory(engine=self._engine)
+            self._session_factory = get_session_factory(engine=self.engine)
         return self._session_factory
 
     def is_available(self) -> bool:
@@ -285,6 +293,8 @@ class DatabaseService:
             )
             return cfg.to_dict()
 
+    save_tool_config = set_tool_capability
+
     # ---------------------------------------------------------------------------
     # Capability Setup Wizard Sessions & Credentials
     # ---------------------------------------------------------------------------
@@ -344,6 +354,7 @@ class DatabaseService:
         key_fingerprint: str = "",
         scopes: Optional[List[str]] = None,
         provider_name: Optional[str] = None,
+        expires_at: Optional[datetime] = None,
     ) -> Dict[str, Any]:
         """Store encrypted integration secrets."""
         effective_option = option_id or provider_name or "default"
@@ -356,10 +367,12 @@ class DatabaseService:
                 encrypted_secrets=encrypted_secrets,
                 key_fingerprint=key_fingerprint,
                 scopes=scopes,
+                expires_at=expires_at,
             )
             return cred.to_dict()
 
     save_credential_encrypted = save_credential
+    save_credential_raw = save_credential
 
     def get_credential_raw(self, business_id: str, tool_id: str) -> Optional[Dict[str, Any]]:
         """Fetch raw credential record (including encrypted secrets for internal decryption)."""
@@ -371,11 +384,14 @@ class DatabaseService:
             return {
                 "id": cred.id,
                 "business_id": cred.business_id,
+                "connection_id": cred.connection_id,
                 "tool_id": cred.tool_id,
                 "option_id": cred.option_id,
                 "encrypted_secrets": cred.encrypted_secrets,
                 "key_fingerprint": cred.key_fingerprint,
                 "scopes": cred.scopes or [],
+                "fencing_token": cred.fencing_token,
+                "schema_version": cred.schema_version,
                 "expires_at": cred.expires_at,
             }
 
@@ -384,6 +400,218 @@ class DatabaseService:
         with session_scope(self.session_factory) as session:
             tool_repo = ToolConfigRepository(session)
             return tool_repo.delete_credential(business_id, tool_id)
+
+    # ---------------------------------------------------------------------------
+    # Multi-Account Connection & Distributed Refresh Lease APIs
+    # ---------------------------------------------------------------------------
+
+    def create_connection(
+        self,
+        business_id: str,
+        provider_id: str,
+        connection_slug: str = "default",
+        external_account_id: Optional[str] = None,
+        display_label: Optional[str] = None,
+        is_default: bool = False,
+        status: str = "active",
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        """Create multi-account connection record, automatically unsetting existing default if is_default=True."""
+        with session_scope(self.session_factory) as session:
+            conn_repo = ConnectionRepository(session)
+            conn = conn_repo.create_connection(
+                business_id=business_id,
+                provider_id=provider_id,
+                connection_slug=connection_slug,
+                external_account_id=external_account_id,
+                display_label=display_label,
+                is_default=is_default,
+                status=status,
+                metadata=metadata,
+            )
+            return conn.to_dict()
+
+    def get_connection(self, connection_id: str, business_id: Optional[str] = None) -> Optional[Dict[str, Any]]:
+        """Fetch connection record by ID with optional tenant isolation."""
+        with session_scope(self.session_factory) as session:
+            conn_repo = ConnectionRepository(session)
+            conn = conn_repo.get_connection(connection_id, business_id=business_id)
+            return conn.to_dict() if conn else None
+
+    def get_connection_by_slug(self, business_id: str, provider_id: str, connection_slug: str) -> Optional[Dict[str, Any]]:
+        """Fetch connection by business tenant, provider, and unique connection slug."""
+        with session_scope(self.session_factory) as session:
+            conn_repo = ConnectionRepository(session)
+            conn = conn_repo.get_connection_by_slug(business_id, provider_id, connection_slug)
+            return conn.to_dict() if conn else None
+
+    def get_default_connection(self, business_id: str, provider_id: str) -> Optional[Dict[str, Any]]:
+        """Fetch the default connection for a tenant and provider."""
+        with session_scope(self.session_factory) as session:
+            conn_repo = ConnectionRepository(session)
+            conn = conn_repo.get_default_connection(business_id, provider_id)
+            return conn.to_dict() if conn else None
+
+    def list_connections(
+        self,
+        business_id: str,
+        provider_id: Optional[str] = None,
+        status: Optional[str] = None,
+    ) -> List[Dict[str, Any]]:
+        """List connections for a business tenant."""
+        with session_scope(self.session_factory) as session:
+            conn_repo = ConnectionRepository(session)
+            connections = conn_repo.list_connections(business_id, provider_id=provider_id, status=status)
+            return [c.to_dict() for c in connections]
+
+    def set_default_connection(self, business_id: str, provider_id: str, connection_id: str) -> bool:
+        """Atomically promote a connection to be the single default for (business_id, provider_id)."""
+        with session_scope(self.session_factory) as session:
+            conn_repo = ConnectionRepository(session)
+            return conn_repo.set_default_connection(business_id, provider_id, connection_id)
+
+    def update_connection_status(self, connection_id: str, status: str, business_id: Optional[str] = None) -> Optional[Dict[str, Any]]:
+        """Update operational status of a connection."""
+        with session_scope(self.session_factory) as session:
+            conn_repo = ConnectionRepository(session)
+            conn = conn_repo.update_connection_status(connection_id, status, business_id=business_id)
+            return conn.to_dict() if conn else None
+
+    def delete_connection(self, connection_id: str, business_id: Optional[str] = None) -> bool:
+        """Purge connection record and associated credentials."""
+        with session_scope(self.session_factory) as session:
+            conn_repo = ConnectionRepository(session)
+            return conn_repo.delete_connection(connection_id, business_id=business_id)
+
+    def acquire_refresh_lease(
+        self,
+        cred_id: str,
+        worker_id: str,
+        ttl_seconds: int = 30,
+        business_id: Optional[str] = None,
+    ) -> Optional[int]:
+        """Atomically acquire token refresh lease via CAS, requiring non-empty business_id."""
+        if not business_id or not str(business_id).strip():
+            raise ValueError("business_id is required for acquire_refresh_lease and cannot be None or empty.")
+        with session_scope(self.session_factory) as session:
+            conn_repo = ConnectionRepository(session)
+            return conn_repo.acquire_refresh_lease(
+                cred_id,
+                worker_id,
+                ttl_seconds=ttl_seconds,
+                business_id=business_id,
+            )
+
+    def commit_refreshed_credentials(
+        self,
+        cred_id: str,
+        worker_id: str,
+        acquired_fencing_token: int,
+        new_encrypted_secrets: str,
+        new_expires_at: Optional[Any] = None,
+        new_key_fingerprint: Optional[str] = None,
+        business_id: Optional[str] = None,
+    ) -> bool:
+        """Atomically commit refreshed credentials guarded by worker_id, business_id, and fencing_token."""
+        if not business_id or not str(business_id).strip():
+            raise ValueError("business_id is required for commit_refreshed_credentials and cannot be None or empty.")
+        with session_scope(self.session_factory) as session:
+            conn_repo = ConnectionRepository(session)
+            return conn_repo.commit_refreshed_credentials(
+                cred_id=cred_id,
+                worker_id=worker_id,
+                acquired_fencing_token=acquired_fencing_token,
+                new_encrypted_secrets=new_encrypted_secrets,
+                new_expires_at=new_expires_at,
+                new_key_fingerprint=new_key_fingerprint,
+                business_id=business_id,
+            )
+
+    def release_refresh_lease(
+        self,
+        cred_id: str,
+        worker_id: str,
+        business_id: Optional[str] = None,
+    ) -> bool:
+        """Release refresh lease only if owned by worker_id and scoped to business_id."""
+        if not business_id or not str(business_id).strip():
+            raise ValueError("business_id is required for release_refresh_lease and cannot be None or empty.")
+        with session_scope(self.session_factory) as session:
+            conn_repo = ConnectionRepository(session)
+            return conn_repo.release_refresh_lease(
+                cred_id,
+                worker_id,
+                business_id=business_id,
+            )
+
+    def link_credential_to_connection(self, cred_id: str, connection_id: str) -> bool:
+        """Associate credential with a connection."""
+        with session_scope(self.session_factory) as session:
+            conn_repo = ConnectionRepository(session)
+            return conn_repo.link_credential_to_connection(cred_id, connection_id)
+
+    def get_connection_credential_raw(
+        self,
+        business_id: str,
+        connection_id: str,
+    ) -> Optional[Dict[str, Any]]:
+        """Fetch raw credential record associated with a specific connection."""
+        with session_scope(self.session_factory) as session:
+            conn_repo = ConnectionRepository(session)
+            cred = conn_repo.get_credential_by_connection(connection_id, business_id=business_id)
+            if not cred:
+                return None
+            return {
+                "id": cred.id,
+                "business_id": cred.business_id,
+                "connection_id": cred.connection_id,
+                "tool_id": cred.tool_id,
+                "option_id": cred.option_id,
+                "encrypted_secrets": cred.encrypted_secrets,
+                "key_fingerprint": cred.key_fingerprint,
+                "scopes": cred.scopes or [],
+                "fencing_token": cred.fencing_token,
+                "schema_version": cred.schema_version,
+                "expires_at": cred.expires_at,
+            }
+
+    def save_connection_credential(
+        self,
+        connection_id: str,
+        business_id: str,
+        encrypted_secrets: str,
+        key_fingerprint: str,
+        option_id: str = "custom",
+        tool_id: Optional[str] = None,
+        scopes: Optional[List[str]] = None,
+        expires_at: Optional[datetime] = None,
+    ) -> Dict[str, Any]:
+        """Store or update encrypted credential record directly attached to a connection."""
+        with session_scope(self.session_factory) as session:
+            conn_repo = ConnectionRepository(session)
+            cred = conn_repo.save_connection_credential(
+                connection_id=connection_id,
+                business_id=business_id,
+                encrypted_secrets=encrypted_secrets,
+                key_fingerprint=key_fingerprint,
+                option_id=option_id,
+                tool_id=tool_id,
+                scopes=scopes,
+                expires_at=expires_at,
+            )
+            return cred.to_dict()
+
+    def delete_connection_credential(
+        self,
+        connection_id: str,
+        business_id: str,
+    ) -> bool:
+        """Purge credential record attached to a connection for a specific tenant."""
+        if not business_id or not str(business_id).strip():
+            raise ValueError("business_id is required for delete_connection_credential and cannot be None or empty.")
+        with session_scope(self.session_factory) as session:
+            conn_repo = ConnectionRepository(session)
+            return conn_repo.delete_connection_credential(connection_id=connection_id, business_id=business_id)
 
     def record_capability_audit(
         self,
@@ -680,8 +908,10 @@ class DatabaseService:
         end_date: Optional[Any] = None,
         status: Optional[str] = None,
         resource_id: Optional[str] = None,
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
     ) -> List[Dict[str, Any]]:
-        """List reservations for a business."""
+        """List reservations for a business with optional pagination."""
         with session_scope(self.session_factory) as session:
             res_repo = ReservationRepository(session)
             bookings = res_repo.list_reservations(
@@ -690,6 +920,8 @@ class DatabaseService:
                 end_date=end_date,
                 status=status,
                 resource_id=resource_id,
+                limit=limit,
+                offset=offset,
             )
             return [b.to_dict() for b in bookings]
 
@@ -892,11 +1124,11 @@ class DatabaseService:
                     is_simulated=True,
                 )
 
-    def get_pending_action(self, business_id: str) -> Optional[Dict[str, Any]]:
-        """Fetch active pending confirmation action for a business."""
+    def get_pending_action(self, business_id: str, session_id: Optional[str] = None) -> Optional[Dict[str, Any]]:
+        """Fetch active pending confirmation action for a business, optionally filtered by voice session."""
         with session_scope(self.session_factory) as session:
             pending_repo = PendingActionRepository(session)
-            action = pending_repo.get_latest_pending(business_id)
+            action = pending_repo.get_latest_pending(business_id, session_id=session_id)
             return action.to_dict() if action else None
 
     def get_pending_action_by_id(self, business_id: str, action_id: str) -> Optional[Dict[str, Any]]:
@@ -912,10 +1144,12 @@ class DatabaseService:
         self,
         business_id: str,
         pending_action: Dict[str, Any],
+        session_id: Optional[str] = None,
     ) -> Optional[Dict[str, Any]]:
-        """Persist a newly intercepted pending action awaiting confirmation."""
+        """Persist a newly intercepted pending action awaiting confirmation, linked to business and optional voice session."""
         with session_scope(self.session_factory) as session:
             pending_repo = PendingActionRepository(session)
+            sess_id = session_id or pending_action.get("session_id")
             action = pending_repo.create_action(
                 business_id=business_id,
                 action_id=pending_action["action_id"],
@@ -923,6 +1157,7 @@ class DatabaseService:
                 tool_name=pending_action.get("tool_name", "Unknown Action"),
                 arguments=pending_action.get("arguments", {}),
                 summary=pending_action.get("summary", ""),
+                session_id=sess_id,
             )
             return action.to_dict()
 
@@ -963,6 +1198,12 @@ class DatabaseService:
         with session_scope(self.session_factory) as session:
             pending_repo = PendingActionRepository(session)
             return pending_repo.cancel_all_pending(business_id)
+
+    def cancel_session_pending_actions(self, session_id: str) -> int:
+        """Cancel any active pending confirmation actions for a specific voice session."""
+        with session_scope(self.session_factory) as session:
+            pending_repo = PendingActionRepository(session)
+            return pending_repo.cancel_session_pending(session_id)
 
     def get_business_by_phone_number(self, phone_number: str) -> Optional[Dict[str, Any]]:
         """Lookup business by phone number with E.164 normalization."""

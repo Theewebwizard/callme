@@ -24,11 +24,14 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { api } from '../api';
+import BookingCalendarView from './BookingCalendarView';
 
 const TOOL_ICONS = {
   answer_faq: BookOpen,
   check_table_availability: Calendar,
   create_table_booking: Calendar,
+  check_room_availability: Calendar,
+  create_room_booking: Calendar,
   check_appointment_availability: Calendar,
   create_appointment: Calendar,
   take_message: MessageSquare,
@@ -49,6 +52,7 @@ const PRIORITIES = ['Nice to Have', 'Important', 'Business Critical'];
 
 export default function ToolLibrary({ business }) {
   const [activeTab, setActiveTab] = useState('capabilities'); // 'capabilities', 'resources', 'demands'
+  const [discoveryFilter, setDiscoveryFilter] = useState('all'); // 'all', 'enabled', 'disabled', 'unconfigured', 'unavailable', 'not_implemented'
   const [tools, setTools] = useState([]);
   const [capabilities, setCapabilities] = useState({});
   const [savedEnabledMap, setSavedEnabledMap] = useState({});
@@ -56,6 +60,7 @@ export default function ToolLibrary({ business }) {
   const [savingTools, setSavingTools] = useState(false);
   const [demands, setDemands] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState(null);
   const [feedback, setFeedback] = useState(null);
 
   // Resource Management State
@@ -96,29 +101,36 @@ export default function ToolLibrary({ business }) {
 
   const loadData = async () => {
     setLoading(true);
+    setErrorMsg(null);
     try {
-      const [toolsData, capsData, demandsData] = await Promise.all([
+      // 1. Fetch core tools, resources, and demands immediately for instantaneous response
+      const [toolsData, demandsData, resList, bookingList] = await Promise.all([
         api.getTools(business.id),
-        api.getCapabilities(business.id).catch(() => []),
         api.getToolDemands(business.id).catch(() => []),
+        api.listResources(business.id).catch(() => []),
+        api.listReservations(business.id).catch(() => []),
       ]);
       const initialMap = toolsData.enabled_tools || {};
       setTools(toolsData.tools || []);
       setSavedEnabledMap(initialMap);
       setEnabledMap(initialMap);
-
-      const capMap = {};
-      (capsData || []).forEach((c) => {
-        capMap[c.tool_id] = c;
-      });
-      setCapabilities(capMap);
       setDemands(demandsData || []);
+      setResources(resList || []);
+      setReservations(bookingList || []);
 
-      if (activeTab === 'resources') {
-        loadResources();
-      }
+      // 2. Fetch full live readiness reports (can take ~10s to audit all integration check engines)
+      api.getCapabilities(business.id)
+        .then((capsData) => {
+          const capMap = {};
+          (capsData || []).forEach((c) => {
+            capMap[c.tool_id] = c;
+          });
+          setCapabilities(capMap);
+        })
+        .catch((err) => console.warn('Could not load detailed capability audit reports:', err));
     } catch (err) {
       console.error('Failed to load capability data:', err);
+      setErrorMsg(err.message || 'Failed to load capability data');
     } finally {
       setLoading(false);
     }
@@ -435,9 +447,69 @@ export default function ToolLibrary({ business }) {
     }
   };
 
+  const getDiscoveryStatus = (t) => {
+    if (t.is_implemented === false) return 'not_implemented';
+    const cap = capabilities[t.id];
+    if (cap?.status === 'degraded' || cap?.status === 'disconnected') return 'unavailable';
+    const isEnabled = !!enabledMap[t.id];
+    if (!cap || cap.status === 'not_configured' || cap.status === 'needs_input') {
+      return 'unconfigured';
+    }
+    return isEnabled ? 'enabled' : 'disabled';
+  };
+
+  const getDiscoveryBadge = (status) => {
+    switch (status) {
+      case 'enabled':
+        return (
+          <span style={{ background: '#dcfce7', color: '#15803d', border: '1px solid #bbf7d0', padding: '2px 8px', borderRadius: '10px', fontSize: '0.72rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+            🟢 Enabled
+          </span>
+        );
+      case 'disabled':
+        return (
+          <span style={{ background: '#f1f5f9', color: '#475569', border: '1px solid #e2e8f0', padding: '2px 8px', borderRadius: '10px', fontSize: '0.72rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+            ⚪ Disabled
+          </span>
+        );
+      case 'unconfigured':
+        return (
+          <span style={{ background: '#fef3c7', color: '#b45309', border: '1px solid #fde68a', padding: '2px 8px', borderRadius: '10px', fontSize: '0.72rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+            🟡 Unconfigured
+          </span>
+        );
+      case 'unavailable':
+        return (
+          <span style={{ background: '#fee2e2', color: '#b91c1c', border: '1px solid #fecaca', padding: '2px 8px', borderRadius: '10px', fontSize: '0.72rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+            🔴 Unavailable
+          </span>
+        );
+      case 'not_implemented':
+        return (
+          <span style={{ background: '#f3e8ff', color: '#7e22ce', border: '1px solid #e9d5ff', padding: '2px 8px', borderRadius: '10px', fontSize: '0.72rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+            🟣 Not Yet Implemented
+          </span>
+        );
+      default:
+        return null;
+    }
+  };
+
   const currentOption = wizardSchema?.supported_options?.find((o) => o.option_id === selectedOptionId);
 
   if (!business) return null;
+
+  const countAll = tools.length;
+  const countEnabled = tools.filter((t) => getDiscoveryStatus(t) === 'enabled').length;
+  const countDisabled = tools.filter((t) => getDiscoveryStatus(t) === 'disabled').length;
+  const countUnconfigured = tools.filter((t) => getDiscoveryStatus(t) === 'unconfigured').length;
+  const countUnavailable = tools.filter((t) => getDiscoveryStatus(t) === 'unavailable').length;
+  const countNotImplemented = tools.filter((t) => getDiscoveryStatus(t) === 'not_implemented').length;
+
+  const filteredTools = tools.filter((t) => {
+    if (discoveryFilter === 'all') return true;
+    return getDiscoveryStatus(t) === discoveryFilter;
+  });
 
   return (
     <section className="main-content">
@@ -451,6 +523,49 @@ export default function ToolLibrary({ business }) {
           </div>
         </div>
       </div>
+
+      {errorMsg && (
+        <div
+          style={{
+            padding: '1rem',
+            borderRadius: 'var(--radius-md)',
+            marginBottom: '1.25rem',
+            background: '#fff1f2',
+            border: '1px solid #fecdd3',
+            color: '#be123c',
+            fontSize: '0.88rem',
+            fontWeight: 500,
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 700, marginBottom: '0.5rem' }}>
+            <AlertCircle size={18} /> Error Loading Capabilities
+          </div>
+          <div>{errorMsg}</div>
+          <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.75rem' }}>
+            {errorMsg.toLowerCase().includes('token') || errorMsg.toLowerCase().includes('authentication') || errorMsg.toLowerCase().includes('credentials') ? (
+              <button
+                className="btn-secondary"
+                style={{ padding: '0.35rem 0.85rem', fontSize: '0.8rem', cursor: 'pointer' }}
+                onClick={() => {
+                  localStorage.removeItem('callme_token');
+                  localStorage.removeItem('callme_active_business_id');
+                  localStorage.removeItem('callme_role');
+                  window.location.reload();
+                }}
+              >
+                🔑 Sign In Again
+              </button>
+            ) : null}
+            <button
+              className="btn-primary"
+              style={{ padding: '0.35rem 0.85rem', fontSize: '0.8rem', cursor: 'pointer' }}
+              onClick={loadData}
+            >
+              🔄 Retry
+            </button>
+          </div>
+        </div>
+      )}
 
       {feedback && (
         <div
@@ -572,96 +687,159 @@ export default function ToolLibrary({ business }) {
             </div>
           </div>
 
-          <div className="tool-grid">
-            {tools.map((t) => {
-              const IconComponent = TOOL_ICONS[t.id] || Wrench;
-              const isEnabled = !!enabledMap[t.id];
-              const cap = capabilities[t.id];
-              const capStatus = cap?.status || (isEnabled ? 'ready' : 'not_configured');
-              const authSource = cap?.authoritative_source || 'Platform Default';
-              const selectedOptionName = cap?.selected_option_name || 'Built-in Architecture';
-
+          {/* Feature Discovery Status Filter Bar */}
+          <div style={{ display: 'flex', gap: '0.45rem', marginBottom: '1.25rem', flexWrap: 'wrap', alignItems: 'center', background: 'var(--slate-50)', padding: '0.6rem 0.85rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--slate-200)' }}>
+            <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--slate-600)', marginRight: '6px' }}>Status Filter:</span>
+            {[
+              { id: 'all', label: 'All Capabilities', count: countAll },
+              { id: 'enabled', label: 'Enabled', count: countEnabled },
+              { id: 'disabled', label: 'Disabled', count: countDisabled },
+              { id: 'unconfigured', label: 'Unconfigured', count: countUnconfigured },
+              { id: 'unavailable', label: 'Unavailable', count: countUnavailable },
+              { id: 'not_implemented', label: 'Not Yet Implemented', count: countNotImplemented },
+            ].map((f) => {
+              const isSelected = discoveryFilter === f.id;
               return (
-                <div key={t.id} className={`tool-card ${isEnabled ? 'enabled' : ''}`} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                  <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start', width: '100%' }}>
-                    <div
-                      style={{
-                        width: '42px',
-                        height: '42px',
-                        borderRadius: 'var(--radius-md)',
-                        background: isEnabled ? 'var(--sky-500)' : 'var(--slate-100)',
-                        color: isEnabled ? 'white' : 'var(--slate-500)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        flexShrink: 0,
-                        boxShadow: isEnabled ? '0 4px 12px rgba(14, 165, 233, 0.3)' : 'none',
-                      }}
-                    >
-                      <IconComponent size={20} />
-                    </div>
-
-                    <div style={{ flex: 1 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px', flexWrap: 'wrap' }}>
-                        <span style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--slate-900)' }}>
-                          {t.name}
-                        </span>
-                        <label className="switch">
-                          <input
-                            type="checkbox"
-                            checked={isEnabled}
-                            onChange={() => handleToggle(t.id)}
-                          />
-                          <span className="slider" />
-                        </label>
-                      </div>
-
-                      <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginTop: '4px', flexWrap: 'wrap' }}>
-                        {getCapabilityBadge(capStatus)}
-                        <span style={{ fontSize: '0.72rem', background: 'var(--slate-100)', color: 'var(--slate-600)', padding: '2px 8px', borderRadius: '10px', fontWeight: 600 }}>
-                          {selectedOptionName}
-                        </span>
-                      </div>
-
-                      <div style={{ fontSize: '0.82rem', color: 'var(--slate-600)', marginTop: '8px', lineHeight: 1.4 }}>
-                        {t.description}
-                      </div>
-
-                      <div style={{ marginTop: '10px', fontSize: '0.75rem', color: 'var(--slate-500)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <Server size={12} /> Source of Truth: <strong>{authSource}</strong>
-                      </div>
-
-                      {cap?.missing_requirements && cap.missing_requirements.length > 0 && (
-                        <div style={{ marginTop: '8px', padding: '6px 10px', background: 'var(--amber-50)', border: '1px solid var(--amber-200)', borderRadius: '6px', fontSize: '0.75rem', color: 'var(--amber-800)' }}>
-                          ⚠️ {cap.missing_requirements[0]}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  <div style={{ display: 'flex', gap: '0.5rem', borderTop: '1px solid var(--slate-100)', paddingTop: '0.75rem', marginTop: 'auto' }}>
-                    <button
-                      type="button"
-                      className="btn-secondary"
-                      onClick={() => openWizard(t)}
-                      style={{ flex: 1, padding: '0.4rem', fontSize: '0.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}
-                    >
-                      <Sliders size={14} /> Configure Setup
-                    </button>
-                    <button
-                      type="button"
-                      className="btn-secondary"
-                      onClick={() => handleTestConnection(t.id)}
-                      title="Test live connectivity and verify permissions"
-                      style={{ padding: '0.4rem 0.6rem', fontSize: '0.8rem' }}
-                    >
-                      <ShieldCheck size={14} /> Test
-                    </button>
-                  </div>
-                </div>
+                <button
+                  key={f.id}
+                  type="button"
+                  onClick={() => setDiscoveryFilter(f.id)}
+                  style={{
+                    fontSize: '0.78rem',
+                    padding: '4px 10px',
+                    borderRadius: '16px',
+                    border: isSelected ? '2px solid var(--sky-500)' : '1px solid var(--slate-200)',
+                    background: isSelected ? 'var(--sky-50)' : 'white',
+                    fontWeight: isSelected ? 700 : 500,
+                    color: isSelected ? 'var(--sky-700)' : 'var(--slate-700)',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    boxShadow: isSelected ? '0 1px 3px rgba(14, 165, 233, 0.2)' : 'none',
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  {f.label} <span style={{ opacity: 0.75, fontSize: '0.72rem' }}>({f.count})</span>
+                </button>
               );
             })}
           </div>
+
+          {loading ? (
+            <div className="card" style={{ padding: '3.5rem 2rem', textAlign: 'center', color: 'var(--slate-500)' }}>
+              <div style={{ display: 'inline-block', width: '28px', height: '28px', border: '3px solid var(--sky-200)', borderTopColor: 'var(--sky-600)', borderRadius: '50%', animation: 'spin 1s linear infinite', marginBottom: '0.75rem' }} />
+              <div style={{ fontWeight: 600, color: 'var(--slate-700)', fontSize: '0.95rem' }}>Loading business capabilities & tools...</div>
+            </div>
+          ) : filteredTools.length === 0 ? (
+            <div className="card" style={{ padding: '3rem 2rem', textAlign: 'center', color: 'var(--slate-500)' }}>
+              <p style={{ fontWeight: 600, fontSize: '0.95rem', marginBottom: '0.5rem' }}>
+                No capabilities match filter <strong>"{discoveryFilter}"</strong>
+              </p>
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => setDiscoveryFilter('all')}
+                style={{ fontSize: '0.8rem', padding: '0.35rem 0.85rem' }}
+              >
+                Reset to All Capabilities
+              </button>
+            </div>
+          ) : (
+            <div className="tool-grid">
+              {filteredTools.map((t) => {
+                const IconComponent = TOOL_ICONS[t.id] || Wrench;
+                const isEnabled = !!enabledMap[t.id];
+                const cap = capabilities[t.id];
+                const capStatus = cap?.status || (isEnabled ? 'ready' : 'not_configured');
+                const discStatus = getDiscoveryStatus(t);
+                const authSource = cap?.authoritative_source || 'Platform Default';
+                const selectedOptionName = cap?.selected_option_name || 'Built-in Architecture';
+
+                return (
+                  <div key={t.id} className={`tool-card ${isEnabled ? 'enabled' : ''}`} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start', width: '100%' }}>
+                      <div
+                        style={{
+                          width: '42px',
+                          height: '42px',
+                          borderRadius: 'var(--radius-md)',
+                          background: isEnabled ? 'var(--sky-500)' : 'var(--slate-100)',
+                          color: isEnabled ? 'white' : 'var(--slate-500)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexShrink: 0,
+                          boxShadow: isEnabled ? '0 4px 12px rgba(14, 165, 233, 0.3)' : 'none',
+                        }}
+                      >
+                        <IconComponent size={20} />
+                      </div>
+
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px', flexWrap: 'wrap' }}>
+                          <span style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--slate-900)' }}>
+                            {t.name}
+                          </span>
+                          <label className="switch">
+                            <input
+                              type="checkbox"
+                              checked={isEnabled}
+                              disabled={t.is_implemented === false}
+                              onChange={() => handleToggle(t.id)}
+                            />
+                            <span className="slider" />
+                          </label>
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginTop: '4px', flexWrap: 'wrap' }}>
+                          {getDiscoveryBadge(discStatus)}
+                          {getCapabilityBadge(capStatus)}
+                          <span style={{ fontSize: '0.72rem', background: 'var(--slate-100)', color: 'var(--slate-600)', padding: '2px 8px', borderRadius: '10px', fontWeight: 600 }}>
+                            {selectedOptionName}
+                          </span>
+                        </div>
+
+                        <div style={{ fontSize: '0.82rem', color: 'var(--slate-600)', marginTop: '8px', lineHeight: 1.4 }}>
+                          {t.description}
+                        </div>
+
+                        <div style={{ marginTop: '10px', fontSize: '0.75rem', color: 'var(--slate-500)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <Server size={12} /> Source of Truth: <strong>{authSource}</strong>
+                        </div>
+
+                        {cap?.missing_requirements && cap.missing_requirements.length > 0 && (
+                          <div style={{ marginTop: '8px', padding: '6px 10px', background: 'var(--amber-50)', border: '1px solid var(--amber-200)', borderRadius: '6px', fontSize: '0.75rem', color: 'var(--amber-800)' }}>
+                            ⚠️ {cap.missing_requirements[0]}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '0.5rem', borderTop: '1px solid var(--slate-100)', paddingTop: '0.75rem', marginTop: 'auto' }}>
+                      <button
+                        type="button"
+                        className="btn-secondary"
+                        onClick={() => openWizard(t)}
+                        style={{ flex: 1, padding: '0.4rem', fontSize: '0.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}
+                      >
+                        <Sliders size={14} /> Configure Setup
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-secondary"
+                        onClick={() => handleTestConnection(t.id)}
+                        title="Test live connectivity and verify permissions"
+                        style={{ padding: '0.4rem 0.6rem', fontSize: '0.8rem' }}
+                      >
+                        <ShieldCheck size={14} /> Test
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 
@@ -669,182 +847,192 @@ export default function ToolLibrary({ business }) {
          TAB 2: RESOURCE INVENTORY & BOOKINGS (FIRST-PARTY ENGINE)
          ========================================================================= */}
       {activeTab === 'resources' && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem', alignItems: 'flex-start' }}>
-          {/* Add Resource Form */}
-          <form onSubmit={handleAddResource} className="card">
-            <div className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Plus size={18} color="var(--sky-600)" /> Add Reservable Resource
-            </div>
-            <div className="card-desc">
-              Register dining tables or consultation suites for first-party booking conflict prevention.
-            </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
+          {/* Interactive Booking Calendar & Timeline Grid */}
+          <BookingCalendarView
+            business={business}
+            resources={resources}
+            reservations={reservations}
+            onRefresh={loadResources}
+          />
 
-            <div className="form-group" style={{ marginBottom: '1rem' }}>
-              <label className="form-label">Resource Label / Name *</label>
-              <input
-                type="text"
-                className="form-input"
-                placeholder="e.g. Table 5 (Terrace) or Dental Suite 3"
-                value={newResourceName}
-                onChange={(e) => setNewResourceName(e.target.value)}
-                required
-              />
-            </div>
-
-            <div className="form-grid" style={{ marginBottom: '1rem', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-              <div className="form-group">
-                <label className="form-label">Resource Type</label>
-                <select
-                  className="form-input"
-                  value={newResourceType}
-                  onChange={(e) => setNewResourceType(e.target.value)}
-                >
-                  <option value="table">Dining Table (Restaurant)</option>
-                  <option value="room">Hotel Room / Suite</option>
-                  <option value="clinic_room">Clinical Suite / Consultation Room</option>
-                  <option value="practitioner">Practitioner / Doctor</option>
-                  <option value="service_staff">Service Staff / Stylist</option>
-                  <option value="desk">Service Desk</option>
-                </select>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem', alignItems: 'flex-start' }}>
+            {/* Add Resource Form */}
+            <form onSubmit={handleAddResource} className="card">
+              <div className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Plus size={18} color="var(--sky-600)" /> Add Reservable Resource
+              </div>
+              <div className="card-desc">
+                Register dining tables or consultation suites for first-party booking conflict prevention.
               </div>
 
-              <div className="form-group">
-                <label className="form-label">Section / Area</label>
+              <div className="form-group" style={{ marginBottom: '1rem' }}>
+                <label className="form-label">Resource Label / Name *</label>
                 <input
                   type="text"
                   className="form-input"
-                  placeholder="e.g. Patio, 1st Floor"
-                  value={newResourceSection}
-                  onChange={(e) => setNewResourceSection(e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div className="form-grid" style={{ marginBottom: '1.25rem', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem' }}>
-              <div className="form-group">
-                <label className="form-label">Capacity</label>
-                <input
-                  type="number"
-                  className="form-input"
-                  min="1"
-                  max="50"
-                  value={newResourceCapacity}
-                  onChange={(e) => setNewResourceCapacity(e.target.value)}
+                  placeholder="e.g. Table 5 (Terrace) or Dental Suite 3"
+                  value={newResourceName}
+                  onChange={(e) => setNewResourceName(e.target.value)}
                   required
                 />
               </div>
 
-              <div className="form-group">
-                <label className="form-label">Min Party</label>
-                <input
-                  type="number"
-                  className="form-input"
-                  min="1"
-                  max="50"
-                  value={newResourceMinParty}
-                  onChange={(e) => setNewResourceMinParty(e.target.value)}
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Max Party</label>
-                <input
-                  type="number"
-                  className="form-input"
-                  min="1"
-                  max="50"
-                  value={newResourceMaxParty}
-                  onChange={(e) => setNewResourceMaxParty(e.target.value)}
-                  required
-                />
-              </div>
-            </div>
-
-            <button type="submit" className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
-              <Plus size={16} /> Register Reservable Resource
-            </button>
-          </form>
-
-          {/* Active Inventory List */}
-          <div className="card">
-            <div className="card-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Database size={18} color="var(--sky-600)" /> Active Inventory ({resources.length})
-              </span>
-              <button
-                type="button"
-                className="btn-secondary"
-                onClick={loadResources}
-                disabled={loadingResources}
-                style={{ fontSize: '0.75rem', padding: '0.3rem 0.6rem' }}
-              >
-                <RefreshCw size={12} /> Refresh
-              </button>
-            </div>
-            <div className="card-desc">
-              Resources authoritative in database. AI checks availability against this inventory.
-            </div>
-
-            {loadingResources ? (
-              <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--slate-500)' }}>Loading inventory...</div>
-            ) : resources.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--slate-500)', background: 'var(--slate-50)', borderRadius: 'var(--radius-md)' }}>
-                No reservable resources registered yet. Add a table or consultation suite to enable built-in booking.
-              </div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                {resources.map((res) => (
-                  <div
-                    key={res.id}
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      padding: '0.75rem 1rem',
-                      background: 'var(--slate-50)',
-                      borderRadius: 'var(--radius-md)',
-                      border: '1px solid var(--slate-200)',
-                    }}
+              <div className="form-grid" style={{ marginBottom: '1rem', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div className="form-group">
+                  <label className="form-label">Resource Type</label>
+                  <select
+                    className="form-input"
+                    value={newResourceType}
+                    onChange={(e) => setNewResourceType(e.target.value)}
                   >
-                    <div>
-                      <div style={{ fontWeight: 700, color: 'var(--slate-900)', fontSize: '0.9rem' }}>
-                        {res.name}
-                      </div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--slate-500)', marginTop: '2px' }}>
-                        Type: <strong>{res.resource_type}</strong> • Section: <strong>{res.section || 'General'}</strong> • Fits: <strong>{res.min_party_size}–{res.max_party_size} guests</strong>
-                      </div>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteResource(res.id)}
-                      title="Delete resource"
-                      style={{ background: 'none', border: 'none', color: 'var(--rose-600)', cursor: 'pointer', padding: '6px' }}
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Recent Reservations Snapshot */}
-            {reservations.length > 0 && (
-              <div style={{ marginTop: '1.5rem', borderTop: '1px solid var(--slate-100)', paddingTop: '1rem' }}>
-                <div style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--slate-800)', marginBottom: '0.5rem' }}>
-                  Confirmed Bookings in Authoritative Database ({reservations.length})
+                    <option value="table">Dining Table (Restaurant)</option>
+                    <option value="room">Hotel Room / Suite</option>
+                    <option value="clinic_room">Clinical Suite / Consultation Room</option>
+                    <option value="practitioner">Practitioner / Doctor</option>
+                    <option value="service_staff">Service Staff / Stylist</option>
+                    <option value="desk">Service Desk</option>
+                  </select>
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                  {reservations.slice(0, 5).map((b) => (
-                    <div key={b.id} style={{ fontSize: '0.78rem', background: 'white', border: '1px solid var(--slate-200)', padding: '6px 10px', borderRadius: '6px', display: 'flex', justifyContent: 'space-between' }}>
-                      <span><strong>{b.customer_name}</strong> ({b.party_size} guests)</span>
-                      <span style={{ color: 'var(--slate-500)' }}>{b.start_time?.slice(0, 16).replace('T', ' ')}</span>
+
+                <div className="form-group">
+                  <label className="form-label">Section / Area</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder="e.g. Patio, 1st Floor"
+                    value={newResourceSection}
+                    onChange={(e) => setNewResourceSection(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="form-grid" style={{ marginBottom: '1.25rem', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem' }}>
+                <div className="form-group">
+                  <label className="form-label">Capacity</label>
+                  <input
+                    type="number"
+                    className="form-input"
+                    min="1"
+                    max="50"
+                    value={newResourceCapacity}
+                    onChange={(e) => setNewResourceCapacity(e.target.value)}
+                    required
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Min Party</label>
+                  <input
+                    type="number"
+                    className="form-input"
+                    min="1"
+                    max="50"
+                    value={newResourceMinParty}
+                    onChange={(e) => setNewResourceMinParty(e.target.value)}
+                    required
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Max Party</label>
+                  <input
+                    type="number"
+                    className="form-input"
+                    min="1"
+                    max="50"
+                    value={newResourceMaxParty}
+                    onChange={(e) => setNewResourceMaxParty(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+
+              <button type="submit" className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
+                <Plus size={16} /> Register Reservable Resource
+              </button>
+            </form>
+
+            {/* Active Inventory List */}
+            <div className="card">
+              <div className="card-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Database size={18} color="var(--sky-600)" /> Active Inventory ({resources.length})
+                </span>
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={loadResources}
+                  disabled={loadingResources}
+                  style={{ fontSize: '0.75rem', padding: '0.3rem 0.6rem' }}
+                >
+                  <RefreshCw size={12} /> Refresh
+                </button>
+              </div>
+              <div className="card-desc">
+                Resources authoritative in database. AI checks availability against this inventory.
+              </div>
+
+              {loadingResources ? (
+                <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--slate-500)' }}>Loading inventory...</div>
+              ) : resources.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--slate-500)', background: 'var(--slate-50)', borderRadius: 'var(--radius-md)' }}>
+                  No reservable resources registered yet. Add a table or consultation suite to enable built-in booking.
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  {resources.map((res) => (
+                    <div
+                      key={res.id}
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '0.75rem 1rem',
+                        background: 'var(--slate-50)',
+                        borderRadius: 'var(--radius-md)',
+                        border: '1px solid var(--slate-200)',
+                      }}
+                    >
+                      <div>
+                        <div style={{ fontWeight: 700, color: 'var(--slate-900)', fontSize: '0.9rem' }}>
+                          {res.name}
+                        </div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--slate-500)', marginTop: '2px' }}>
+                          Type: <strong>{res.resource_type}</strong> • Section: <strong>{res.section || 'General'}</strong> • Fits: <strong>{res.min_party_size}–{res.max_party_size} guests</strong>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteResource(res.id)}
+                        title="Delete resource"
+                        style={{ background: 'none', border: 'none', color: 'var(--rose-600)', cursor: 'pointer', padding: '6px' }}
+                      >
+                        <Trash2 size={16} />
+                      </button>
                     </div>
                   ))}
                 </div>
-              </div>
-            )}
+              )}
+
+              {/* Recent Reservations Snapshot */}
+              {reservations.length > 0 && (
+                <div style={{ marginTop: '1.5rem', borderTop: '1px solid var(--slate-100)', paddingTop: '1rem' }}>
+                  <div style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--slate-800)', marginBottom: '0.5rem' }}>
+                    Confirmed Bookings in Authoritative Database ({reservations.length})
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    {reservations.slice(0, 5).map((b) => (
+                      <div key={b.id} style={{ fontSize: '0.78rem', background: 'white', border: '1px solid var(--slate-200)', padding: '6px 10px', borderRadius: '6px', display: 'flex', justifyContent: 'space-between' }}>
+                        <span><strong>{b.customer_name}</strong> ({b.party_size} guests)</span>
+                        <span style={{ color: 'var(--slate-500)' }}>{b.start_time?.slice(0, 16).replace('T', ' ')}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}

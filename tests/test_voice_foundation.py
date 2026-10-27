@@ -46,8 +46,10 @@ from backend.voice.providers import get_telephony_provider, MockTelephonyProvide
 
 @pytest.fixture
 def api_client():
-    """TestClient instance for FastAPI application."""
-    return TestClient(app)
+    """TestClient instance for FastAPI application with platform admin auth."""
+    client = TestClient(app)
+    client.headers.update({"X-Admin-API-Key": "test-admin-secret-key-12345"})
+    return client
 
 
 # ==============================================================================

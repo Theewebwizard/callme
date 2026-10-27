@@ -5,7 +5,7 @@ Safely loads and validates environment variables using Pydantic.
 
 from functools import lru_cache
 from typing import Optional
-from pydantic import field_validator
+from pydantic import field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -20,6 +20,14 @@ class Settings(BaseSettings):
     HOST: str = "0.0.0.0"
     PORT: int = 8000
     API_BASE_URL: str = "http://localhost:8000"
+
+    # Authentication & Security Configuration
+    SECRET_KEY: str = "callme_dev_secret_key_change_in_production_32chars"
+    JWT_SECRET_KEY: Optional[str] = None
+    JWT_ALGORITHM: str = "HS256"
+    JWT_EXPIRE_HOURS: int = 24
+    ADMIN_API_KEY: Optional[str] = None
+    CORS_ALLOWED_ORIGINS: str = "*"
 
     # Tool Execution Mode Policy (Explicit Allowlist: 'mock', 'live', 'unavailable')
     TOOL_EXECUTION_MODE: str = "mock"
@@ -80,6 +88,7 @@ class Settings(BaseSettings):
 
     # Multi-Tenant Integration Adapter & Secret Vault Settings
     CAPABILITY_ENCRYPTION_KEY: Optional[str] = None
+    CAPABILITY_KEYRING: Optional[str] = None
     TWILIO_ACCOUNT_SID: Optional[str] = None
     TWILIO_AUTH_TOKEN: Optional[str] = None
     STRIPE_SECRET_KEY: Optional[str] = None
@@ -104,6 +113,26 @@ class Settings(BaseSettings):
     def is_deepgram_configured(self) -> bool:
         """Check if Deepgram API key is configured."""
         return bool(self.DEEPGRAM_API_KEY and self.DEEPGRAM_API_KEY.strip())
+
+    @property
+    def effective_jwt_secret(self) -> str:
+        """Retrieve effective JWT secret key."""
+        return self.JWT_SECRET_KEY or self.SECRET_KEY
+
+    @property
+    def is_admin_configured(self) -> bool:
+        """Check if platform admin API key is configured."""
+        return bool(self.ADMIN_API_KEY and self.ADMIN_API_KEY.strip())
+
+    @model_validator(mode="after")
+    def validate_production_vault_key(self) -> "Settings":
+        """Enforce fail-closed key configuration in production."""
+        if self.ENVIRONMENT.lower() in ("production", "prod"):
+            if not self.CAPABILITY_ENCRYPTION_KEY or not self.CAPABILITY_ENCRYPTION_KEY.strip():
+                raise ValueError("FATAL: CAPABILITY_ENCRYPTION_KEY must be configured in production.")
+            from backend.capabilities.vault import validate_and_decode_key
+            validate_and_decode_key(self.CAPABILITY_ENCRYPTION_KEY, environment=self.ENVIRONMENT)
+        return self
 
     model_config = SettingsConfigDict(
         env_file=".env",

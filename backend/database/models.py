@@ -18,6 +18,8 @@ from sqlalchemy import (
     UniqueConstraint,
     Index,
     JSON,
+    BigInteger,
+    text,
 )
 from sqlalchemy.orm import declarative_base, relationship
 
@@ -297,6 +299,7 @@ class PendingAction(Base):
 
     id = Column(String(64), primary_key=True)  # Matches action_id UUID
     business_id = Column(String(64), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
+    session_id = Column(String(64), ForeignKey("voice_sessions.id", ondelete="SET NULL"), nullable=True, index=True)
     action_type = Column(String(64), nullable=False)
     tool_name = Column(String(100), nullable=False)
     arguments = Column(JSON, default=dict, nullable=False)
@@ -311,6 +314,7 @@ class PendingAction(Base):
 
     __table_args__ = (
         Index("ix_pending_business_status", "business_id", "status"),
+        Index("ix_pending_session_status", "session_id", "status"),
     )
 
     def to_dict(self) -> Dict[str, Any]:
@@ -318,6 +322,7 @@ class PendingAction(Base):
         return {
             "action_id": self.id,
             "business_id": self.business_id,
+            "session_id": self.session_id,
             "tool_id": self.action_type,
             "tool_name": self.tool_name,
             "arguments": self.arguments or {},
@@ -367,6 +372,64 @@ class ToolDemand(Base):
         }
 
 
+class IntegrationConnection(Base):
+    """
+    Multi-account integration connection entity.
+    Represents an authenticated connection to an external provider (e.g. Google Calendar, Stripe, SevenRooms).
+    Enables multi-calendar, multi-location, and multi-department accounts per business tenant.
+    """
+    __tablename__ = "integration_connections"
+
+    id = Column(String(64), primary_key=True, default=lambda: f"conn_{uuid.uuid4().hex[:12]}")
+    business_id = Column(String(64), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
+    provider_id = Column(String(64), nullable=False, index=True)
+    connection_slug = Column(String(64), nullable=False, default="default")
+    external_account_id = Column(String(255), nullable=True)
+    display_label = Column(String(255), nullable=True)
+    is_default = Column(Boolean, default=False, nullable=False)
+    status = Column(String(32), default="active", nullable=False)
+    metadata_json = Column(JSON, default=dict, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint("business_id", "provider_id", "connection_slug", name="uq_biz_provider_slug"),
+        Index(
+            "ix_uq_biz_provider_default",
+            "business_id",
+            "provider_id",
+            unique=True,
+            sqlite_where=text("is_default = 1"),
+            postgresql_where=text("is_default = true"),
+        ),
+        Index(
+            "ix_uq_biz_provider_external_acct",
+            "business_id",
+            "provider_id",
+            "external_account_id",
+            unique=True,
+            sqlite_where=text("external_account_id IS NOT NULL"),
+            postgresql_where=text("external_account_id IS NOT NULL"),
+        ),
+    )
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert connection record to dictionary."""
+        return {
+            "id": self.id,
+            "business_id": self.business_id,
+            "provider_id": self.provider_id,
+            "connection_slug": self.connection_slug,
+            "external_account_id": self.external_account_id,
+            "display_label": self.display_label,
+            "is_default": self.is_default,
+            "status": self.status,
+            "metadata": self.metadata_json or {},
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+        }
+
+
 class IntegrationCredential(Base):
     """
     Secure tenant integration credential store.
@@ -377,12 +440,17 @@ class IntegrationCredential(Base):
 
     id = Column(String(64), primary_key=True, default=lambda: f"cred_{uuid.uuid4().hex[:12]}")
     business_id = Column(String(64), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
+    connection_id = Column(String(64), ForeignKey("integration_connections.id", ondelete="CASCADE"), nullable=True, index=True)
     tool_id = Column(String(64), nullable=False, index=True)
     option_id = Column(String(64), nullable=False)
     encrypted_secrets = Column(Text, nullable=False)
     key_fingerprint = Column(String(64), nullable=False)
     scopes = Column(JSON, default=list, nullable=False)
     expires_at = Column(DateTime(timezone=True), nullable=True)
+    lease_owner_id = Column(String(64), nullable=True)
+    lease_expires_at = Column(DateTime(timezone=True), nullable=True)
+    fencing_token = Column(BigInteger, default=0, nullable=False)
+    schema_version = Column(Integer, default=1, nullable=False)
     created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
     updated_at = Column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
 
@@ -395,10 +463,13 @@ class IntegrationCredential(Base):
         return {
             "id": self.id,
             "business_id": self.business_id,
+            "connection_id": self.connection_id,
             "tool_id": self.tool_id,
             "option_id": self.option_id,
             "key_fingerprint": self.key_fingerprint,
             "scopes": self.scopes or [],
+            "fencing_token": self.fencing_token,
+            "schema_version": self.schema_version,
             "expires_at": self.expires_at.isoformat() if self.expires_at else None,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
