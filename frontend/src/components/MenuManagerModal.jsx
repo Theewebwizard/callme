@@ -17,6 +17,70 @@ import {
 } from 'lucide-react';
 import { api } from '../api';
 
+// Robust API client helpers with direct REST fallback
+async function safeGetMenu(businessId, category = null) {
+  if (api && typeof api.getMenu === 'function') {
+    return api.getMenu(businessId, category);
+  }
+  const token = localStorage.getItem('callme_token');
+  const q = category ? `?category=${encodeURIComponent(category)}` : '';
+  const res = await fetch(`/api/businesses/${businessId}/menu${q}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  if (!res.ok) throw new Error(`Failed to load menu (HTTP ${res.status})`);
+  return res.json();
+}
+
+async function safeUploadMenu(businessId, items, replace = false) {
+  if (api && typeof api.uploadMenu === 'function') {
+    return api.uploadMenu(businessId, items, replace);
+  }
+  const token = localStorage.getItem('callme_token');
+  const res = await fetch(`/api/businesses/${businessId}/menu/upload`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify({ items, replace }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || `Upload failed (HTTP ${res.status})`);
+  }
+  return res.json();
+}
+
+async function safeDeleteMenuItem(businessId, itemId) {
+  if (api && typeof api.deleteMenuItem === 'function') {
+    return api.deleteMenuItem(businessId, itemId);
+  }
+  const token = localStorage.getItem('callme_token');
+  const res = await fetch(`/api/businesses/${businessId}/menu/${itemId}`, {
+    method: 'DELETE',
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  if (!res.ok) throw new Error(`Failed to delete item (HTTP ${res.status})`);
+  return res.json();
+}
+
+async function safeParseMenuText(businessId, text, defaultCategory = 'Mains') {
+  if (api && typeof api.parseMenuText === 'function') {
+    return api.parseMenuText(businessId, text, defaultCategory);
+  }
+  const token = localStorage.getItem('callme_token');
+  const res = await fetch(`/api/businesses/${businessId}/menu/parse-text`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify({ text, default_category: defaultCategory }),
+  });
+  if (!res.ok) throw new Error(`Parsing failed (HTTP ${res.status})`);
+  return res.json();
+}
+
 const DEFAULT_CATEGORIES = ['Starters', 'Mains', 'Breads', 'Desserts', 'Beverages'];
 
 export function MenuManagerView({ business, isEmbedded = false, onMenuUpdated, onClose }) {
@@ -57,7 +121,7 @@ export function MenuManagerView({ business, isEmbedded = false, onMenuUpdated, o
     if (!business?.id) return;
     setLoading(true);
     try {
-      const res = await api.getMenu(business.id);
+      const res = await safeGetMenu(business.id);
       if (res && res.items) {
         setMenuItems(res.items);
       }
@@ -147,7 +211,7 @@ export function MenuManagerView({ business, isEmbedded = false, onMenuUpdated, o
     if (!fileParsedPreview.length) return;
     setSaving(true);
     try {
-      const res = await api.uploadMenu(business.id, fileParsedPreview, replaceOnUpload);
+      const res = await safeUploadMenu(business.id, fileParsedPreview, replaceOnUpload);
       setFeedback({ type: 'success', text: `Successfully saved ${res.count} dishes to your menu!` });
       setSelectedFile(null);
       setFileParsedPreview([]);
@@ -190,7 +254,7 @@ export function MenuManagerView({ business, isEmbedded = false, onMenuUpdated, o
     }
     setSaving(true);
     try {
-      const res = await api.parseMenuText(business.id, pastedText, pasteCategory);
+      const res = await safeParseMenuText(business.id, pastedText, pasteCategory);
       if (res && res.items) {
         setParsedPasteItems(res.items);
         setFeedback({
@@ -209,7 +273,7 @@ export function MenuManagerView({ business, isEmbedded = false, onMenuUpdated, o
     if (!parsedPasteItems.length) return;
     setSaving(true);
     try {
-      const res = await api.uploadMenu(business.id, parsedPasteItems, replaceOnPaste);
+      const res = await safeUploadMenu(business.id, parsedPasteItems, replaceOnPaste);
       setFeedback({ type: 'success', text: `Successfully saved ${res.count} dishes to your menu!` });
       setPastedText('');
       setParsedPasteItems([]);
@@ -251,7 +315,7 @@ export function MenuManagerView({ business, isEmbedded = false, onMenuUpdated, o
 
     setSaving(true);
     try {
-      await api.uploadMenu(business.id, [dishPayload], false); // append
+      await safeUploadMenu(business.id, [dishPayload], false); // append
       setFeedback({ type: 'success', text: `Added "${newDishName}" to menu!` });
       setNewDishName('');
       setNewDishPrice('');
@@ -268,7 +332,7 @@ export function MenuManagerView({ business, isEmbedded = false, onMenuUpdated, o
   const handleDeleteDish = async (itemId, dishName) => {
     if (!window.confirm(`Delete "${dishName}" from your menu?`)) return;
     try {
-      await api.deleteMenuItem(business.id, itemId);
+      await safeDeleteMenuItem(business.id, itemId);
       setFeedback({ type: 'success', text: `Deleted "${dishName}".` });
       setMenuItems((prev) => prev.filter((i) => i.id !== itemId));
       if (onMenuUpdated) onMenuUpdated();

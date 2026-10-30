@@ -336,3 +336,11 @@ export const api = {
       body: JSON.stringify({ status }),
     }),
 };
+
+export const getMenu = (businessId, category = null) => api.getMenu(businessId, category);
+export const uploadMenu = (businessId, items, replace = true) => api.uploadMenu(businessId, items, replace);
+export const deleteMenuItem = (businessId, itemId) => api.deleteMenuItem(businessId, itemId);
+export const searchMenu = (businessId, query) => api.searchMenu(businessId, query);
+export const parseMenuText = (businessId, text, defaultCategory = 'Mains') => api.parseMenuText(businessId, text, defaultCategory);
+
+export default api;
