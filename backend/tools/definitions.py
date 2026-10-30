@@ -459,3 +459,35 @@ class CreateRoomBookingInput(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
+
+
+class QueryMenuPricingInput(BaseModel):
+    """Input payload for searching dishes, ingredients, dietary options, and prices on a restaurant menu."""
+    query: str = Field(
+        ...,
+        min_length=1,
+        max_length=300,
+        description="Dish name, ingredient, flavor note, or category keyword to search (e.g., 'paneer butter masala', 'something sweet', 'spicy starters', 'vegan options', 'rotis').",
+    )
+    category: Optional[str] = Field(
+        None,
+        max_length=100,
+        description="Optional category filter (e.g., Starters, Mains, Breads, Desserts, Beverages).",
+    )
+    dietary_preference: Optional[str] = Field(
+        None,
+        max_length=50,
+        description="Optional dietary constraint (e.g., vegetarian, vegan, gluten-free, jain).",
+    )
+    max_budget: Optional[float] = Field(
+        None,
+        ge=0,
+        description="Optional maximum budget per dish in local currency (e.g. 350.0).",
+    )
+
+    @field_validator("query", mode="before")
+    @classmethod
+    def clean_query(cls, v: Any) -> Any:
+        return v.strip() if isinstance(v, str) else v
+
+    model_config = ConfigDict(extra="forbid")

@@ -266,9 +266,9 @@ class GroqService:
         max_retries = get_settings().LLM_MAX_RETRIES
         for attempt in range(max_retries + 1):
             try:
-                t0 = time.time()
+                t0 = time.perf_counter()
                 response = self.client.chat.completions.create(**kwargs)
-                latency_ms = (time.time() - t0) * 1000.0
+                latency_ms = max(round((time.perf_counter() - t0) * 1000.0, 2), 0.01)
 
                 choice = response.choices[0]
                 message = choice.message

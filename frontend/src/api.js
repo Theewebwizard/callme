@@ -306,6 +306,26 @@ export const api = {
     return request(`/businesses/${businessId}/reservations/${reservationId}${q}`, { method: 'DELETE' });
   },
 
+  // Restaurant Menu Management
+  getMenu: (businessId, category = null) => {
+    const q = category ? `?category=${encodeURIComponent(category)}` : '';
+    return request(`/businesses/${businessId}/menu${q}`);
+  },
+  uploadMenu: (businessId, items, replace = true) =>
+    request(`/businesses/${businessId}/menu/upload`, {
+      method: 'POST',
+      body: JSON.stringify({ items, replace }),
+    }),
+  deleteMenuItem: (businessId, itemId) =>
+    request(`/businesses/${businessId}/menu/${itemId}`, { method: 'DELETE' }),
+  searchMenu: (businessId, query) =>
+    request(`/businesses/${businessId}/menu/search?query=${encodeURIComponent(query)}`, { method: 'POST' }),
+  parseMenuText: (businessId, text, defaultCategory = 'Mains') =>
+    request(`/businesses/${businessId}/menu/parse-text`, {
+      method: 'POST',
+      body: JSON.stringify({ text, default_category: defaultCategory }),
+    }),
+
   // Admin Command Center
   getAdminOverview: () => request('/admin/overview'),
   getAdminTools: () => request('/admin/tools'),

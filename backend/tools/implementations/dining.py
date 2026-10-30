@@ -3,7 +3,10 @@ Dining and table management tool handlers.
 """
 
 import uuid
-from typing import Dict, Any
+from typing import Dict, Any, List, Optional
+import logging
+
+logger = logging.getLogger(__name__)
 from backend.tools.base import (
     ToolExecutionResult,
     ToolExecutionStatus,
@@ -12,6 +15,7 @@ from backend.tools.base import (
 from backend.tools.definitions import (
     CheckTableAvailabilityInput,
     CreateTableBookingInput,
+    QueryMenuPricingInput,
 )
 
 
@@ -274,4 +278,113 @@ def format_dining_reservation_summary(args: Dict[str, Any]) -> str:
         f"• Party Size: {args.get('party_size')} guests\n"
         f"• Reservation Date & Time: {args.get('date')} at {args.get('time')}"
         f"{notes}"
+    )
+
+
+def handle_query_menu_pricing(
+    input_data: QueryMenuPricingInput,
+    business_config: Dict[str, Any],
+) -> ToolExecutionResult:
+    """
+    Search restaurant menu for dishes, current prices, descriptions, and dietary options.
+    Uses semantic concept matching and dynamic tenant database access with zero hardcoded dishes.
+    """
+    biz_id = business_config.get("id", "")
+    biz_name = business_config.get("name", "our restaurant")
+    phone = business_config.get("phone_number", "our front desk")
+    raw_mode = business_config.get("execution_mode", "mock")
+    is_live = (str(raw_mode).lower() == "live")
+    exec_mode = ToolExecutionMode.LIVE if is_live else ToolExecutionMode.MOCK
+
+    query = input_data.query.strip()
+    category = input_data.category.strip() if input_data.category else None
+    dietary = input_data.dietary_preference.strip() if input_data.dietary_preference else None
+    max_budget = input_data.max_budget
+
+    matching_items: List[Dict[str, Any]] = []
+
+    # 1. Authoritative query via DatabaseService
+    try:
+        from backend.database.service import get_database_service
+        db_service = get_database_service()
+        if db_service and biz_id:
+            matching_items = db_service.search_menu_items_semantic(
+                business_id=biz_id,
+                query=query,
+                category=category,
+                dietary_preference=dietary,
+                max_budget=max_budget,
+                limit=6,
+            )
+    except Exception as exc:
+        logger.warning("Database search failed in handle_query_menu_pricing: %s", exc)
+
+    # 2. In-memory fallback if DB returned empty and menu_items were supplied in business_config
+    if not matching_items and "menu_items" in business_config and business_config["menu_items"]:
+        from backend.database.repositories.menu_repo import rank_menu_items_semantic
+        matching_items = rank_menu_items_semantic(
+            items=business_config["menu_items"],
+            query=query,
+            category=category,
+            dietary_preference=dietary,
+            max_budget=max_budget,
+            limit=6,
+        )
+
+    # 3. Assemble response
+    if not matching_items:
+        budget_str = f" under ₹{int(max_budget)}" if max_budget else ""
+        dietary_str = f" {dietary}" if dietary else ""
+        return ToolExecutionResult(
+            tool_id="query_menu_pricing",
+            status=ToolExecutionStatus.SUCCESS,
+            success=True,
+            is_business_accepted=True,
+            mode=exec_mode,
+            is_simulated=(not is_live),
+            data={
+                "found": False,
+                "count": 0,
+                "query": query,
+                "items": [],
+            },
+            message=(
+                f"We currently do not have any{dietary_str} items matching '{query}'{budget_str} "
+                f"on our menu today. Would you like me to check our other chef specialties, or help reserve a table at {biz_name}?"
+            ),
+        )
+
+    # Format clear spoken voice summary
+    lines = [f"Here are the matching options from {biz_name}'s menu:"]
+    currency_symbol = matching_items[0].get("currency", "INR")
+    curr_prefix = "₹" if currency_symbol in ("INR", "₹") else f"{currency_symbol} "
+
+    for item in matching_items:
+        p = item.get("price", 0.0)
+        formatted_price = f"{curr_prefix}{int(p)}" if p == int(p) else f"{curr_prefix}{p:.2f}"
+        name = item.get("name", "Special Dish")
+        desc = item.get("description", "").strip()
+        tags = item.get("dietary_tags") or []
+        tag_str = f" [{', '.join(tags)}]" if tags else ""
+        if desc:
+            lines.append(f"• {name} - {formatted_price}: {desc}{tag_str}")
+        else:
+            lines.append(f"• {name} - {formatted_price}{tag_str}")
+
+    summary_text = "\n".join(lines)
+
+    return ToolExecutionResult(
+        tool_id="query_menu_pricing",
+        status=ToolExecutionStatus.SUCCESS,
+        success=True,
+        is_business_accepted=True,
+        mode=exec_mode,
+        is_simulated=(not is_live),
+        data={
+            "found": True,
+            "count": len(matching_items),
+            "query": query,
+            "items": matching_items,
+        },
+        message=summary_text,
     )

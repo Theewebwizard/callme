@@ -29,6 +29,7 @@ from backend.database.repositories import (
     CallRepository,
     ConversationRepository,
     ResourceRepository,
+    MenuItemRepository,
 )
 from backend.database.seed_data import INITIAL_BUSINESSES, INITIAL_TOOLS, MOCK_CALL_HISTORY
 
@@ -95,6 +96,14 @@ def _get_default_tool_metadata(tool_id: str, business_data: Dict[str, Any]) -> D
                 "timezone": tz,
             },
         }
+    elif tool_id == "query_menu_pricing":
+        return {
+            "selected_option_id": "builtin_restaurant_menu",
+            "configuration": {
+                "currency": "INR",
+                "default_category": "Mains",
+            },
+        }
     elif tool_id == "answer_faq":
         return {
             "selected_option_id": "builtin_knowledge_base",
@@ -150,6 +159,7 @@ def seed_database(
         call_repo = CallRepository(sess)
         conv_repo = ConversationRepository(sess)
         res_repo = ResourceRepository(sess)
+        menu_repo = MenuItemRepository(sess)
 
         for b_id, b_data in INITIAL_BUSINESSES.items():
             biz = biz_repo.get(b_id)
@@ -203,6 +213,12 @@ def seed_database(
                             category="General",
                         )
                         stats["faqs_created"] += 1
+
+            # 3b. Seed Menu Items for this business if not yet seeded
+            existing_menu = menu_repo.list_for_business(b_id)
+            if not existing_menu and b_data.get("menu_items"):
+                menu_repo.bulk_create(b_id, b_data["menu_items"])
+                logger.info("Seeded %d menu items for tenant %s", len(b_data["menu_items"]), b_id)
 
             # 4. Seed Reservable Resources for this business if not yet seeded
             existing_resources = res_repo.list_resources(b_id)

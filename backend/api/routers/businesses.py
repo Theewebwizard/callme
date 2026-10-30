@@ -436,3 +436,230 @@ def delete_business(
         "business_id": business_id,
         "message": f"Business tenant '{business_id}' and all associated records deleted successfully.",
     }
+
+
+# -------------------------------------------------------------
+# Restaurant Menu Management & Upload Endpoints
+# -------------------------------------------------------------
+
+class MenuItemPayload(BaseModel):
+    name: str = Field(..., min_length=1, max_length=255)
+    category: str = Field(..., min_length=1, max_length=100)
+    price: float = Field(..., ge=0)
+    currency: str = Field("INR", max_length=10)
+    description: Optional[str] = Field(None, max_length=1000)
+    dietary_tags: Optional[List[str]] = Field(default_factory=list)
+    spice_level: Optional[str] = Field("medium", max_length=50)
+    is_available: bool = True
+
+
+class MenuUploadRequest(BaseModel):
+    items: List[MenuItemPayload] = Field(..., min_length=1)
+    replace: bool = Field(True, description="When true, replaces all existing items. When false, appends new items.")
+
+
+@router.get("/{business_id}/menu")
+def get_business_menu(
+    business_id: str,
+    category: Optional[str] = None,
+    only_available: bool = False,
+) -> Dict[str, Any]:
+    """Retrieve full menu items for a business tenant."""
+    db_service = get_database_service()
+    if not db_service.business_exists(business_id):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Business tenant '{business_id}' not found.",
+        )
+    items = db_service.list_menu_items(business_id, category=category, only_available=only_available)
+    return {
+        "success": True,
+        "business_id": business_id,
+        "count": len(items),
+        "items": items,
+    }
+
+
+@router.post("/{business_id}/menu/upload")
+def upload_business_menu(
+    business_id: str,
+    req: MenuUploadRequest,
+    principal: AuthenticatedPrincipal = Depends(verify_business_access),
+) -> Dict[str, Any]:
+    """Upload and persist structured restaurant menu items with semantic search tags."""
+    db_service = get_database_service()
+    if not db_service.business_exists(business_id):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Business tenant '{business_id}' not found.",
+        )
+    item_dicts = [item.model_dump() for item in req.items]
+    persisted = db_service.upload_menu_items(business_id, item_dicts, replace=req.replace)
+    return {
+        "success": True,
+        "business_id": business_id,
+        "count": len(persisted),
+        "message": f"Successfully {'replaced' if req.replace else 'added'} {len(persisted)} menu items for business '{business_id}'.",
+        "items": persisted,
+    }
+
+
+@router.delete("/{business_id}/menu/{item_id}")
+def delete_business_menu_item(
+    business_id: str,
+    item_id: str,
+    principal: AuthenticatedPrincipal = Depends(verify_business_access),
+) -> Dict[str, Any]:
+    """Delete a specific menu item."""
+    db_service = get_database_service()
+    deleted = db_service.delete_menu_item(business_id, item_id)
+    if not deleted:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Menu item '{item_id}' not found for business '{business_id}'.",
+        )
+    return {
+        "success": True,
+        "message": f"Menu item '{item_id}' successfully deleted.",
+    }
+
+
+@router.post("/{business_id}/menu/search")
+def search_business_menu(
+    business_id: str,
+    query: str,
+    category: Optional[str] = None,
+    dietary_preference: Optional[str] = None,
+    max_budget: Optional[float] = None,
+) -> Dict[str, Any]:
+    """Semantically search menu items (useful for testing or UI search bar)."""
+    db_service = get_database_service()
+    results = db_service.search_menu_items_semantic(
+        business_id=business_id,
+        query=query,
+        category=category,
+        dietary_preference=dietary_preference,
+        max_budget=max_budget,
+    )
+    return {
+        "success": True,
+        "business_id": business_id,
+        "query": query,
+        "count": len(results),
+        "items": results,
+    }
+
+
+class ParseMenuTextRequest(BaseModel):
+    text: str = Field(..., min_length=1)
+    default_category: Optional[str] = "Mains"
+
+
+@router.post("/{business_id}/menu/parse-text")
+def parse_menu_text(
+    business_id: str,
+    req: ParseMenuTextRequest,
+    principal: AuthenticatedPrincipal = Depends(verify_business_access),
+) -> Dict[str, Any]:
+    """
+    Parse unstructured or pasted menu text into structured dish objects with categories and prices.
+    Enables restaurant owners to paste their menu directly without typing code.
+    """
+    lines = req.text.strip().splitlines()
+    current_category = req.default_category or "Mains"
+    parsed_items = []
+
+    category_headers = {
+        "starter": "Starters", "starters": "Starters", "appetizer": "Starters", "appetizers": "Starters", "snacks": "Starters",
+        "main": "Mains", "mains": "Mains", "main course": "Mains", "curries": "Mains", "gravies": "Mains", "dal": "Mains",
+        "bread": "Breads", "breads": "Breads", "rotis": "Breads", "naans": "Breads",
+        "dessert": "Desserts", "desserts": "Desserts", "sweets": "Desserts", "mithai": "Desserts",
+        "beverage": "Beverages", "beverages": "Beverages", "drinks": "Beverages", "shakes": "Beverages",
+    }
+
+    price_pattern = re.compile(r'(?:₹|rs\.?|inr)?\s*(\d+(?:\.\d{1,2})?)\s*(?:/-)?', re.IGNORECASE)
+
+    for line in lines:
+        raw_line = line.strip()
+        if not raw_line:
+            continue
+
+        # Check if line is a category header
+        clean_header = re.sub(r'[:\-_#\*\(\)]', '', raw_line).strip().lower()
+        if clean_header in category_headers:
+            current_category = category_headers[clean_header]
+            continue
+
+        # Look for price at the end or inside line
+        matches = list(price_pattern.finditer(raw_line))
+        if not matches:
+            continue
+
+        # Pick the most plausible price match (usually the last numeric figure)
+        price_match = matches[-1]
+        try:
+            price_val = float(price_match.group(1))
+        except (ValueError, TypeError):
+            continue
+
+        # Dish name is the text outside the price
+        start_idx, end_idx = price_match.span()
+        name_part = (raw_line[:start_idx] + " " + raw_line[end_idx:]).strip()
+        name_part = re.sub(r'[\-–—:\.\(\)]+$', '', name_part).strip()
+        name_part = re.sub(r'^[\-–—:\.\*\#]+', '', name_part).strip()
+
+        if len(name_part) < 2:
+            continue
+
+        # Extract optional description if inside parentheses
+        desc = ""
+        desc_match = re.search(r'\((.*?)\)', name_part)
+        if desc_match:
+            desc = desc_match.group(1).strip()
+            name_part = re.sub(r'\(.*?\)', '', name_part).strip()
+
+        name_part = re.sub(r'[\-–—:\.\s]+$', '', name_part).strip()
+        name_part = re.sub(r'^[\-–—:\.\*\#\s]+', '', name_part).strip()
+
+        # Deduce category from dish keywords if not in specific header
+        cat = current_category
+        nl = name_part.lower()
+        if any(w in nl for w in ["naan", "roti", "paratha", "kulcha", "chapati", "phulka"]):
+            cat = "Breads"
+        elif any(w in nl for w in ["jamun", "kulfi", "rasmalai", "halwa", "kheer", "ice cream", "pudding", "cake"]):
+            cat = "Desserts"
+        elif any(w in nl for w in ["lassi", "chaas", "soda", "juice", "tea", "chai", "coffee", "shake", "mojito", "water"]):
+            cat = "Beverages"
+        elif any(w in nl for w in ["tikka", "kabab", "corn", "pakoda", "roll", "soup", "chaat", "manchurian"]):
+            cat = "Starters"
+
+        # Deduce dietary tags
+        tags = []
+        if any(w in nl or w in desc.lower() for w in ["chicken", "mutton", "fish", "egg", "murgh", "meat", "prawn"]):
+            tags.append("non-vegetarian")
+        else:
+            tags.append("vegetarian")
+
+        if any(w in nl or w in desc.lower() for w in ["vegan", "dairy-free"]):
+            tags.append("vegan")
+        if any(w in nl or w in desc.lower() for w in ["gluten-free", "gluten free"]):
+            tags.append("gluten-free")
+        if any(w in nl or w in desc.lower() for w in ["jain"]):
+            tags.append("jain-available")
+
+        parsed_items.append({
+            "name": name_part,
+            "category": cat,
+            "price": price_val,
+            "currency": "INR",
+            "description": desc or None,
+            "dietary_tags": tags,
+            "spice_level": "spicy" if "spicy" in desc.lower() else ("mild" if "mild" in desc.lower() else "medium"),
+            "is_available": True,
+        })
+
+    return {
+        "success": True,
+        "count": len(parsed_items),
+        "items": parsed_items,
+    }

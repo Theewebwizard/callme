@@ -609,8 +609,9 @@ _default_wizard: Optional[CapabilitySetupWizard] = None
 
 
 def get_setup_wizard() -> CapabilitySetupWizard:
-    """Return singleton CapabilitySetupWizard instance."""
+    """Return singleton CapabilitySetupWizard instance in sync with current database service."""
     global _default_wizard
-    if _default_wizard is None:
-        _default_wizard = CapabilitySetupWizard()
+    current_db = get_database_service()
+    if _default_wizard is None or getattr(_default_wizard, "db", None) is not current_db:
+        _default_wizard = CapabilitySetupWizard(current_db)
     return _default_wizard

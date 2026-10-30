@@ -65,11 +65,11 @@ def test_registry_rejects_duplicate_registration(registry: ToolRegistry):
 def test_registry_list_tools_filtering(registry: ToolRegistry):
     """Verify listing all tools and filtering by category."""
     all_tools = registry.list_tools()
-    assert len(all_tools) == 9
+    assert len(all_tools) == 10
 
     dining_tools = registry.list_tools(category=ToolCategory.DINING)
-    assert len(dining_tools) == 2
-    assert {t.id for t in dining_tools} == {"check_table_availability", "create_table_booking"}
+    assert len(dining_tools) == 3
+    assert {t.id for t in dining_tools} == {"check_table_availability", "create_table_booking", "query_menu_pricing"}
 
     healthcare_tools = registry.list_tools(category=ToolCategory.HEALTHCARE)
     assert len(healthcare_tools) == 2

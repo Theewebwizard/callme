@@ -12,7 +12,7 @@ from sqlalchemy import (
     String,
     Text,
     Boolean,
-    Integer,
+    Integer, Float,
     DateTime,
     ForeignKey,
     UniqueConstraint,
@@ -65,6 +65,7 @@ class Business(Base):
     tool_demands = relationship("ToolDemand", back_populates="business", cascade="all, delete-orphan", lazy="select")
     reservable_resources = relationship("ReservableResource", back_populates="business", cascade="all, delete-orphan", lazy="select")
     reservations = relationship("Reservation", back_populates="business", cascade="all, delete-orphan", lazy="select")
+    menu_items = relationship("MenuItem", back_populates="business", cascade="all, delete-orphan", lazy="select")
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert model to dictionary representation."""
@@ -113,6 +114,50 @@ class BusinessFAQ(Base):
             "question": self.question,
             "answer": self.answer,
             "category": self.category,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+        }
+
+
+class MenuItem(Base):
+    """
+    Business-specific restaurant menu item record.
+    Used for semantic menu retrieval, pricing inquiries, dietary filtering, and recommendations.
+    """
+    __tablename__ = "menu_items"
+
+    id = Column(String(64), primary_key=True, default=lambda: f"item_{uuid.uuid4().hex[:12]}")
+    business_id = Column(String(64), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
+    name = Column(String(255), nullable=False, index=True)
+    category = Column(String(100), nullable=False, index=True)  # e.g., 'Starters', 'Mains', 'Breads', 'Desserts', 'Beverages'
+    price = Column(Float, nullable=False)
+    currency = Column(String(10), default="INR", nullable=False)
+    description = Column(Text, nullable=True)
+    dietary_tags = Column(JSON, default=list, nullable=False)  # e.g., ['vegetarian', 'vegan', 'gluten-free', 'jain']
+    spice_level = Column(String(50), nullable=True)  # e.g., 'mild', 'medium', 'spicy'
+    is_available = Column(Boolean, default=True, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
+
+    business = relationship("Business", back_populates="menu_items")
+
+    __table_args__ = (
+        Index("ix_menu_business_category", "business_id", "category"),
+    )
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert menu item to dictionary representation."""
+        return {
+            "id": self.id,
+            "business_id": self.business_id,
+            "name": self.name,
+            "category": self.category,
+            "price": self.price,
+            "currency": self.currency,
+            "description": self.description or "",
+            "dietary_tags": self.dietary_tags or [],
+            "spice_level": self.spice_level or "medium",
+            "is_available": self.is_available,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }

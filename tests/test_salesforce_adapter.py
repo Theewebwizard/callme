@@ -21,6 +21,7 @@ Tests:
 - Capability contract execution via execute()
 """
 
+from typing import Any, Dict, List, Optional
 import pytest
 from unittest.mock import MagicMock, patch
 import json

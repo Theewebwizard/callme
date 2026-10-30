@@ -14,6 +14,7 @@ from backend.database.repositories.tool_demand_repo import ToolDemandRepository
 from backend.database.repositories.resource_repo import ResourceRepository
 from backend.database.repositories.reservation_repo import ReservationRepository, ReservationConflictError
 from backend.database.repositories.connection_repo import ConnectionRepository
+from backend.database.repositories.menu_repo import MenuItemRepository
 
 __all__ = [
     "BaseRepository",
@@ -29,4 +30,5 @@ __all__ = [
     "ReservationRepository",
     "ReservationConflictError",
     "ConnectionRepository",
+    "MenuItemRepository",
 ]

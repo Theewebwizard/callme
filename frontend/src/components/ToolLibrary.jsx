@@ -22,9 +22,11 @@ import {
   Database,
   Lock,
   ExternalLink,
+  Utensils,
 } from 'lucide-react';
 import { api } from '../api';
 import BookingCalendarView from './BookingCalendarView';
+import MenuManagerModal, { MenuManagerView } from './MenuManagerModal';
 
 const TOOL_ICONS = {
   answer_faq: BookOpen,
@@ -36,6 +38,7 @@ const TOOL_ICONS = {
   create_appointment: Calendar,
   take_message: MessageSquare,
   transfer_call: PhoneForwarded,
+  query_menu_pricing: Utensils,
 };
 
 const DEMAND_CATEGORIES = [
@@ -76,6 +79,7 @@ export default function ToolLibrary({ business }) {
 
   // Wizard Modal State
   const [wizardOpen, setWizardOpen] = useState(false);
+  const [menuModalOpen, setMenuModalOpen] = useState(false);
   const [wizardTool, setWizardTool] = useState(null);
   const [wizardSchema, setWizardSchema] = useState(null);
   const [wizardStep, setWizardStep] = useState(1); // 1: Option, 2: Fields, 3: Validate, 4: Ready
@@ -816,7 +820,30 @@ export default function ToolLibrary({ business }) {
                       </div>
                     </div>
 
-                    <div style={{ display: 'flex', gap: '0.5rem', borderTop: '1px solid var(--slate-100)', paddingTop: '0.75rem', marginTop: 'auto' }}>
+                    <div style={{ display: 'flex', gap: '0.5rem', borderTop: '1px solid var(--slate-100)', paddingTop: '0.75rem', marginTop: 'auto', flexWrap: 'wrap' }}>
+                      {t.id === 'query_menu_pricing' && (
+                        <button
+                          type="button"
+                          className="btn-secondary"
+                          onClick={() => setMenuModalOpen(true)}
+                          style={{
+                            flex: '1 1 100%',
+                            padding: '0.45rem',
+                            fontSize: '0.8rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '6px',
+                            color: 'var(--sky-700)',
+                            borderColor: 'var(--sky-300)',
+                            background: 'var(--sky-50)',
+                            fontWeight: 700,
+                            marginBottom: '4px',
+                          }}
+                        >
+                          <Utensils size={14} /> Upload / Manage Menu Dishes
+                        </button>
+                      )}
                       <button
                         type="button"
                         className="btn-secondary"
@@ -1162,7 +1189,7 @@ export default function ToolLibrary({ business }) {
             style={{
               background: 'white',
               borderRadius: 'var(--radius-lg)',
-              maxWidth: '680px',
+              maxWidth: (wizardTool?.id === 'query_menu_pricing' && wizardStep === 2) ? '920px' : '680px',
               width: '100%',
               maxHeight: '90vh',
               overflowY: 'auto',
@@ -1237,8 +1264,8 @@ export default function ToolLibrary({ business }) {
                           <span style={{ fontWeight: 800, fontSize: '0.95rem', color: 'var(--slate-900)' }}>
                             {opt.name}
                           </span>
-                          <span style={{ fontSize: '0.72rem', background: opt.is_builtin ? 'var(--emerald-100)' : 'var(--slate-100)', color: opt.is_builtin ? 'var(--emerald-700)' : 'var(--slate-700)', padding: '2px 8px', borderRadius: '10px', fontWeight: 700 }}>
-                            {opt.is_builtin ? 'First-Party Built-In' : 'External Provider'}
+                          <span style={{ fontSize: '0.72rem', background: (opt.is_built_in ?? opt.is_builtin) ? 'var(--emerald-100)' : 'var(--slate-100)', color: (opt.is_built_in ?? opt.is_builtin) ? 'var(--emerald-700)' : 'var(--slate-700)', padding: '2px 8px', borderRadius: '10px', fontWeight: 700 }}>
+                            {(opt.is_built_in ?? opt.is_builtin) ? 'First-Party Built-In' : 'External Provider'}
                           </span>
                         </div>
                         <div style={{ fontSize: '0.82rem', color: 'var(--slate-600)', marginTop: '4px' }}>
@@ -1314,6 +1341,27 @@ export default function ToolLibrary({ business }) {
                           </div>
                         </div>
                       ))}
+                    </div>
+                  )}
+
+                  {(wizardTool?.id === 'query_menu_pricing' || currentOption.option_id === 'builtin_restaurant_menu') && (
+                    <div style={{ marginTop: '1.5rem', borderTop: '2px solid var(--slate-100)', paddingTop: '1.25rem' }}>
+                      <div style={{ marginBottom: '1rem' }}>
+                        <h3 style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--slate-900)', margin: '0 0 4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <Utensils size={18} color="var(--sky-600)" /> Restaurant Menu & Pricing (All 3 Upload Options)
+                        </h3>
+                        <p style={{ fontSize: '0.8rem', color: 'var(--slate-600)', margin: 0 }}>
+                          Upload, paste, or manage your restaurant dishes using any of the 3 options below. The AI receptionist queries this dynamically for prices and ingredients.
+                        </p>
+                      </div>
+
+                      <MenuManagerView
+                        business={business}
+                        isEmbedded={true}
+                        onMenuUpdated={() => {
+                          loadData();
+                        }}
+                      />
                     </div>
                   )}
 
@@ -1480,6 +1528,14 @@ export default function ToolLibrary({ business }) {
           </div>
         </div>
       )}
+
+      {/* Standalone Menu Manager Modal */}
+      <MenuManagerModal
+        business={business}
+        isOpen={menuModalOpen}
+        onClose={() => setMenuModalOpen(false)}
+        onMenuUpdated={loadData}
+      />
     </section>
   );
 }

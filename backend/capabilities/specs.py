@@ -1095,6 +1095,54 @@ TOOL_CAPABILITY_SPECS: Dict[str, ToolCapabilityRequirement] = {
             ),
         ],
     ),
+    # ---------------------------------------------------------------------------
+    # 8. Query Menu & Pricing (Restaurant only)
+    # ---------------------------------------------------------------------------
+    "query_menu_pricing": ToolCapabilityRequirement(
+        tool_id="query_menu_pricing",
+        version="1.0.0",
+        name="Query Menu & Pricing",
+        description="Searches restaurant menu dishes, current prices, descriptions, ingredients, and dietary options.",
+        category="Dining & Hospitality",
+        allowed_canonical_industries=["restaurant"],
+        failure_behavior=FailureBehavior.DEGRADED_RESPONSE,
+        requires_confirmation=False,
+        supported_options=[
+            IntegrationOption(
+                option_id="builtin_restaurant_menu",
+                name="Tenant Restaurant Menu & Pricing Store",
+                description="Semantic concept search and multi-tenant menu storage built directly into CallMe.",
+                is_built_in=True,
+                requires_external_connection=False,
+                authoritative_source=AuthoritativeSource.BUILTIN_DATABASE,
+                setup_fields=[
+                    SetupField(
+                        key="currency",
+                        label="Menu Currency",
+                        type=FieldType.STRING,
+                        required=False,
+                        default_value="INR",
+                        description="Default currency for menu prices (e.g. INR, USD, EUR).",
+                    ),
+                    SetupField(
+                        key="show_dietary_tags",
+                        label="Include Dietary Tags in Responses",
+                        type=FieldType.BOOLEAN,
+                        required=False,
+                        default_value=True,
+                        description="Include vegetarian, vegan, and gluten-free tags in responses.",
+                    ),
+                ],
+                instructions_markdown=(
+                    "### Tenant Restaurant Menu & Pricing Store\n"
+                    "CallMe manages and semantically indexes your dishes directly in your tenant database.\n\n"
+                    "**Readiness Requirements:**\n"
+                    "1. Upload your restaurant dishes with prices, descriptions, and dietary tags under **Menu Management**.\n"
+                    "2. The receptionist AI uses semantic concept search to answer caller dish and price queries."
+                ),
+            ),
+        ],
+    ),
 }
 
 

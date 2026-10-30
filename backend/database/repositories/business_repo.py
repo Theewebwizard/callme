@@ -141,7 +141,7 @@ class BusinessRepository(BaseRepository):
         from sqlalchemy.orm import joinedload
         stmt = (
             select(Business)
-            .options(joinedload(Business.faqs), joinedload(Business.tool_configs))
+            .options(joinedload(Business.faqs), joinedload(Business.tool_configs), joinedload(Business.menu_items))
             .where(Business.id == business_id)
             .limit(1)
         )
@@ -154,6 +154,9 @@ class BusinessRepository(BaseRepository):
         # Gather FAQs
         faqs_list = [faq.to_dict() for faq in biz.faqs]
         base_dict["faqs"] = faqs_list
+
+        # Gather Menu Items
+        base_dict["menu_items"] = [m.to_dict() for m in (biz.menu_items or [])]
 
         # Gather enabled tools and capability configs
         tool_map = {tc.tool_id: tc.is_enabled for tc in biz.tool_configs}

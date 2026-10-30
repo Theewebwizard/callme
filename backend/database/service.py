@@ -4,6 +4,7 @@ Provides transactional boundaries, fallback detection, and decoupled data access
 """
 
 from typing import Optional, Dict, List, Any, Tuple
+from datetime import datetime
 import time
 import logging
 from sqlalchemy.orm import sessionmaker, Session
@@ -29,6 +30,7 @@ from backend.database.repositories import (
     ReservationRepository,
     ReservationConflictError,
     ConnectionRepository,
+    MenuItemRepository,
 )
 
 logger = logging.getLogger(__name__)
@@ -1349,6 +1351,93 @@ class DatabaseService:
             conv_repo = ConversationRepository(session)
             return conv_repo.list_session_dicts(business_id=business_id, session_id=session_id, limit=limit)
 
+
+
+
+    # ---------------------------------------------------------
+    # Restaurant Menu Management & Semantic Search Operations
+    # ---------------------------------------------------------
+
+    def list_menu_items(
+        self,
+        business_id: str,
+        category: Optional[str] = None,
+        only_available: bool = True,
+    ) -> List[Dict[str, Any]]:
+        """Retrieve menu items for a restaurant business, optionally filtered by category."""
+        with session_scope(self.session_factory) as session:
+            repo = MenuItemRepository(session)
+            return repo.list_dicts_for_business(business_id=business_id, category=category, only_available=only_available)
+
+    def upload_menu_items(
+        self,
+        business_id: str,
+        items: List[Dict[str, Any]],
+        replace: bool = True,
+    ) -> List[Dict[str, Any]]:
+        """
+        Upload and persist menu items for a business.
+        When replace=True, replaces existing menu atomically; otherwise appends.
+        """
+        self.invalidate_profile_cache(business_id)
+        with session_scope(self.session_factory) as session:
+            repo = MenuItemRepository(session)
+            if replace:
+                created = repo.replace_all_for_business(business_id, items)
+            else:
+                created = repo.bulk_create(business_id, items)
+            return [c.to_dict() for c in created]
+
+    def search_menu_items_semantic(
+        self,
+        business_id: str,
+        query: str,
+        category: Optional[str] = None,
+        dietary_preference: Optional[str] = None,
+        max_budget: Optional[float] = None,
+        limit: int = 6,
+    ) -> List[Dict[str, Any]]:
+        """
+        Perform semantic search over a restaurant's menu items.
+        Understands natural queries (e.g., 'sweet dishes', 'something spicy', 'paneer curries under 300').
+        """
+        with session_scope(self.session_factory) as session:
+            repo = MenuItemRepository(session)
+            return repo.search_semantic(
+                business_id=business_id,
+                query=query,
+                category=category,
+                dietary_preference=dietary_preference,
+                max_budget=max_budget,
+                limit=limit,
+            )
+
+    def get_menu_item(self, business_id: str, item_id: str) -> Optional[Dict[str, Any]]:
+        """Fetch a single menu item with tenant verification."""
+        with session_scope(self.session_factory) as session:
+            repo = MenuItemRepository(session)
+            item = repo.get(item_id, business_id=business_id)
+            return item.to_dict() if item else None
+
+    def update_menu_item(
+        self,
+        business_id: str,
+        item_id: str,
+        updates: Dict[str, Any],
+    ) -> Optional[Dict[str, Any]]:
+        """Update an existing menu item."""
+        self.invalidate_profile_cache(business_id)
+        with session_scope(self.session_factory) as session:
+            repo = MenuItemRepository(session)
+            updated = repo.update(item_id, business_id, updates)
+            return updated.to_dict() if updated else None
+
+    def delete_menu_item(self, business_id: str, item_id: str) -> bool:
+        """Delete a menu item."""
+        self.invalidate_profile_cache(business_id)
+        with session_scope(self.session_factory) as session:
+            repo = MenuItemRepository(session)
+            return repo.delete(item_id, business_id=business_id)
 
 
 _DEFAULT_SERVICE: Optional[DatabaseService] = None

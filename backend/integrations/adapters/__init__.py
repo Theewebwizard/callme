@@ -35,6 +35,7 @@ from backend.integrations.adapters.builtin_support_adapters import (
     BuiltinKnowledgeBaseAdapter,
     BuiltinMessagingAdapter,
     SimulatedEscalationAdapter,
+    BuiltinRestaurantMenuAdapter,
 )
 
 __all__ = [
@@ -50,6 +51,7 @@ __all__ = [
     "BuiltinKnowledgeBaseAdapter",
     "BuiltinMessagingAdapter",
     "SimulatedEscalationAdapter",
+    "BuiltinRestaurantMenuAdapter",
     "GoogleCalendarAdapter",
     "OutlookCalendarAdapter",
     "OpenTableAdapter",

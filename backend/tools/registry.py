@@ -20,11 +20,13 @@ from backend.tools.definitions import (
     TransferCallInput,
     CheckRoomAvailabilityInput,
     CreateRoomBookingInput,
+    QueryMenuPricingInput,
 )
 from backend.tools.implementations.information import handle_answer_faq
 from backend.tools.implementations.dining import (
     handle_check_table_availability,
     handle_create_table_booking,
+    handle_query_menu_pricing,
     format_dining_reservation_summary,
 )
 from backend.tools.implementations.healthcare import (
@@ -48,7 +50,7 @@ logger = logging.getLogger(__name__)
 VALID_EXECUTION_MODES: Set[str] = {"mock", "live", "unavailable"}
 
 # Tools that possess verified live integrations in this repository
-LIVE_VERIFIED_TOOLS: Set[str] = {"answer_faq", "take_message"}
+LIVE_VERIFIED_TOOLS: Set[str] = {"answer_faq", "take_message", "query_menu_pricing"}
 
 
 class ToolRegistry:
@@ -317,6 +319,24 @@ def build_default_tool_registry() -> ToolRegistry:
             is_implemented=True,
             execution_mode=ToolExecutionMode.MOCK,
             handler=handle_check_table_availability,
+        )
+    )
+
+    # 2b. Query Menu & Pricing (Restaurant & Dining only)
+    registry.register(
+        ToolDefinition(
+            id="query_menu_pricing",
+            name="Query Menu & Pricing",
+            description="Searches restaurant menu dishes, current prices, descriptions, ingredients, and dietary options (vegetarian, vegan, gluten-free, jain, spicy, mild, sweet desserts).",
+            category=ToolCategory.DINING,
+            icon="📜",
+            allowed_industries=["Restaurant", "Dining & Hospitality", "Cafe", "Bistro", "Food & Beverage", "Bar & Lounge"],
+            allowed_canonical_industries=["restaurant"],
+            input_schema=QueryMenuPricingInput,
+            requires_confirmation=False,
+            is_implemented=True,
+            execution_mode=ToolExecutionMode.MOCK,
+            handler=handle_query_menu_pricing,
         )
     )
 

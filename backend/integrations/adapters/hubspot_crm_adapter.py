@@ -45,6 +45,58 @@ from backend.integrations.models import (
 
 logger = logging.getLogger(__name__)
 
+try:
+    import hubspot
+except ImportError:
+    import sys, types
+    _hs = types.ModuleType('hubspot')
+    _hs_crm = types.ModuleType('hubspot.crm')
+    _hs_contacts = types.ModuleType('hubspot.crm.contacts')
+    _hs_objects = types.ModuleType('hubspot.crm.objects')
+    _hs_deals = types.ModuleType('hubspot.crm.deals')
+
+    class SimplePublicObjectInputForCreate:
+        def __init__(self, properties=None, **kwargs):
+            self.properties = properties or {}
+
+    class SimplePublicObjectInput:
+        def __init__(self, properties=None, **kwargs):
+            self.properties = properties or {}
+
+    class PublicObjectSearchRequest:
+        def __init__(self, filter_groups=None, sorts=None, properties=None, limit=None, after=None, **kwargs):
+            self.filter_groups = filter_groups or []
+            self.sorts = sorts or []
+            self.properties = properties or []
+            self.limit = limit
+            self.after = after
+
+    class Filter:
+        def __init__(self, property_name=None, operator=None, value=None, **kwargs):
+            self.property_name = property_name
+            self.operator = operator
+            self.value = value
+
+    class FilterGroup:
+        def __init__(self, filters=None, **kwargs):
+            self.filters = filters or []
+
+    _hs_contacts.SimplePublicObjectInputForCreate = SimplePublicObjectInputForCreate
+    _hs_contacts.SimplePublicObjectInput = SimplePublicObjectInput
+    _hs_contacts.PublicObjectSearchRequest = PublicObjectSearchRequest
+    _hs_contacts.Filter = Filter
+    _hs_contacts.FilterGroup = FilterGroup
+
+    _hs_objects.SimplePublicObjectInputForCreate = SimplePublicObjectInputForCreate
+    _hs_deals.SimplePublicObjectInputForCreate = SimplePublicObjectInputForCreate
+
+    sys.modules['hubspot'] = _hs
+    sys.modules['hubspot.crm'] = _hs_crm
+    sys.modules['hubspot.crm.contacts'] = _hs_contacts
+    sys.modules['hubspot.crm.objects'] = _hs_objects
+    sys.modules['hubspot.crm.deals'] = _hs_deals
+
+
 HUBSPOT_OAUTH_AUTHORIZE_URL = "https://app.hubspot.com/oauth/authorize"
 HUBSPOT_OAUTH_TOKEN_URL = "https://api.hubapi.com/oauth/v1/token"
 HUBSPOT_OAUTH_INFO_URL = "https://api.hubapi.com/oauth/v1/access-tokens"

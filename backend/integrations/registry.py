@@ -37,6 +37,7 @@ from backend.integrations.adapters import (
     BuiltinKnowledgeBaseAdapter,
     BuiltinMessagingAdapter,
     SimulatedEscalationAdapter,
+    BuiltinRestaurantMenuAdapter,
 )
 
 logger = logging.getLogger(__name__)
@@ -76,6 +77,7 @@ class IntegrationRegistry:
             BuiltinKnowledgeBaseAdapter,
             BuiltinMessagingAdapter,
             SimulatedEscalationAdapter,
+            BuiltinRestaurantMenuAdapter,
         ]
 
         for adapter_cls in adapters:

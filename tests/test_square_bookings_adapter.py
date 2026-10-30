@@ -25,6 +25,17 @@ from datetime import datetime, timezone, timedelta
 from unittest.mock import patch, MagicMock
 import pytest
 
+try:
+    from square.core.api_error import ApiError
+except ImportError:
+    class ApiError(Exception):
+        def __init__(self, status_code=500, headers=None, body=None):
+            super().__init__(str(body or status_code))
+            self.status_code = status_code
+            self.headers = headers or {}
+            self.body = body or {}
+
+
 from backend.capabilities.models import CapabilityStatus, AuthoritativeSource
 from backend.integrations.models import (
     CapabilityType,
@@ -176,7 +187,6 @@ def test_square_seller_eligibility_missing_permissions():
     )
 
     mock_client = MagicMock()
-    from square.core.api_error import ApiError
     # Simulate 403 NOT_AUTHORIZED error from Square
     api_err = ApiError(
         status_code=403,
@@ -524,7 +534,6 @@ def test_square_reschedule_concurrency_version_mismatch():
     )
 
     mock_client = MagicMock()
-    from square.core.api_error import ApiError
     api_err = ApiError(
         status_code=409,
         headers={},
@@ -704,7 +713,6 @@ def test_square_error_normalization():
         business_id="biz_salon_001",
         credentials={"access_token": "live_token_123"},
     )
-    from square.core.api_error import ApiError
 
     # 429 RATE_LIMITED
     err_429 = ApiError(status_code=429, headers={"retry-after": "5"}, body={"errors": [{"code": "RATE_LIMITED", "category": "RATE_LIMIT_ERROR", "detail": "Slow down"}]})
