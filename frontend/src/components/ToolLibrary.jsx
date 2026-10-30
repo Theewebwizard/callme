@@ -27,6 +27,8 @@ import {
 import { api } from '../api';
 import BookingCalendarView from './BookingCalendarView';
 import MenuManagerModal, { MenuManagerView } from './MenuManagerModal';
+import { getDomainForBusiness } from '../domain/businessDomainRegistry';
+import ResourceInventoryCard from './ResourceInventoryCard';
 
 const TOOL_ICONS = {
   answer_faq: BookOpen,
@@ -54,6 +56,8 @@ const DEMAND_CATEGORIES = [
 const PRIORITIES = ['Nice to Have', 'Important', 'Business Critical'];
 
 export default function ToolLibrary({ business }) {
+  const domainConfig = getDomainForBusiness(business);
+  const ResourceIcon = domainConfig.resourceConfig.icon || Database;
   const [activeTab, setActiveTab] = useState('capabilities'); // 'capabilities', 'resources', 'demands'
   const [discoveryFilter, setDiscoveryFilter] = useState('all'); // 'all', 'enabled', 'disabled', 'unconfigured', 'unavailable', 'not_implemented'
   const [tools, setTools] = useState([]);
@@ -70,12 +74,7 @@ export default function ToolLibrary({ business }) {
   const [resources, setResources] = useState([]);
   const [reservations, setReservations] = useState([]);
   const [loadingResources, setLoadingResources] = useState(false);
-  const [newResourceName, setNewResourceName] = useState('');
-  const [newResourceCapacity, setNewResourceCapacity] = useState(2);
-  const [newResourceMinParty, setNewResourceMinParty] = useState(1);
-  const [newResourceMaxParty, setNewResourceMaxParty] = useState(4);
-  const [newResourceType, setNewResourceType] = useState('table');
-  const [newResourceSection, setNewResourceSection] = useState('Main Dining');
+
 
   // Wizard Modal State
   const [wizardOpen, setWizardOpen] = useState(false);
@@ -103,6 +102,12 @@ export default function ToolLibrary({ business }) {
       loadData();
     }
   }, [business?.id]);
+
+  useEffect(() => {
+    if (activeTab === 'menu' && !domainConfig.hasMenu) {
+      setActiveTab('capabilities');
+    }
+  }, [domainConfig.hasMenu, activeTab]);
 
   const loadData = async () => {
     setLoading(true);
@@ -330,41 +335,6 @@ export default function ToolLibrary({ business }) {
         `• Permissions: ${res.permissions?.valid ? 'VALID' : 'INVALID'}`);
     } catch (err) {
       alert(`Connection test failed: ${err.message}`);
-    }
-  };
-
-  // --- Resource Management Handlers ---
-
-  const handleAddResource = async (e) => {
-    e.preventDefault();
-    if (!newResourceName.trim()) return;
-
-    try {
-      const created = await api.createResource(business.id, {
-        name: newResourceName.trim(),
-        capacity: Number(newResourceCapacity),
-        min_party_size: Number(newResourceMinParty),
-        max_party_size: Number(newResourceMaxParty),
-        resource_type: newResourceType,
-        section: newResourceSection.trim(),
-      });
-      setResources((prev) => [...prev, created]);
-      setNewResourceName('');
-      setFeedback({ type: 'success', text: `Resource "${created.name}" registered successfully!` });
-      setTimeout(() => setFeedback(null), 4000);
-    } catch (err) {
-      setFeedback({ type: 'error', text: `Failed to add resource: ${err.message}` });
-    }
-  };
-
-  const handleDeleteResource = async (resourceId) => {
-    if (!window.confirm('Delete this resource from inventory? Existing reservations will be preserved.')) return;
-    try {
-      await api.deleteResource(business.id, resourceId);
-      setResources((prev) => prev.filter((r) => r.id !== resourceId));
-      setFeedback({ type: 'success', text: 'Resource deleted from inventory.' });
-    } catch (err) {
-      setFeedback({ type: 'error', text: `Delete failed: ${err.message}` });
     }
   };
 
@@ -608,18 +578,20 @@ export default function ToolLibrary({ business }) {
           <Wrench size={16} /> Capabilities & Tools ({tools.length})
         </button>
 
-        <button
-          className={`btn-secondary ${activeTab === 'menu' ? 'active' : ''}`}
-          style={{
-            background: activeTab === 'menu' ? 'var(--sky-50)' : 'white',
-            borderColor: activeTab === 'menu' ? 'var(--sky-400)' : 'var(--slate-300)',
-            color: activeTab === 'menu' ? 'var(--sky-700)' : 'var(--slate-700)',
-            fontWeight: activeTab === 'menu' ? 700 : 500,
-          }}
-          onClick={() => setActiveTab('menu')}
-        >
-          <Utensils size={16} /> 🍽️ Restaurant Menu & Pricing ({menuItemCount})
-        </button>
+        {domainConfig.hasMenu && (
+          <button
+            className={`btn-secondary ${activeTab === 'menu' ? 'active' : ''}`}
+            style={{
+              background: activeTab === 'menu' ? 'var(--sky-50)' : 'white',
+              borderColor: activeTab === 'menu' ? 'var(--sky-400)' : 'var(--slate-300)',
+              color: activeTab === 'menu' ? 'var(--sky-700)' : 'var(--slate-700)',
+              fontWeight: activeTab === 'menu' ? 700 : 500,
+            }}
+            onClick={() => setActiveTab('menu')}
+          >
+            <Utensils size={16} /> 🍽️ {domainConfig.menuConfig.shortTitle} ({menuItemCount})
+          </button>
+        )}
 
         <button
           className={`btn-secondary ${activeTab === 'resources' ? 'active' : ''}`}
@@ -627,10 +599,11 @@ export default function ToolLibrary({ business }) {
             background: activeTab === 'resources' ? 'var(--sky-50)' : 'white',
             borderColor: activeTab === 'resources' ? 'var(--sky-400)' : 'var(--slate-300)',
             color: activeTab === 'resources' ? 'var(--sky-700)' : 'var(--slate-700)',
+            fontWeight: activeTab === 'resources' ? 700 : 500,
           }}
           onClick={() => setActiveTab('resources')}
         >
-          <Database size={16} /> 🪑 Resource Inventory ({resources.length})
+          <ResourceIcon size={16} /> {domainConfig.resourceConfig.shortTitle} ({resources.length})
         </button>
 
         <button
@@ -837,7 +810,7 @@ export default function ToolLibrary({ business }) {
                     </div>
 
                     <div style={{ display: 'flex', gap: '0.5rem', borderTop: '1px solid var(--slate-100)', paddingTop: '0.75rem', marginTop: 'auto', flexWrap: 'wrap' }}>
-                      {t.id === 'query_menu_pricing' && (
+                      {t.id === 'query_menu_pricing' && domainConfig.hasMenu && (
                         <button
                           type="button"
                           className="btn-secondary"
@@ -889,7 +862,7 @@ export default function ToolLibrary({ business }) {
       {/* =========================================================================
          TAB: RESTAURANT MENU & SEMANTIC PRICING STORE
          ========================================================================= */}
-      {activeTab === 'menu' && (
+      {activeTab === 'menu' && domainConfig.hasMenu && (
         <div className="card" style={{ padding: '1.5rem', background: 'white' }}>
           <div style={{ marginBottom: '1.25rem' }}>
             <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--slate-900)', margin: '0 0 4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -916,194 +889,13 @@ export default function ToolLibrary({ business }) {
          TAB 2: RESOURCE INVENTORY & BOOKINGS (FIRST-PARTY ENGINE)
          ========================================================================= */}
       {activeTab === 'resources' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
-          {/* Interactive Booking Calendar & Timeline Grid */}
-          <BookingCalendarView
-            business={business}
-            resources={resources}
-            reservations={reservations}
-            onRefresh={loadResources}
-          />
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem', alignItems: 'flex-start' }}>
-            {/* Add Resource Form */}
-            <form onSubmit={handleAddResource} className="card">
-              <div className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Plus size={18} color="var(--sky-600)" /> Add Reservable Resource
-              </div>
-              <div className="card-desc">
-                Register dining tables or consultation suites for first-party booking conflict prevention.
-              </div>
-
-              <div className="form-group" style={{ marginBottom: '1rem' }}>
-                <label className="form-label">Resource Label / Name *</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  placeholder="e.g. Table 5 (Terrace) or Dental Suite 3"
-                  value={newResourceName}
-                  onChange={(e) => setNewResourceName(e.target.value)}
-                  required
-                />
-              </div>
-
-              <div className="form-grid" style={{ marginBottom: '1rem', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                <div className="form-group">
-                  <label className="form-label">Resource Type</label>
-                  <select
-                    className="form-input"
-                    value={newResourceType}
-                    onChange={(e) => setNewResourceType(e.target.value)}
-                  >
-                    <option value="table">Dining Table (Restaurant)</option>
-                    <option value="room">Hotel Room / Suite</option>
-                    <option value="clinic_room">Clinical Suite / Consultation Room</option>
-                    <option value="practitioner">Practitioner / Doctor</option>
-                    <option value="service_staff">Service Staff / Stylist</option>
-                    <option value="desk">Service Desk</option>
-                  </select>
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Section / Area</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    placeholder="e.g. Patio, 1st Floor"
-                    value={newResourceSection}
-                    onChange={(e) => setNewResourceSection(e.target.value)}
-                  />
-                </div>
-              </div>
-
-              <div className="form-grid" style={{ marginBottom: '1.25rem', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem' }}>
-                <div className="form-group">
-                  <label className="form-label">Capacity</label>
-                  <input
-                    type="number"
-                    className="form-input"
-                    min="1"
-                    max="50"
-                    value={newResourceCapacity}
-                    onChange={(e) => setNewResourceCapacity(e.target.value)}
-                    required
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Min Party</label>
-                  <input
-                    type="number"
-                    className="form-input"
-                    min="1"
-                    max="50"
-                    value={newResourceMinParty}
-                    onChange={(e) => setNewResourceMinParty(e.target.value)}
-                    required
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Max Party</label>
-                  <input
-                    type="number"
-                    className="form-input"
-                    min="1"
-                    max="50"
-                    value={newResourceMaxParty}
-                    onChange={(e) => setNewResourceMaxParty(e.target.value)}
-                    required
-                  />
-                </div>
-              </div>
-
-              <button type="submit" className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
-                <Plus size={16} /> Register Reservable Resource
-              </button>
-            </form>
-
-            {/* Active Inventory List */}
-            <div className="card">
-              <div className="card-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Database size={18} color="var(--sky-600)" /> Active Inventory ({resources.length})
-                </span>
-                <button
-                  type="button"
-                  className="btn-secondary"
-                  onClick={loadResources}
-                  disabled={loadingResources}
-                  style={{ fontSize: '0.75rem', padding: '0.3rem 0.6rem' }}
-                >
-                  <RefreshCw size={12} /> Refresh
-                </button>
-              </div>
-              <div className="card-desc">
-                Resources authoritative in database. AI checks availability against this inventory.
-              </div>
-
-              {loadingResources ? (
-                <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--slate-500)' }}>Loading inventory...</div>
-              ) : resources.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--slate-500)', background: 'var(--slate-50)', borderRadius: 'var(--radius-md)' }}>
-                  No reservable resources registered yet. Add a table or consultation suite to enable built-in booking.
-                </div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                  {resources.map((res) => (
-                    <div
-                      key={res.id}
-                      style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        padding: '0.75rem 1rem',
-                        background: 'var(--slate-50)',
-                        borderRadius: 'var(--radius-md)',
-                        border: '1px solid var(--slate-200)',
-                      }}
-                    >
-                      <div>
-                        <div style={{ fontWeight: 700, color: 'var(--slate-900)', fontSize: '0.9rem' }}>
-                          {res.name}
-                        </div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--slate-500)', marginTop: '2px' }}>
-                          Type: <strong>{res.resource_type}</strong> • Section: <strong>{res.section || 'General'}</strong> • Fits: <strong>{res.min_party_size}–{res.max_party_size} guests</strong>
-                        </div>
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteResource(res.id)}
-                        title="Delete resource"
-                        style={{ background: 'none', border: 'none', color: 'var(--rose-600)', cursor: 'pointer', padding: '6px' }}
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Recent Reservations Snapshot */}
-              {reservations.length > 0 && (
-                <div style={{ marginTop: '1.5rem', borderTop: '1px solid var(--slate-100)', paddingTop: '1rem' }}>
-                  <div style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--slate-800)', marginBottom: '0.5rem' }}>
-                    Confirmed Bookings in Authoritative Database ({reservations.length})
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                    {reservations.slice(0, 5).map((b) => (
-                      <div key={b.id} style={{ fontSize: '0.78rem', background: 'white', border: '1px solid var(--slate-200)', padding: '6px 10px', borderRadius: '6px', display: 'flex', justifyContent: 'space-between' }}>
-                        <span><strong>{b.customer_name}</strong> ({b.party_size} guests)</span>
-                        <span style={{ color: 'var(--slate-500)' }}>{b.start_time?.slice(0, 16).replace('T', ' ')}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
+        <ResourceInventoryCard
+          business={business}
+          domainConfig={domainConfig}
+          resources={resources}
+          reservations={reservations}
+          onRefresh={loadResources}
+        />
       )}
 
       {/* =========================================================================
@@ -1386,7 +1178,7 @@ export default function ToolLibrary({ business }) {
                     </div>
                   )}
 
-                  {(wizardTool?.id === 'query_menu_pricing' || currentOption.option_id === 'builtin_restaurant_menu') && (
+                  {(wizardTool?.id === 'query_menu_pricing' || currentOption.option_id === 'builtin_restaurant_menu') && domainConfig.hasMenu && (
                     <div style={{ marginTop: '1.5rem', borderTop: '2px solid var(--slate-100)', paddingTop: '1.25rem' }}>
                       <div style={{ marginBottom: '1rem' }}>
                         <h3 style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--slate-900)', margin: '0 0 4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
