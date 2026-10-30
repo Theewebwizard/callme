@@ -80,6 +80,7 @@ export default function ToolLibrary({ business }) {
   // Wizard Modal State
   const [wizardOpen, setWizardOpen] = useState(false);
   const [menuModalOpen, setMenuModalOpen] = useState(false);
+  const [menuItemCount, setMenuItemCount] = useState(17);
   const [wizardTool, setWizardTool] = useState(null);
   const [wizardSchema, setWizardSchema] = useState(null);
   const [wizardStep, setWizardStep] = useState(1); // 1: Option, 2: Fields, 3: Validate, 4: Ready
@@ -121,6 +122,7 @@ export default function ToolLibrary({ business }) {
       setDemands(demandsData || []);
       setResources(resList || []);
       setReservations(bookingList || []);
+      api.getMenu(business.id).then((r) => r?.items && setMenuItemCount(r.items.length)).catch(() => {});
 
       // 2. Fetch full live readiness reports (can take ~10s to audit all integration check engines)
       api.getCapabilities(business.id)
@@ -149,6 +151,7 @@ export default function ToolLibrary({ business }) {
       ]);
       setResources(resList || []);
       setReservations(bookingList || []);
+      api.getMenu(business.id).then((r) => r?.items && setMenuItemCount(r.items.length)).catch(() => {});
     } catch (err) {
       console.error('Failed to load resources:', err);
     } finally {
@@ -606,6 +609,19 @@ export default function ToolLibrary({ business }) {
         </button>
 
         <button
+          className={`btn-secondary ${activeTab === 'menu' ? 'active' : ''}`}
+          style={{
+            background: activeTab === 'menu' ? 'var(--sky-50)' : 'white',
+            borderColor: activeTab === 'menu' ? 'var(--sky-400)' : 'var(--slate-300)',
+            color: activeTab === 'menu' ? 'var(--sky-700)' : 'var(--slate-700)',
+            fontWeight: activeTab === 'menu' ? 700 : 500,
+          }}
+          onClick={() => setActiveTab('menu')}
+        >
+          <Utensils size={16} /> 🍽️ Restaurant Menu & Pricing ({menuItemCount})
+        </button>
+
+        <button
           className={`btn-secondary ${activeTab === 'resources' ? 'active' : ''}`}
           style={{
             background: activeTab === 'resources' ? 'var(--sky-50)' : 'white',
@@ -867,6 +883,32 @@ export default function ToolLibrary({ business }) {
               })}
             </div>
           )}
+        </div>
+      )}
+
+      {/* =========================================================================
+         TAB: RESTAURANT MENU & SEMANTIC PRICING STORE
+         ========================================================================= */}
+      {activeTab === 'menu' && (
+        <div className="card" style={{ padding: '1.5rem', background: 'white' }}>
+          <div style={{ marginBottom: '1.25rem' }}>
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--slate-900)', margin: '0 0 4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Utensils size={20} color="var(--sky-600)" /> Restaurant Menu & Semantic Pricing Store
+            </h2>
+            <p style={{ fontSize: '0.82rem', color: 'var(--slate-600)', margin: 0 }}>
+              Upload and manage your dishes, categories, and prices for <strong>{business.name}</strong>. Choose any of the 3 upload methods below.
+            </p>
+          </div>
+
+          <MenuManagerView
+            business={business}
+            isEmbedded={true}
+            defaultTab="upload"
+            onMenuUpdated={() => {
+              loadData();
+              api.getMenu(business.id).then((r) => r?.items && setMenuItemCount(r.items.length)).catch(() => {});
+            }}
+          />
         </div>
       )}
 

@@ -83,8 +83,8 @@ async function safeParseMenuText(businessId, text, defaultCategory = 'Mains') {
 
 const DEFAULT_CATEGORIES = ['Starters', 'Mains', 'Breads', 'Desserts', 'Beverages'];
 
-export function MenuManagerView({ business, isEmbedded = false, onMenuUpdated, onClose }) {
-  const [activeTab, setActiveTab] = useState('table'); // 'table' | 'upload' | 'paste'
+export function MenuManagerView({ business, isEmbedded = false, onMenuUpdated, onClose, defaultTab = 'upload' }) {
+  const [activeTab, setActiveTab] = useState(defaultTab); // 'upload' | 'paste' | 'table'
   const [menuItems, setMenuItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -417,80 +417,144 @@ export function MenuManagerView({ business, isEmbedded = false, onMenuUpdated, o
         </button>
       </div>
 
-      {/* 3 Upload Options Navigation Bar */}
+      {/* 3 Upload Options Selection Bar - Large Prominent Cards */}
       <div
         style={{
-          display: 'flex',
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))',
+          gap: '8px',
+          padding: '0.85rem 1rem',
+          background: 'var(--slate-50, #f8fafc)',
           borderBottom: '1px solid var(--slate-200, #e2e8f0)',
-          background: 'white',
-          padding: '0 0.5rem',
-          overflowX: 'auto',
         }}
       >
-        <button
-          type="button"
-          onClick={() => setActiveTab('table')}
-          style={{
-            padding: '0.75rem 1rem',
-            border: 'none',
-            background: 'none',
-            fontSize: '0.82rem',
-            fontWeight: activeTab === 'table' ? 700 : 500,
-            color: activeTab === 'table' ? 'var(--sky-600, #0284c7)' : 'var(--slate-600, #475569)',
-            borderBottom: activeTab === 'table' ? '2px solid var(--sky-500, #0ea5e9)' : '2px solid transparent',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          <ListPlus size={15} />
-          Option 1: Dish Inventory & Add ({menuItems.length})
-        </button>
-
+        {/* Option 1: File Upload */}
         <button
           type="button"
           onClick={() => setActiveTab('upload')}
           style={{
-            padding: '0.75rem 1rem',
-            border: 'none',
-            background: 'none',
-            fontSize: '0.82rem',
-            fontWeight: activeTab === 'upload' ? 700 : 500,
-            color: activeTab === 'upload' ? 'var(--sky-600, #0284c7)' : 'var(--slate-600, #475569)',
-            borderBottom: activeTab === 'upload' ? '2px solid var(--sky-500, #0ea5e9)' : '2px solid transparent',
+            padding: '10px 12px',
+            borderRadius: '8px',
+            border: activeTab === 'upload' ? '2px solid var(--sky-500, #0ea5e9)' : '1px solid var(--slate-200, #e2e8f0)',
+            background: activeTab === 'upload' ? 'var(--sky-50, #f0f9ff)' : 'white',
             cursor: 'pointer',
+            textAlign: 'left',
             display: 'flex',
             alignItems: 'center',
-            gap: '6px',
-            whiteSpace: 'nowrap',
+            gap: '10px',
+            boxShadow: activeTab === 'upload' ? '0 2px 6px rgba(14, 165, 233, 0.15)' : 'none',
+            transition: 'all 0.15s ease',
           }}
         >
-          <Upload size={15} />
-          Option 2: File Upload (CSV / JSON)
+          <div
+            style={{
+              width: '34px',
+              height: '34px',
+              borderRadius: '6px',
+              background: activeTab === 'upload' ? 'var(--sky-500, #0ea5e9)' : 'var(--slate-100, #f1f5f9)',
+              color: activeTab === 'upload' ? 'white' : 'var(--slate-600, #475569)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+            }}
+          >
+            <Upload size={17} />
+          </div>
+          <div>
+            <div style={{ fontWeight: 800, fontSize: '0.84rem', color: activeTab === 'upload' ? 'var(--sky-900, #0c4a6e)' : 'var(--slate-800, #1e293b)' }}>
+              1. File Upload (CSV/JSON)
+            </div>
+            <div style={{ fontSize: '0.7rem', color: 'var(--slate-500, #64748b)', marginTop: '1px' }}>
+              Upload spreadsheet file
+            </div>
+          </div>
         </button>
 
+        {/* Option 2: Paste Raw Text */}
         <button
           type="button"
           onClick={() => setActiveTab('paste')}
           style={{
-            padding: '0.75rem 1rem',
-            border: 'none',
-            background: 'none',
-            fontSize: '0.82rem',
-            fontWeight: activeTab === 'paste' ? 700 : 500,
-            color: activeTab === 'paste' ? 'var(--sky-600, #0284c7)' : 'var(--slate-600, #475569)',
-            borderBottom: activeTab === 'paste' ? '2px solid var(--sky-500, #0ea5e9)' : '2px solid transparent',
+            padding: '10px 12px',
+            borderRadius: '8px',
+            border: activeTab === 'paste' ? '2px solid var(--sky-500, #0ea5e9)' : '1px solid var(--slate-200, #e2e8f0)',
+            background: activeTab === 'paste' ? 'var(--sky-50, #f0f9ff)' : 'white',
             cursor: 'pointer',
+            textAlign: 'left',
             display: 'flex',
             alignItems: 'center',
-            gap: '6px',
-            whiteSpace: 'nowrap',
+            gap: '10px',
+            boxShadow: activeTab === 'paste' ? '0 2px 6px rgba(14, 165, 233, 0.15)' : 'none',
+            transition: 'all 0.15s ease',
           }}
         >
-          <FileText size={15} />
-          Option 3: Paste Menu Text (AI Auto-Detect)
+          <div
+            style={{
+              width: '34px',
+              height: '34px',
+              borderRadius: '6px',
+              background: activeTab === 'paste' ? 'var(--sky-500, #0ea5e9)' : 'var(--slate-100, #f1f5f9)',
+              color: activeTab === 'paste' ? 'white' : 'var(--slate-600, #475569)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+            }}
+          >
+            <FileText size={17} />
+          </div>
+          <div>
+            <div style={{ fontWeight: 800, fontSize: '0.84rem', color: activeTab === 'paste' ? 'var(--sky-900, #0c4a6e)' : 'var(--slate-800, #1e293b)' }}>
+              2. Paste Menu Text (AI)
+            </div>
+            <div style={{ fontSize: '0.7rem', color: 'var(--slate-500, #64748b)', marginTop: '1px' }}>
+              Auto-detect dishes & prices
+            </div>
+          </div>
+        </button>
+
+        {/* Option 3: Dish Inventory Table */}
+        <button
+          type="button"
+          onClick={() => setActiveTab('table')}
+          style={{
+            padding: '10px 12px',
+            borderRadius: '8px',
+            border: activeTab === 'table' ? '2px solid var(--sky-500, #0ea5e9)' : '1px solid var(--slate-200, #e2e8f0)',
+            background: activeTab === 'table' ? 'var(--sky-50, #f0f9ff)' : 'white',
+            cursor: 'pointer',
+            textAlign: 'left',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            boxShadow: activeTab === 'table' ? '0 2px 6px rgba(14, 165, 233, 0.15)' : 'none',
+            transition: 'all 0.15s ease',
+          }}
+        >
+          <div
+            style={{
+              width: '34px',
+              height: '34px',
+              borderRadius: '6px',
+              background: activeTab === 'table' ? 'var(--sky-500, #0ea5e9)' : 'var(--slate-100, #f1f5f9)',
+              color: activeTab === 'table' ? 'white' : 'var(--slate-600, #475569)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+            }}
+          >
+            <ListPlus size={17} />
+          </div>
+          <div>
+            <div style={{ fontWeight: 800, fontSize: '0.84rem', color: activeTab === 'table' ? 'var(--sky-900, #0c4a6e)' : 'var(--slate-800, #1e293b)' }}>
+              3. View & Add Dishes ({menuItems.length})
+            </div>
+            <div style={{ fontSize: '0.7rem', color: 'var(--slate-500, #64748b)', marginTop: '1px' }}>
+              Browse & edit {menuItems.length} items
+            </div>
+          </div>
         </button>
       </div>
 
@@ -531,6 +595,65 @@ export function MenuManagerView({ business, isEmbedded = false, onMenuUpdated, o
         {/* ========================================================= */}
         {activeTab === 'table' && (
           <div>
+            {/* Quick Jump Callout */}
+            <div style={{
+              background: 'var(--sky-50, #f0f9ff)',
+              border: '1px solid var(--sky-200, #bae6fd)',
+              borderRadius: '8px',
+              padding: '0.65rem 1rem',
+              marginBottom: '1rem',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '8px',
+            }}>
+              <div style={{ fontSize: '0.8rem', color: 'var(--sky-900, #0c4a6e)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Sparkles size={15} color="var(--sky-600, #0284c7)" />
+                Want to bulk upload your menu at once?
+              </div>
+              <div style={{ display: 'flex', gap: '6px' }}>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('upload')}
+                  style={{
+                    padding: '4px 10px',
+                    fontSize: '0.74rem',
+                    fontWeight: 700,
+                    background: 'var(--sky-500, #0ea5e9)',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '5px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                  }}
+                >
+                  <Upload size={12} /> 📁 Upload CSV / JSON
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('paste')}
+                  style={{
+                    padding: '4px 10px',
+                    fontSize: '0.74rem',
+                    fontWeight: 700,
+                    background: 'white',
+                    color: 'var(--sky-700, #0369a1)',
+                    border: '1px solid var(--sky-300, #7dd3fc)',
+                    borderRadius: '5px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                  }}
+                >
+                  <FileText size={12} /> 📝 Paste Raw Text
+                </button>
+              </div>
+            </div>
+
             {/* Quick Add Dish Form */}
             <form
               onSubmit={handleAddSingleDish}
