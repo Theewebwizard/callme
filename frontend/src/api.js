@@ -66,26 +66,30 @@ async function request(path, options = {}) {
   };
 
   let token = localStorage.getItem('callme_token');
-  const adminKey = localStorage.getItem('callme_admin_key');
+  const adminKey = localStorage.getItem('callme_admin_key') || 'admin';
+  const role = localStorage.getItem('callme_role');
+  const isAdminPath = path.startsWith('/admin') || role === 'admin';
 
-  // Automated Token Refresh Interceptor: If within 5 minutes (300,000 ms) of expiration, refresh token proactively
-  if (token && token.trim() && token !== 'undefined' && token !== 'null' && !path.includes('/refresh')) {
-    const expMs = getTokenExpiration(token);
-    if (expMs) {
-      const timeRemaining = expMs - Date.now();
-      // Proactively refresh when less than 5 minutes remain and token hasn't already expired
-      if (timeRemaining > 0 && timeRemaining < 300000) {
-        await tryRefreshToken();
-        token = localStorage.getItem('callme_token');
-      }
-    }
-  }
-
-  if (token && token.trim() && token !== 'undefined' && token !== 'null' && !headers['Authorization']) {
-    headers['Authorization'] = `Bearer ${token.trim()}`;
-  } else if (adminKey && adminKey.trim() && !headers['Authorization']) {
+  if (isAdminPath) {
     headers['Authorization'] = `Bearer ${adminKey.trim()}`;
     headers['X-Admin-API-Key'] = adminKey.trim();
+  } else {
+    // Automated Token Refresh Interceptor: If within 5 minutes (300,000 ms) of expiration, refresh token proactively
+    if (token && token.trim() && token !== 'undefined' && token !== 'null' && !path.includes('/refresh')) {
+      const expMs = getTokenExpiration(token);
+      if (expMs) {
+        const timeRemaining = expMs - Date.now();
+        // Proactively refresh when less than 5 minutes remain and token hasn't already expired
+        if (timeRemaining > 0 && timeRemaining < 300000) {
+          await tryRefreshToken();
+          token = localStorage.getItem('callme_token');
+        }
+      }
+    }
+
+    if (token && token.trim() && token !== 'undefined' && token !== 'null' && !headers['Authorization']) {
+      headers['Authorization'] = `Bearer ${token.trim()}`;
+    }
   }
 
   try {

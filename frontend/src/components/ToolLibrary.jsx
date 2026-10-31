@@ -422,7 +422,7 @@ export default function ToolLibrary({ business }) {
         );
       case 'validating':
         return (
-          <span style={{ background: 'var(--sky-100)', color: 'var(--sky-700)', padding: '3px 9px', borderRadius: '12px', fontSize: '0.72rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+          <span style={{ background: 'rgba(79, 70, 229, 0.1)', color: 'var(--indigo-700)', padding: '3px 9px', borderRadius: '12px', fontSize: '0.72rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
             <RefreshCw size={13} /> Validating
           </span>
         );
@@ -516,7 +516,24 @@ export default function ToolLibrary({ business }) {
       <div className="section-header">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
           <div>
-            <h1 className="section-title">🧰 Capability Setup Wizard & Integrations</h1>
+            <div
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                padding: '0.25rem 0.65rem',
+                borderRadius: 'var(--radius-full)',
+                background: 'var(--bg-surface-elevated)',
+                border: '1px solid var(--border-subtle)',
+                color: 'var(--text-secondary)',
+                fontSize: '0.74rem',
+                fontWeight: 600,
+                marginBottom: '0.45rem',
+              }}
+            >
+              <Wrench size={12} /> Autonomous Tool Registry
+            </div>
+            <h1 className="section-title">Capabilities, Inventory & Extensions</h1>
             <p className="section-subtitle">
               Configure verified capabilities, manage built-in table and room inventory, or connect external providers for <strong>{business.name}</strong>.
             </p>
@@ -527,25 +544,25 @@ export default function ToolLibrary({ business }) {
       {errorMsg && (
         <div
           style={{
-            padding: '1rem',
-            borderRadius: 'var(--radius-md)',
+            padding: '0.85rem 1.15rem',
+            borderRadius: 'var(--radius-sm)',
             marginBottom: '1.25rem',
-            background: '#fff1f2',
-            border: '1px solid #fecdd3',
-            color: '#be123c',
-            fontSize: '0.88rem',
+            background: 'rgba(244, 63, 94, 0.1)',
+            border: '1px solid rgba(244, 63, 94, 0.3)',
+            color: '#fb7185',
+            fontSize: '0.82rem',
             fontWeight: 500,
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 700, marginBottom: '0.5rem' }}>
-            <AlertCircle size={18} /> Error Loading Capabilities
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 600, marginBottom: '0.4rem' }}>
+            <AlertCircle size={16} /> Error Loading Capabilities
           </div>
           <div>{errorMsg}</div>
-          <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.75rem' }}>
+          <div style={{ display: 'flex', gap: '0.65rem', marginTop: '0.65rem' }}>
             {errorMsg.toLowerCase().includes('token') || errorMsg.toLowerCase().includes('authentication') || errorMsg.toLowerCase().includes('credentials') ? (
               <button
                 className="btn-secondary"
-                style={{ padding: '0.35rem 0.85rem', fontSize: '0.8rem', cursor: 'pointer' }}
+                style={{ padding: '0.3rem 0.75rem', fontSize: '0.78rem', cursor: 'pointer' }}
                 onClick={() => {
                   localStorage.removeItem('callme_token');
                   localStorage.removeItem('callme_active_business_id');
@@ -553,15 +570,15 @@ export default function ToolLibrary({ business }) {
                   window.location.reload();
                 }}
               >
-                🔑 Sign In Again
+                Sign In Again
               </button>
             ) : null}
             <button
               className="btn-primary"
-              style={{ padding: '0.35rem 0.85rem', fontSize: '0.8rem', cursor: 'pointer' }}
+              style={{ padding: '0.3rem 0.75rem', fontSize: '0.78rem', cursor: 'pointer' }}
               onClick={loadData}
             >
-              🔄 Retry
+              Retry
             </button>
           </div>
         </div>
@@ -571,58 +588,68 @@ export default function ToolLibrary({ business }) {
         <div
           style={{
             padding: '0.75rem 1rem',
-            borderRadius: 'var(--radius-md)',
+            borderRadius: 'var(--radius-sm)',
             marginBottom: '1.25rem',
-            background: feedback.type === 'success' ? 'var(--emerald-100)' : 'var(--rose-100)',
-            color: feedback.type === 'success' ? 'var(--emerald-700)' : 'var(--rose-700)',
-            fontSize: '0.85rem',
-            fontWeight: 600,
+            background: feedback.type === 'success' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(244, 63, 94, 0.1)',
+            color: feedback.type === 'success' ? 'var(--mint-400)' : '#fb7185',
+            fontSize: '0.82rem',
+            fontWeight: 500,
             display: 'flex',
             alignItems: 'center',
             gap: '0.5rem',
+            border: `1px solid ${feedback.type === 'success' ? 'rgba(16, 185, 129, 0.25)' : 'rgba(244, 63, 94, 0.25)'}`,
           }}
         >
-          {feedback.type === 'success' ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
+          {feedback.type === 'success' ? <CheckCircle2 size={15} /> : <AlertCircle size={15} />}
           {feedback.text}
         </div>
       )}
 
       {/* Primary Navigation Tabs */}
-      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
         <button
           className={`btn-secondary ${activeTab === 'capabilities' ? 'active' : ''}`}
           style={{
-            background: activeTab === 'capabilities' ? 'var(--sky-50)' : 'white',
-            borderColor: activeTab === 'capabilities' ? 'var(--sky-400)' : 'var(--slate-300)',
-            color: activeTab === 'capabilities' ? 'var(--sky-700)' : 'var(--slate-700)',
+            background: activeTab === 'capabilities' ? '#ffffff' : 'var(--bg-card)',
+            borderColor: activeTab === 'capabilities' ? '#ffffff' : 'var(--border-subtle)',
+            color: activeTab === 'capabilities' ? '#07080a' : 'var(--text-secondary)',
+            fontWeight: 600,
+            padding: '0.45rem 0.95rem',
+            fontSize: '0.8rem',
           }}
           onClick={() => setActiveTab('capabilities')}
         >
-          <Wrench size={16} /> Capabilities & Tools ({tools.length})
+          <Wrench size={14} /> Capabilities ({tools.length})
         </button>
 
         <button
           className={`btn-secondary ${activeTab === 'resources' ? 'active' : ''}`}
           style={{
-            background: activeTab === 'resources' ? 'var(--sky-50)' : 'white',
-            borderColor: activeTab === 'resources' ? 'var(--sky-400)' : 'var(--slate-300)',
-            color: activeTab === 'resources' ? 'var(--sky-700)' : 'var(--slate-700)',
+            background: activeTab === 'resources' ? '#ffffff' : 'var(--bg-card)',
+            borderColor: activeTab === 'resources' ? '#ffffff' : 'var(--border-subtle)',
+            color: activeTab === 'resources' ? '#07080a' : 'var(--text-secondary)',
+            fontWeight: 600,
+            padding: '0.45rem 0.95rem',
+            fontSize: '0.8rem',
           }}
           onClick={() => setActiveTab('resources')}
         >
-          <Database size={16} /> 🪑 Resource Inventory ({resources.length})
+          <Database size={14} /> Resource Inventory ({resources.length})
         </button>
 
         <button
           className={`btn-secondary ${activeTab === 'demands' ? 'active' : ''}`}
           style={{
-            background: activeTab === 'demands' ? 'var(--sky-50)' : 'white',
-            borderColor: activeTab === 'demands' ? 'var(--sky-400)' : 'var(--slate-300)',
-            color: activeTab === 'demands' ? 'var(--sky-700)' : 'var(--slate-700)',
+            background: activeTab === 'demands' ? '#ffffff' : 'var(--bg-card)',
+            borderColor: activeTab === 'demands' ? '#ffffff' : 'var(--border-subtle)',
+            color: activeTab === 'demands' ? '#07080a' : 'var(--text-secondary)',
+            fontWeight: 600,
+            padding: '0.45rem 0.95rem',
+            fontSize: '0.8rem',
           }}
           onClick={() => setActiveTab('demands')}
         >
-          <Sparkles size={16} /> 💡 Custom Feature Demands ({demands.length})
+          <Sparkles size={14} /> Custom Feature Demands ({demands.length})
         </button>
       </div>
 
@@ -633,23 +660,24 @@ export default function ToolLibrary({ business }) {
         <div>
           <div
             style={{
-              background: 'var(--sky-50)',
-              border: '1px solid var(--sky-200)',
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border-subtle)',
               borderRadius: 'var(--radius-md)',
-              padding: '0.85rem 1.15rem',
+              padding: '0.85rem 1.25rem',
               marginBottom: '1.25rem',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
               gap: '1rem',
               flexWrap: 'wrap',
+              boxShadow: 'var(--specular-top)',
             }}
           >
             <div>
-              <div style={{ fontWeight: 800, color: 'var(--sky-900)', fontSize: '0.92rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Layers size={16} /> Industry Policy: <strong>{business.industry || 'General'}</strong>
+              <div style={{ fontWeight: 600, color: '#ffffff', fontSize: '0.86rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Layers size={15} style={{ color: 'var(--mint-400)' }} /> Industry Policy: <strong>{business.industry || 'General'}</strong>
               </div>
-              <div style={{ color: 'var(--sky-700)', fontSize: '0.8rem', marginTop: '2px' }}>
+              <div style={{ color: 'var(--text-secondary)', fontSize: '0.78rem', marginTop: '2px' }}>
                 Live capability execution requires verified readiness. Tools must pass setup validation before they can handle caller requests.
               </div>
             </div>
@@ -688,8 +716,8 @@ export default function ToolLibrary({ business }) {
           </div>
 
           {/* Feature Discovery Status Filter Bar */}
-          <div style={{ display: 'flex', gap: '0.45rem', marginBottom: '1.25rem', flexWrap: 'wrap', alignItems: 'center', background: 'var(--slate-50)', padding: '0.6rem 0.85rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--slate-200)' }}>
-            <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--slate-600)', marginRight: '6px' }}>Status Filter:</span>
+          <div style={{ display: 'flex', gap: '0.45rem', marginBottom: '1.25rem', flexWrap: 'wrap', alignItems: 'center', background: 'var(--bg-surface-elevated)', padding: '0.6rem 0.85rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>
+            <span style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-tertiary)', marginRight: '6px' }}>Status Filter:</span>
             {[
               { id: 'all', label: 'All Capabilities', count: countAll },
               { id: 'enabled', label: 'Enabled', count: countEnabled },
@@ -705,22 +733,31 @@ export default function ToolLibrary({ business }) {
                   type="button"
                   onClick={() => setDiscoveryFilter(f.id)}
                   style={{
-                    fontSize: '0.78rem',
-                    padding: '4px 10px',
-                    borderRadius: '16px',
-                    border: isSelected ? '2px solid var(--sky-500)' : '1px solid var(--slate-200)',
-                    background: isSelected ? 'var(--sky-50)' : 'white',
-                    fontWeight: isSelected ? 700 : 500,
-                    color: isSelected ? 'var(--sky-700)' : 'var(--slate-700)',
+                    fontSize: '0.76rem',
+                    padding: '3px 10px',
+                    borderRadius: 'var(--radius-full)',
+                    border: isSelected ? '1px solid var(--border-medium)' : '1px solid transparent',
+                    background: isSelected ? 'rgba(255, 255, 255, 0.08)' : 'transparent',
+                    fontWeight: isSelected ? 600 : 500,
+                    color: isSelected ? 'var(--text-primary)' : 'var(--text-tertiary)',
                     cursor: 'pointer',
                     display: 'inline-flex',
                     alignItems: 'center',
-                    gap: '4px',
-                    boxShadow: isSelected ? '0 1px 3px rgba(14, 165, 233, 0.2)' : 'none',
+                    gap: '5px',
                     transition: 'all 0.15s ease',
                   }}
                 >
-                  {f.label} <span style={{ opacity: 0.75, fontSize: '0.72rem' }}>({f.count})</span>
+                  <span>{f.label}</span>
+                  <span style={{
+                    fontSize: '0.68rem',
+                    fontFamily: 'var(--font-mono)',
+                    padding: '1px 5px',
+                    borderRadius: '10px',
+                    background: isSelected ? 'rgba(255, 255, 255, 0.12)' : 'rgba(255, 255, 255, 0.04)',
+                    color: isSelected ? 'var(--text-primary)' : 'var(--text-tertiary)',
+                  }}>
+                    {f.count}
+                  </span>
                 </button>
               );
             })}
@@ -728,7 +765,7 @@ export default function ToolLibrary({ business }) {
 
           {loading ? (
             <div className="card" style={{ padding: '3.5rem 2rem', textAlign: 'center', color: 'var(--slate-500)' }}>
-              <div style={{ display: 'inline-block', width: '28px', height: '28px', border: '3px solid var(--sky-200)', borderTopColor: 'var(--sky-600)', borderRadius: '50%', animation: 'spin 1s linear infinite', marginBottom: '0.75rem' }} />
+              <div style={{ display: 'inline-block', width: '28px', height: '28px', border: '3px solid var(--indigo-100)', borderTopColor: 'var(--indigo-600)', borderRadius: '50%', animation: 'spin 1s linear infinite', marginBottom: '0.75rem' }} />
               <div style={{ fontWeight: 600, color: 'var(--slate-700)', fontSize: '0.95rem' }}>Loading business capabilities & tools...</div>
             </div>
           ) : filteredTools.length === 0 ? (
@@ -761,24 +798,24 @@ export default function ToolLibrary({ business }) {
                     <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start', width: '100%' }}>
                       <div
                         style={{
-                          width: '42px',
-                          height: '42px',
-                          borderRadius: 'var(--radius-md)',
-                          background: isEnabled ? 'var(--sky-500)' : 'var(--slate-100)',
-                          color: isEnabled ? 'white' : 'var(--slate-500)',
+                          width: '38px',
+                          height: '38px',
+                          borderRadius: 'var(--radius-sm)',
+                          background: isEnabled ? '#ffffff' : 'var(--bg-surface-elevated)',
+                          color: isEnabled ? '#07080a' : 'var(--text-secondary)',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
                           flexShrink: 0,
-                          boxShadow: isEnabled ? '0 4px 12px rgba(14, 165, 233, 0.3)' : 'none',
+                          border: '1px solid var(--border-medium)',
                         }}
                       >
-                        <IconComponent size={20} />
+                        <IconComponent size={18} />
                       </div>
 
                       <div style={{ flex: 1 }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px', flexWrap: 'wrap' }}>
-                          <span style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--slate-900)' }}>
+                          <span style={{ fontWeight: 600, fontSize: '0.92rem', color: '#ffffff' }}>
                             {t.name}
                           </span>
                           <label className="switch">
@@ -795,22 +832,22 @@ export default function ToolLibrary({ business }) {
                         <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginTop: '4px', flexWrap: 'wrap' }}>
                           {getDiscoveryBadge(discStatus)}
                           {getCapabilityBadge(capStatus)}
-                          <span style={{ fontSize: '0.72rem', background: 'var(--slate-100)', color: 'var(--slate-600)', padding: '2px 8px', borderRadius: '10px', fontWeight: 600 }}>
+                          <span style={{ fontSize: '0.7rem', background: 'var(--bg-surface-elevated)', border: '1px solid var(--border-subtle)', color: 'var(--text-tertiary)', padding: '2px 7px', borderRadius: '4px', fontWeight: 500 }}>
                             {selectedOptionName}
                           </span>
                         </div>
 
-                        <div style={{ fontSize: '0.82rem', color: 'var(--slate-600)', marginTop: '8px', lineHeight: 1.4 }}>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '8px', lineHeight: 1.45 }}>
                           {t.description}
                         </div>
 
-                        <div style={{ marginTop: '10px', fontSize: '0.75rem', color: 'var(--slate-500)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          <Server size={12} /> Source of Truth: <strong>{authSource}</strong>
+                        <div style={{ marginTop: '10px', fontSize: '0.74rem', color: 'var(--text-tertiary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <Server size={12} style={{ color: 'var(--text-secondary)' }} /> Source of Truth: <strong style={{ color: 'var(--text-primary)' }}>{authSource}</strong>
                         </div>
 
                         {cap?.missing_requirements && cap.missing_requirements.length > 0 && (
-                          <div style={{ marginTop: '8px', padding: '6px 10px', background: 'var(--amber-50)', border: '1px solid var(--amber-200)', borderRadius: '6px', fontSize: '0.75rem', color: 'var(--amber-800)' }}>
-                            ⚠️ {cap.missing_requirements[0]}
+                          <div style={{ marginTop: '8px', padding: '6px 10px', background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.3)', borderRadius: 'var(--radius-sm)', fontSize: '0.74rem', color: '#fbbf24' }}>
+                            {cap.missing_requirements[0]}
                           </div>
                         )}
                       </div>
@@ -823,7 +860,7 @@ export default function ToolLibrary({ business }) {
                         onClick={() => openWizard(t)}
                         style={{ flex: 1, padding: '0.4rem', fontSize: '0.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}
                       >
-                        <Sliders size={14} /> Configure Setup
+                        <Sliders size={14} color="var(--indigo-600)" /> Configure Setup
                       </button>
                       <button
                         type="button"
@@ -832,7 +869,7 @@ export default function ToolLibrary({ business }) {
                         title="Test live connectivity and verify permissions"
                         style={{ padding: '0.4rem 0.6rem', fontSize: '0.8rem' }}
                       >
-                        <ShieldCheck size={14} /> Test
+                        <ShieldCheck size={14} color="var(--teal-600)" /> Test
                       </button>
                     </div>
                   </div>
@@ -860,7 +897,7 @@ export default function ToolLibrary({ business }) {
             {/* Add Resource Form */}
             <form onSubmit={handleAddResource} className="card">
               <div className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Plus size={18} color="var(--sky-600)" /> Add Reservable Resource
+                <Plus size={18} color="var(--indigo-600)" /> Add Reservable Resource
               </div>
               <div className="card-desc">
                 Register dining tables or consultation suites for first-party booking conflict prevention.
@@ -957,7 +994,7 @@ export default function ToolLibrary({ business }) {
             <div className="card">
               <div className="card-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Database size={18} color="var(--sky-600)" /> Active Inventory ({resources.length})
+                  <Database size={17} color="var(--color-emerald)" /> Active Inventory ({resources.length})
                 </span>
                 <button
                   type="button"
@@ -970,13 +1007,13 @@ export default function ToolLibrary({ business }) {
                 </button>
               </div>
               <div className="card-desc">
-                Resources authoritative in database. AI checks availability against this inventory.
+                Authoritative resources in database. AI checks availability against this inventory.
               </div>
 
               {loadingResources ? (
-                <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--slate-500)' }}>Loading inventory...</div>
+                <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-tertiary)' }}>Loading inventory...</div>
               ) : resources.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--slate-500)', background: 'var(--slate-50)', borderRadius: 'var(--radius-md)' }}>
+                <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-tertiary)', background: 'var(--bg-surface-elevated)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>
                   No reservable resources registered yet. Add a table or consultation suite to enable built-in booking.
                 </div>
               ) : (
@@ -989,17 +1026,17 @@ export default function ToolLibrary({ business }) {
                         justifyContent: 'space-between',
                         alignItems: 'center',
                         padding: '0.75rem 1rem',
-                        background: 'var(--slate-50)',
+                        background: 'var(--bg-surface-elevated)',
                         borderRadius: 'var(--radius-md)',
-                        border: '1px solid var(--slate-200)',
+                        border: '1px solid var(--border-subtle)',
                       }}
                     >
                       <div>
-                        <div style={{ fontWeight: 700, color: 'var(--slate-900)', fontSize: '0.9rem' }}>
+                        <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.88rem' }}>
                           {res.name}
                         </div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--slate-500)', marginTop: '2px' }}>
-                          Type: <strong>{res.resource_type}</strong> • Section: <strong>{res.section || 'General'}</strong> • Fits: <strong>{res.min_party_size}–{res.max_party_size} guests</strong>
+                        <div style={{ fontSize: '0.74rem', color: 'var(--text-tertiary)', marginTop: '2px' }}>
+                          Type: <strong style={{ color: 'var(--text-secondary)' }}>{res.resource_type}</strong> • Section: <strong style={{ color: 'var(--text-secondary)' }}>{res.section || 'General'}</strong> • Fits: <strong style={{ color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)' }}>{res.min_party_size}–{res.max_party_size} guests</strong>
                         </div>
                       </div>
 
@@ -1007,9 +1044,9 @@ export default function ToolLibrary({ business }) {
                         type="button"
                         onClick={() => handleDeleteResource(res.id)}
                         title="Delete resource"
-                        style={{ background: 'none', border: 'none', color: 'var(--rose-600)', cursor: 'pointer', padding: '6px' }}
+                        style={{ background: 'none', border: 'none', color: 'var(--color-rose)', cursor: 'pointer', padding: '6px' }}
                       >
-                        <Trash2 size={16} />
+                        <Trash2 size={15} />
                       </button>
                     </div>
                   ))}
@@ -1018,15 +1055,15 @@ export default function ToolLibrary({ business }) {
 
               {/* Recent Reservations Snapshot */}
               {reservations.length > 0 && (
-                <div style={{ marginTop: '1.5rem', borderTop: '1px solid var(--slate-100)', paddingTop: '1rem' }}>
-                  <div style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--slate-800)', marginBottom: '0.5rem' }}>
-                    Confirmed Bookings in Authoritative Database ({reservations.length})
+                <div style={{ marginTop: '1.5rem', borderTop: '1px solid var(--border-subtle)', paddingTop: '1rem' }}>
+                  <div style={{ fontWeight: 600, fontSize: '0.82rem', color: 'var(--text-primary)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    Authoritative Database Commit Log ({reservations.length})
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                     {reservations.slice(0, 5).map((b) => (
-                      <div key={b.id} style={{ fontSize: '0.78rem', background: 'white', border: '1px solid var(--slate-200)', padding: '6px 10px', borderRadius: '6px', display: 'flex', justifyContent: 'space-between' }}>
-                        <span><strong>{b.customer_name}</strong> ({b.party_size} guests)</span>
-                        <span style={{ color: 'var(--slate-500)' }}>{b.start_time?.slice(0, 16).replace('T', ' ')}</span>
+                      <div key={b.id} style={{ fontSize: '0.76rem', background: 'var(--bg-surface-elevated)', border: '1px solid var(--border-subtle)', padding: '6px 10px', borderRadius: 'var(--radius-sm)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span><strong style={{ color: 'var(--text-primary)' }}>{b.customer_name}</strong> <span style={{ color: 'var(--text-tertiary)', fontFamily: 'var(--font-mono)' }}>({b.party_size} guests)</span></span>
+                        <span style={{ color: 'var(--text-tertiary)', fontFamily: 'var(--font-mono)', fontSize: '0.72rem' }}>{b.start_time?.slice(0, 16).replace('T', ' ')}</span>
                       </div>
                     ))}
                   </div>
@@ -1044,7 +1081,7 @@ export default function ToolLibrary({ business }) {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(290px, 1fr))', gap: '1.5rem', alignItems: 'flex-start' }}>
           <form onSubmit={handleDemandSubmit} className="card">
             <div className="card-title">
-              <Sparkles size={18} color="var(--sky-600)" /> Demand a Custom Tool Feature
+              <Sparkles size={18} color="var(--indigo-600)" /> Demand a Custom Tool Feature
             </div>
             <div className="card-desc">
               Request bespoke CRM, telephony, or calendar integrations for engineering review.
@@ -1132,7 +1169,7 @@ export default function ToolLibrary({ business }) {
                   <div key={d.id} style={{ padding: '0.85rem', background: 'var(--slate-50)', border: '1px solid var(--slate-200)', borderRadius: 'var(--radius-md)' }}>
                     <div style={{ fontWeight: 700, color: 'var(--slate-900)', fontSize: '0.9rem' }}>{d.tool_name}</div>
                     <div style={{ fontSize: '0.78rem', color: 'var(--slate-600)', margin: '4px 0' }}>{d.description}</div>
-                    <div style={{ fontSize: '0.72rem', color: 'var(--sky-600)', fontWeight: 600 }}>Target: {d.integration_target} • Status: {d.status}</div>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--indigo-600)', fontWeight: 600 }}>Target: {d.integration_target} • Status: {d.status}</div>
                   </div>
                 ))}
               </div>
@@ -1149,8 +1186,8 @@ export default function ToolLibrary({ business }) {
           style={{
             position: 'fixed',
             inset: 0,
-            background: 'rgba(15, 23, 42, 0.6)',
-            backdropFilter: 'blur(4px)',
+            background: 'rgba(0, 0, 0, 0.75)',
+            backdropFilter: 'blur(8px)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -1160,46 +1197,47 @@ export default function ToolLibrary({ business }) {
         >
           <div
             style={{
-              background: 'white',
+              background: 'var(--bg-card)',
               borderRadius: 'var(--radius-lg)',
+              border: '1px solid var(--border-subtle)',
               maxWidth: '680px',
               width: '100%',
               maxHeight: '90vh',
               overflowY: 'auto',
-              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+              boxShadow: 'var(--shadow-modal)',
               display: 'flex',
               flexDirection: 'column',
             }}
           >
             {/* Modal Header */}
-            <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid var(--slate-200)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
-                <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--sky-600)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                <div style={{ fontSize: '0.74rem', fontWeight: 700, color: 'var(--color-emerald)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                   Capability Guided Setup
                 </div>
-                <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--slate-900)', margin: '2px 0 0' }}>
+                <h2 style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--text-primary)', margin: '2px 0 0' }}>
                   {wizardSchema.name}
                 </h2>
               </div>
               <button
                 type="button"
                 onClick={closeWizard}
-                style={{ background: 'none', border: 'none', color: 'var(--slate-400)', cursor: 'pointer', padding: '4px' }}
+                style={{ background: 'none', border: 'none', color: 'var(--text-tertiary)', cursor: 'pointer', padding: '4px' }}
               >
-                <X size={20} />
+                <X size={18} />
               </button>
             </div>
 
             {/* Step Indicators */}
-            <div style={{ padding: '0.85rem 1.5rem', background: 'var(--slate-50)', borderBottom: '1px solid var(--slate-200)', display: 'flex', justifyContent: 'space-between' }}>
+            <div style={{ padding: '0.85rem 1.5rem', background: 'var(--bg-surface-elevated)', borderBottom: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'space-between' }}>
               {[
                 { num: 1, label: 'Integration Choice' },
                 { num: 2, label: 'Configuration' },
                 { num: 3, label: 'Validation & Tests' },
                 { num: 4, label: 'Operational' },
               ].map((s) => (
-                <div key={s.num} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem', fontWeight: wizardStep >= s.num ? 700 : 500, color: wizardStep >= s.num ? 'var(--sky-700)' : 'var(--slate-400)' }}>
-                  <span style={{ width: '20px', height: '20px', borderRadius: '50%', background: wizardStep >= s.num ? 'var(--sky-500)' : 'var(--slate-200)', color: wizardStep >= s.num ? 'white' : 'var(--slate-600)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem' }}>
+                <div key={s.num} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.76rem', fontWeight: wizardStep >= s.num ? 600 : 500, color: wizardStep >= s.num ? 'var(--color-emerald)' : 'var(--text-tertiary)' }}>
+                  <span style={{ width: '20px', height: '20px', borderRadius: '50%', background: wizardStep >= s.num ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255, 255, 255, 0.04)', color: wizardStep >= s.num ? 'var(--color-emerald)' : 'var(--text-tertiary)', border: `1px solid ${wizardStep >= s.num ? 'rgba(16, 185, 129, 0.35)' : 'var(--border-subtle)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontFamily: 'var(--font-mono)' }}>
                     {s.num}
                   </span>
                   <span>{s.label}</span>
@@ -1227,25 +1265,33 @@ export default function ToolLibrary({ business }) {
                         style={{
                           padding: '1rem',
                           borderRadius: 'var(--radius-md)',
-                          border: `2px solid ${selectedOptionId === opt.option_id ? 'var(--sky-500)' : 'var(--slate-200)'}`,
-                          background: selectedOptionId === opt.option_id ? 'var(--sky-50)' : 'white',
+                          border: `1px solid ${selectedOptionId === opt.option_id ? 'var(--color-emerald)' : 'var(--border-subtle)'}`,
+                          background: selectedOptionId === opt.option_id ? 'rgba(16, 185, 129, 0.08)' : 'var(--bg-surface-elevated)',
                           cursor: 'pointer',
                           transition: 'var(--transition)',
                         }}
                       >
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <span style={{ fontWeight: 800, fontSize: '0.95rem', color: 'var(--slate-900)' }}>
+                          <span style={{ fontWeight: 600, fontSize: '0.92rem', color: 'var(--text-primary)' }}>
                             {opt.name}
                           </span>
-                          <span style={{ fontSize: '0.72rem', background: opt.is_builtin ? 'var(--emerald-100)' : 'var(--slate-100)', color: opt.is_builtin ? 'var(--emerald-700)' : 'var(--slate-700)', padding: '2px 8px', borderRadius: '10px', fontWeight: 700 }}>
+                          <span style={{
+                            fontSize: '0.72rem',
+                            background: opt.is_builtin ? 'rgba(16, 185, 129, 0.1)' : 'rgba(255, 255, 255, 0.05)',
+                            color: opt.is_builtin ? 'var(--color-emerald)' : 'var(--text-secondary)',
+                            border: `1px solid ${opt.is_builtin ? 'rgba(16, 185, 129, 0.25)' : 'var(--border-subtle)'}`,
+                            padding: '2px 8px',
+                            borderRadius: 'var(--radius-full)',
+                            fontWeight: 600,
+                          }}>
                             {opt.is_builtin ? 'First-Party Built-In' : 'External Provider'}
                           </span>
                         </div>
-                        <div style={{ fontSize: '0.82rem', color: 'var(--slate-600)', marginTop: '4px' }}>
+                        <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginTop: '4px', lineHeight: 1.45 }}>
                           {opt.description}
                         </div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--slate-500)', marginTop: '8px' }}>
-                          Authoritative Store: <strong>{opt.authoritative_source}</strong>
+                        <div style={{ fontSize: '0.74rem', color: 'var(--text-tertiary)', marginTop: '8px' }}>
+                          Authoritative Store: <strong style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-mono)' }}>{opt.authoritative_source}</strong>
                         </div>
                       </div>
                     ))}

@@ -6,11 +6,17 @@ import {
   PhoneCall,
   Clock,
   Wrench,
-  CheckCircle,
+  CheckCircle2,
   MessageSquare,
   User,
   Bot,
   Sparkles,
+  Phone,
+  ArrowRight,
+  ShieldCheck,
+  Calendar,
+  Copy,
+  Check,
 } from 'lucide-react';
 import { api } from '../api';
 
@@ -21,19 +27,22 @@ export default function CallHistory({ business, initialCalls = [], onCallsUpdate
   const [loading, setLoading] = useState(initialCalls.length === 0);
   const [selectedOutcome, setSelectedOutcome] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeCallDetail, setActiveCallDetail] = useState(null);
-
+  const [activeCallId, setActiveCallId] = useState(initialCalls[0]?.id || null);
+  const [copiedTranscript, setCopiedTranscript] = useState(false);
   const [error, setError] = useState(null);
 
   // Sync state if parent passes new calls
   useEffect(() => {
-    if (initialCalls && initialCalls.length > 0 && calls.length === 0) {
+    if (initialCalls && initialCalls.length > 0) {
       setCalls(initialCalls);
+      if (!activeCallId && initialCalls[0]) {
+        setActiveCallId(initialCalls[0].id);
+      }
       setLoading(false);
     }
   }, [initialCalls]);
 
-  // Fetch or refresh business calls
+  // Fetch calls on mount
   useEffect(() => {
     if (business?.id) {
       loadAllCalls(calls.length === 0);
@@ -44,10 +53,12 @@ export default function CallHistory({ business, initialCalls = [], onCallsUpdate
     if (showSpinner) setLoading(true);
     setError(null);
     try {
-      // Load full call history once so tab switching & searches are instantaneous (< 1ms)
       const res = await api.getCallHistory(business.id, 'All');
       const loaded = res.calls || [];
       setCalls(loaded);
+      if (loaded.length > 0 && !activeCallId) {
+        setActiveCallId(loaded[0].id);
+      }
       if (onCallsUpdated) onCallsUpdated(loaded);
     } catch (err) {
       console.error('Failed to load calls:', err);
@@ -59,14 +70,12 @@ export default function CallHistory({ business, initialCalls = [], onCallsUpdate
     }
   };
 
-  // Instantaneous in-memory multi-predicate filtering (Outcome filter + Search query)
+  // Instantaneous multi-predicate filtering
   const filteredCalls = useMemo(() => {
     return calls.filter((c) => {
-      // 1. Outcome pill filter
       if (selectedOutcome !== 'All' && c.outcome !== selectedOutcome) {
         return false;
       }
-      // 2. Search query filter
       if (!searchQuery.trim()) return true;
       const q = searchQuery.toLowerCase();
       const numMatch = c.caller_number && c.caller_number.toLowerCase().includes(q);
@@ -75,6 +84,23 @@ export default function CallHistory({ business, initialCalls = [], onCallsUpdate
       return numMatch || sumMatch || toolsMatch;
     });
   }, [calls, selectedOutcome, searchQuery]);
+
+  // Selected call object
+  const activeCall = useMemo(() => {
+    if (!activeCallId && filteredCalls.length > 0) return filteredCalls[0];
+    return filteredCalls.find((c) => c.id === activeCallId) || filteredCalls[0] || null;
+  }, [activeCallId, filteredCalls]);
+
+  const handleCopyTranscript = () => {
+    if (!activeCall) return;
+    const turns = activeCall.transcript || [];
+    const text = turns
+      .map((t) => `[${t.speaker || t.role}]: ${t.content || t.text || t.message || ''}`)
+      .join('\n');
+    navigator.clipboard.writeText(text);
+    setCopiedTranscript(true);
+    setTimeout(() => setCopiedTranscript(false), 2000);
+  };
 
   const getOutcomeBadgeClass = (outcome) => {
     switch (outcome) {
@@ -94,10 +120,10 @@ export default function CallHistory({ business, initialCalls = [], onCallsUpdate
   if (!business) {
     return (
       <div className="main-content">
-        <div className="card" style={{ textAlign: 'center', padding: '3rem' }}>
+        <div className="card" style={{ textAlign: 'center', padding: '3.5rem 1rem' }}>
           <h3>No Business Selected</h3>
-          <p style={{ color: 'var(--slate-500)', marginTop: '0.5rem' }}>
-            Please select or register a business to view call audit logs.
+          <p style={{ color: 'var(--text-secondary)', marginTop: '0.5rem' }}>
+            Please select or register a business to inspect call audit logs.
           </p>
         </div>
       </div>
@@ -105,385 +131,349 @@ export default function CallHistory({ business, initialCalls = [], onCallsUpdate
   }
 
   return (
-    <section className="main-content">
-      <div className="section-header">
-        <h1 className="section-title">📋 Call History & Audit Logs</h1>
+    <section className="main-content" aria-label="Call Audit Trail">
+      {/* Header Bar */}
+      <div className="section-header" style={{ marginBottom: '1.25rem' }}>
+        <div
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.4rem',
+            padding: '0.25rem 0.65rem',
+            borderRadius: 'var(--radius-full)',
+            background: 'var(--bg-surface-elevated)',
+            border: '1px solid var(--border-subtle)',
+            color: 'var(--text-secondary)',
+            fontSize: '0.74rem',
+            fontWeight: 600,
+            marginBottom: '0.45rem',
+          }}
+        >
+          <History size={12} /> Audited Telephony Session Inspector
+        </div>
+        <h1 className="section-title">Call History & Turn-by-Turn Audits</h1>
         <p className="section-subtitle">
-          Audited logs of customer voice calls, resolution outcomes, and automated tool interventions for <strong>{business.name}</strong>.
+          Real-time logs of customer voice calls, autonomous tool execution traces, and verified resolutions for <strong>{business.name}</strong>.
         </p>
       </div>
 
-      {/* Filter and Search Bar */}
-      <div className="card" style={{ marginBottom: '1.5rem', padding: '1rem 1.25rem' }}>
-        <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', gap: '1rem', alignItems: 'center' }}>
-          {/* Outcome Filter Pills */}
-          <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
-            {OUTCOMES.map((out) => (
-              <button
-                key={out}
-                className={`btn-secondary ${selectedOutcome === out ? 'active' : ''}`}
+      {/* Raycast Master-Detail Split View */}
+      <div className="split-view-container">
+        {/* Left Master List Pane */}
+        <div className="split-list-pane">
+          {/* Search & Filters */}
+          <div className="split-list-header">
+            <div style={{ position: 'relative', width: '100%' }}>
+              <Search
+                size={14}
                 style={{
-                  padding: '0.35rem 0.75rem',
-                  fontSize: '0.8rem',
-                  borderRadius: 'var(--radius-full)',
-                  background: selectedOutcome === out ? 'var(--sky-500)' : 'white',
-                  color: selectedOutcome === out ? 'white' : 'var(--slate-700)',
-                  borderColor: selectedOutcome === out ? 'var(--sky-500)' : 'var(--slate-300)',
+                  position: 'absolute',
+                  left: '10px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  color: 'var(--text-tertiary)',
                 }}
-                onClick={() => setSelectedOutcome(out)}
-              >
-                {out}
-              </button>
-            ))}
-          </div>
+              />
+              <input
+                type="text"
+                placeholder="Search phone, tool, or summary..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="form-input"
+                style={{ paddingLeft: '32px', fontSize: '0.8rem' }}
+              />
+            </div>
 
-          {/* Search Box */}
-          <div style={{ position: 'relative', width: '280px' }}>
-            <Search size={15} style={{ position: 'absolute', left: '10px', top: '10px', color: 'var(--slate-400)' }} />
-            <input
-              type="text"
-              className="form-input"
-              placeholder="Search phone or summary..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              style={{ paddingLeft: '32px', fontSize: '0.85rem', width: '100%' }}
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Main Call Table */}
-      <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-        {loading ? (
-          <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--slate-500)' }}>
-            Loading call history records...
-          </div>
-        ) : error ? (
-          <div style={{ padding: '3rem', textAlign: 'center', color: '#be123c' }}>
-            <p style={{ fontWeight: 600, marginBottom: '0.75rem' }}>{error}</p>
-            {error.toLowerCase().includes('token') || error.toLowerCase().includes('authentication') || error.toLowerCase().includes('credentials') ? (
-              <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', marginTop: '0.75rem' }}>
+            {/* Outcome Filter Pills */}
+            <div style={{ display: 'flex', gap: '0.35rem', overflowX: 'auto', paddingBottom: '2px' }}>
+              {OUTCOMES.map((oc) => (
                 <button
-                  className="btn-secondary"
-                  style={{ padding: '0.4rem 1rem', fontSize: '0.85rem', cursor: 'pointer' }}
-                  onClick={() => {
-                    localStorage.removeItem('callme_token');
-                    localStorage.removeItem('callme_active_business_id');
-                    localStorage.removeItem('callme_role');
-                    window.location.reload();
+                  key={oc}
+                  type="button"
+                  onClick={() => setSelectedOutcome(oc)}
+                  style={{
+                    padding: '0.25rem 0.55rem',
+                    borderRadius: 'var(--radius-full)',
+                    border: '1px solid',
+                    borderColor: selectedOutcome === oc ? 'var(--border-strong)' : 'var(--border-subtle)',
+                    background: selectedOutcome === oc ? 'var(--bg-surface-elevated)' : 'transparent',
+                    color: selectedOutcome === oc ? '#ffffff' : 'var(--text-secondary)',
+                    fontSize: '0.72rem',
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap',
+                    transition: 'all var(--transition-fast)',
                   }}
                 >
-                  🔑 Sign In Again
+                  {oc}
                 </button>
-                <button
-                  className="btn-primary"
-                  style={{ padding: '0.4rem 1rem', fontSize: '0.85rem', cursor: 'pointer' }}
-                  onClick={loadAllCalls}
-                >
-                  🔄 Retry Fetching Records
-                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* List Items */}
+          <div className="split-list-body">
+            {loading ? (
+              <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-tertiary)', fontSize: '0.82rem' }}>
+                Loading session logs...
+              </div>
+            ) : filteredCalls.length === 0 ? (
+              <div style={{ padding: '2.5rem 1rem', textAlign: 'center', color: 'var(--text-tertiary)', fontSize: '0.82rem' }}>
+                No calls match your criteria.
               </div>
             ) : (
-              <button
-                className="btn-primary"
-                style={{ padding: '0.4rem 1rem', fontSize: '0.85rem', cursor: 'pointer' }}
-                onClick={loadAllCalls}
-              >
-                🔄 Retry Fetching Records
-              </button>
-            )}
-          </div>
-        ) : filteredCalls.length > 0 ? (
-          <div className="table-wrapper" style={{ border: 'none' }}>
-            <table className="modern-table">
-              <thead>
-                <tr>
-                  <th>Timestamp</th>
-                  <th>Caller Number</th>
-                  <th>Duration</th>
-                  <th>Outcome</th>
-                  <th>Tools Used</th>
-                  <th>Call Summary</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredCalls.map((c) => (
-                  <tr key={c.id}>
-                    <td style={{ whiteSpace: 'nowrap' }}>{c.datetime}</td>
-                    <td><code>{c.caller_number}</code></td>
-                    <td>{c.duration}</td>
-                    <td>
+              filteredCalls.map((c) => {
+                const isSelected = activeCall?.id === c.id;
+                return (
+                  <div
+                    key={c.id}
+                    className={`call-item ${isSelected ? 'active' : ''}`}
+                    onClick={() => setActiveCallId(c.id)}
+                  >
+                    <div className="call-item-top">
+                      <span className="call-item-did">{c.caller_number}</span>
+                      <span className="call-item-time">{c.datetime?.split(' ')[1] || c.datetime}</span>
+                    </div>
+
+                    <div className="call-item-meta">
                       <span className={`outcome-pill ${getOutcomeBadgeClass(c.outcome)}`}>
                         {c.outcome}
                       </span>
-                    </td>
-                    <td style={{ minWidth: '150px' }}>
-                      {c.tools_used && c.tools_used.length > 0 ? (
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-                          {c.tools_used.map((t, idx) => (
-                            <span
-                              key={idx}
-                              style={{
-                                background: 'var(--sky-50)',
-                                border: '1px solid var(--sky-200)',
-                                color: 'var(--sky-700)',
-                                fontSize: '0.74rem',
-                                fontWeight: 600,
-                                padding: '2px 7px',
-                                borderRadius: 'var(--radius-full)',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '3px',
-                                whiteSpace: 'nowrap',
-                              }}
-                            >
-                              <Wrench size={11} color="var(--sky-600)" />
-                              {typeof t === 'string' ? t.replace(/_/g, ' ') : String(t)}
-                            </span>
-                          ))}
-                        </div>
-                      ) : (
-                        <span style={{ color: 'var(--slate-400)', fontSize: '0.78rem', fontStyle: 'italic' }}>
-                          Direct Conversation
-                        </span>
-                      )}
-                    </td>
-                    <td style={{ maxWidth: '280px', color: 'var(--slate-700)', fontSize: '0.84rem' }}>
-                      <span
-                        title={c.summary}
-                        style={{
-                          display: '-webkit-box',
-                          WebkitLineClamp: 2,
-                          WebkitBoxOrient: 'vertical',
-                          overflow: 'hidden',
-                          lineHeight: 1.45,
-                        }}
-                      >
-                        {c.summary || 'Caller inquiry processed.'}
-                      </span>
-                    </td>
-                    <td>
-                      <button
-                        className="btn-secondary"
-                        style={{
-                          padding: '0.28rem 0.75rem',
-                          fontSize: '0.78rem',
-                          fontWeight: 600,
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '4px',
-                        }}
-                        onClick={() => setActiveCallDetail(c)}
-                      >
-                        <Search size={12} /> Inspect
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--slate-500)' }}>
-            No call records found matching criteria.
-          </div>
-        )}
-      </div>
+                      <span>•</span>
+                      <span style={{ fontFamily: 'var(--font-mono)' }}>{c.duration}</span>
+                    </div>
 
-      {/* Modal / Inspector Drawer */}
-      {activeCallDetail && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(15, 23, 42, 0.55)',
-            backdropFilter: 'blur(6px)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 100,
-            padding: '1.5rem',
-          }}
-          onClick={() => setActiveCallDetail(null)}
-        >
-          <div
-            className="card"
-            style={{ width: '100%', maxWidth: '780px', maxHeight: '90vh', overflowY: 'auto', padding: '1.75rem' }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', borderBottom: '1px solid var(--slate-100)', paddingBottom: '0.85rem' }}>
-              <div className="card-title" style={{ fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 800 }}>
-                <PhoneCall size={22} color="var(--sky-600)" /> Call Details & Audit Report
-              </div>
-              <button
-                className="btn-secondary"
-                style={{ padding: '0.35rem 0.85rem', fontSize: '0.82rem', fontWeight: 600 }}
-                onClick={() => setActiveCallDetail(null)}
+                    <div className="call-item-summary">
+                      {c.summary || 'Inbound voice call processed.'}
+                    </div>
+
+                    {c.tools_used && c.tools_used.length > 0 && (
+                      <div style={{ display: 'flex', gap: '0.3rem', flexWrap: 'wrap', marginTop: '0.2rem' }}>
+                        {c.tools_used.slice(0, 2).map((t, idx) => (
+                          <span
+                            key={idx}
+                            style={{
+                              fontSize: '0.68rem',
+                              fontFamily: 'var(--font-mono)',
+                              background: 'var(--bg-surface-elevated)',
+                              border: '1px solid var(--border-subtle)',
+                              padding: '1px 5px',
+                              borderRadius: '4px',
+                              color: 'var(--text-secondary)',
+                            }}
+                          >
+                            {typeof t === 'string' ? t.replace(/_/g, ' ') : String(t)}
+                          </span>
+                        ))}
+                        {c.tools_used.length > 2 && (
+                          <span style={{ fontSize: '0.68rem', color: 'var(--text-tertiary)' }}>
+                            +{c.tools_used.length - 2}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+
+        {/* Right Detail Inspector Pane */}
+        <div className="split-detail-pane">
+          {activeCall ? (
+            <>
+              {/* Top Inspector Bar */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  borderBottom: '1px solid var(--border-subtle)',
+                  paddingBottom: '1rem',
+                  flexWrap: 'wrap',
+                  gap: '0.75rem',
+                }}
               >
-                ✕ Close
-              </button>
-            </div>
-
-            {/* Call Meta Overview */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '0.85rem', marginBottom: '1.25rem', background: 'var(--slate-50)', padding: '0.85rem 1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--slate-200)' }}>
-              <div>
-                <span style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: 'var(--slate-500)', fontWeight: 700 }}>Caller DID</span>
-                <div style={{ fontWeight: 600, fontSize: '0.88rem', marginTop: '2px' }}><code>{activeCallDetail.caller_number}</code></div>
-              </div>
-              <div>
-                <span style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: 'var(--slate-500)', fontWeight: 700 }}>Call Duration</span>
-                <div style={{ fontWeight: 600, fontSize: '0.88rem', marginTop: '2px' }}>{activeCallDetail.duration}</div>
-              </div>
-              <div>
-                <span style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: 'var(--slate-500)', fontWeight: 700 }}>Date & Time</span>
-                <div style={{ fontWeight: 600, fontSize: '0.88rem', marginTop: '2px' }}>{activeCallDetail.datetime}</div>
-              </div>
-              <div>
-                <span style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: 'var(--slate-500)', fontWeight: 700 }}>Resolution Outcome</span>
-                <div style={{ marginTop: '2px' }}>
-                  <span className={`outcome-pill ${getOutcomeBadgeClass(activeCallDetail.outcome)}`}>
-                    {activeCallDetail.outcome}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Executive Call Summary */}
-            <div style={{ marginBottom: '1.25rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', marginBottom: '0.45rem' }}>
-                <Sparkles size={16} color="var(--sky-600)" />
-                <strong style={{ fontSize: '0.92rem', color: 'var(--slate-800)' }}>Executive Call Summary:</strong>
-              </div>
-              <div style={{ background: '#f8fafc', border: '1px solid #bae6fd', padding: '1rem 1.25rem', borderRadius: 'var(--radius-md)', fontSize: '0.9rem', lineHeight: 1.6, color: 'var(--slate-800)', boxShadow: '0 2px 8px rgba(14, 165, 233, 0.04)' }}>
-                {activeCallDetail.summary || 'Standard call completed successfully. Full turn transcripts are archived in database.'}
-              </div>
-            </div>
-
-            {/* Tools Interventions */}
-            <div style={{ marginBottom: '1.25rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', marginBottom: '0.5rem' }}>
-                <Wrench size={16} color="var(--sky-600)" />
-                <strong style={{ fontSize: '0.92rem', color: 'var(--slate-800)' }}>Autonomous Tools Interventions:</strong>
-                {activeCallDetail.tools_used && activeCallDetail.tools_used.length > 0 && (
-                  <span style={{ fontSize: '0.72rem', background: 'var(--sky-100)', color: 'var(--sky-800)', padding: '2px 8px', borderRadius: 'var(--radius-full)', fontWeight: 700 }}>
-                    {activeCallDetail.tools_used.length} {activeCallDetail.tools_used.length === 1 ? 'Tool' : 'Tools'} Executed
-                  </span>
-                )}
-              </div>
-              {activeCallDetail.tools_used && activeCallDetail.tools_used.length > 0 ? (
-                <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
-                  {activeCallDetail.tools_used.map((t, idx) => (
-                    <div
-                      key={idx}
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                    <code
                       style={{
-                        background: 'white',
-                        border: '1px solid var(--sky-200)',
-                        padding: '0.55rem 0.95rem',
-                        borderRadius: 'var(--radius-md)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.55rem',
-                        fontSize: '0.86rem',
+                        fontSize: '1.15rem',
                         fontWeight: 700,
-                        color: 'var(--sky-900)',
-                        boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+                        fontFamily: 'var(--font-mono)',
+                        color: '#ffffff',
                       }}
                     >
-                      <span style={{ fontSize: '1.05rem' }}>🔧</span>
-                      <span>{typeof t === 'string' ? t.replace(/_/g, ' ') : String(t)}</span>
-                      <span style={{ fontSize: '0.72rem', background: '#ecfdf5', color: '#047857', border: '1px solid #a7f3d0', padding: '2px 7px', borderRadius: '4px', fontWeight: 700 }}>
-                        ✓ Executed
-                      </span>
-                    </div>
-                  ))}
+                      {activeCall.caller_number}
+                    </code>
+                    <span className={`outcome-pill ${getOutcomeBadgeClass(activeCall.outcome)}`}>
+                      {activeCall.outcome}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: '0.76rem', color: 'var(--text-tertiary)', marginTop: '0.25rem', fontFamily: 'var(--font-mono)' }}>
+                    Session ID: {activeCall.id} • {activeCall.datetime} • Duration: {activeCall.duration}
+                  </div>
                 </div>
-              ) : (
-                <div style={{ background: 'var(--slate-50)', border: '1px solid var(--slate-200)', padding: '0.75rem 1rem', borderRadius: 'var(--radius-sm)', fontSize: '0.84rem', color: 'var(--slate-500)', fontStyle: 'italic' }}>
-                  No automated external tool invocations were required for this inquiry (handled through direct dialogue & knowledge base).
-                </div>
-              )}
-            </div>
 
-            {/* Detailed Conversation Dialogue (Exact Words Transcript) */}
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.6rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
-                  <MessageSquare size={16} color="var(--sky-600)" />
-                  <strong style={{ fontSize: '0.92rem', color: 'var(--slate-800)' }}>Detailed Conversation Dialogue (Exact Words Transcript):</strong>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    onClick={handleCopyTranscript}
+                    style={{ padding: '0.35rem 0.75rem', fontSize: '0.78rem' }}
+                  >
+                    {copiedTranscript ? <Check size={13} style={{ color: 'var(--mint-400)' }} /> : <Copy size={13} />}
+                    <span>{copiedTranscript ? 'Copied' : 'Copy Transcript'}</span>
+                  </button>
                 </div>
-                {activeCallDetail.transcript && activeCallDetail.transcript.length > 0 && (
-                  <span style={{ fontSize: '0.72rem', color: 'var(--slate-500)', fontWeight: 600 }}>
-                    {activeCallDetail.transcript.length} turns recorded
-                  </span>
-                )}
               </div>
 
-              {activeCallDetail.transcript && activeCallDetail.transcript.length > 0 ? (
+              {/* Section 1: Executive Call Summary */}
+              <div>
+                <div className="card-title" style={{ fontSize: '0.85rem', marginBottom: '0.4rem' }}>
+                  <Sparkles size={14} />
+                  <span>Executive Resolution Summary</span>
+                </div>
                 <div
                   style={{
-                    background: '#f8fafc',
-                    border: '1px solid var(--slate-200)',
-                    borderRadius: 'var(--radius-md)',
+                    background: 'var(--bg-surface-elevated)',
+                    border: '1px solid var(--border-subtle)',
+                    padding: '0.85rem 1rem',
+                    borderRadius: 'var(--radius-sm)',
+                    fontSize: '0.84rem',
+                    color: 'var(--text-primary)',
+                    lineHeight: 1.55,
+                  }}
+                >
+                  {activeCall.summary || 'Inbound caller inquiry addressed and resolved autonomously.'}
+                </div>
+              </div>
+
+              {/* Section 2: Autonomous Tool Execution Trace */}
+              {activeCall.tools_used && activeCall.tools_used.length > 0 && (
+                <div>
+                  <div className="card-title" style={{ fontSize: '0.85rem', marginBottom: '0.4rem' }}>
+                    <Wrench size={14} />
+                    <span>Autonomous Tool Interventions ({activeCall.tools_used.length})</span>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                    {activeCall.tools_used.map((t, idx) => (
+                      <div
+                        key={idx}
+                        style={{
+                          background: 'var(--bg-surface-elevated)',
+                          border: '1px solid var(--border-subtle)',
+                          padding: '0.65rem 0.85rem',
+                          borderRadius: 'var(--radius-sm)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          fontSize: '0.78rem',
+                          fontFamily: 'var(--font-mono)',
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <CheckCircle2 size={13} style={{ color: 'var(--mint-400)' }} />
+                          <span style={{ color: '#ffffff' }}>{typeof t === 'string' ? t : JSON.stringify(t)}</span>
+                        </div>
+                        <span
+                          style={{
+                            fontSize: '0.7rem',
+                            color: 'var(--mint-400)',
+                            background: 'rgba(16, 185, 129, 0.1)',
+                            padding: '1px 6px',
+                            borderRadius: '4px',
+                          }}
+                        >
+                          SUCCESS
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Section 3: Turn-by-Turn Spoken Dialogue Transcript */}
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                <div className="card-title" style={{ fontSize: '0.85rem', marginBottom: '0.4rem' }}>
+                  <MessageSquare size={14} />
+                  <span>Turn-by-Turn Acoustic Transcript</span>
+                </div>
+
+                <div
+                  style={{
+                    background: 'var(--bg-surface-elevated)',
+                    border: '1px solid var(--border-subtle)',
+                    borderRadius: 'var(--radius-sm)',
                     padding: '1rem',
-                    maxHeight: '360px',
+                    flex: 1,
+                    maxHeight: '400px',
                     overflowY: 'auto',
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: '0.85rem',
+                    gap: '0.75rem',
                   }}
                 >
-                  {activeCallDetail.transcript.map((turn, tIdx) => {
-                    const isUser = turn.role === 'user';
-                    return (
-                      <div
-                        key={tIdx}
-                        style={{
-                          display: 'flex',
-                          flexDirection: 'column',
-                          alignItems: isUser ? 'flex-start' : 'flex-start',
-                          paddingLeft: isUser ? '0' : '0.75rem',
-                          borderLeft: isUser ? '3px solid var(--sky-400)' : '3px solid var(--emerald-400)',
-                          padding: '0.4rem 0.75rem',
-                          background: isUser ? 'rgba(240, 249, 255, 0.7)' : 'white',
-                          borderRadius: '4px',
-                          border: isUser ? '1px solid #e0f2fe' : '1px solid #e2e8f0',
-                        }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', marginBottom: '0.2rem' }}>
-                          {isUser ? (
-                            <>
-                              <User size={13} color="var(--sky-600)" />
-                              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--sky-800)' }}>Customer / Caller</span>
-                            </>
-                          ) : (
-                            <>
-                              <Bot size={13} color="var(--emerald-600)" />
-                              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--emerald-800)' }}>AI Receptionist Host</span>
-                            </>
-                          )}
-                          {turn.timestamp && (
-                            <span style={{ fontSize: '0.68rem', color: 'var(--slate-400)', marginLeft: 'auto' }}>
-                              {turn.timestamp}
-                            </span>
-                          )}
+                  {activeCall.transcript && activeCall.transcript.length > 0 ? (
+                    activeCall.transcript.map((turn, idx) => {
+                      const isUser = turn.speaker === 'user' || turn.role === 'user' || turn.speaker === 'caller';
+                      return (
+                        <div
+                          key={idx}
+                          style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: isUser ? 'flex-end' : 'flex-start',
+                            maxWidth: '85%',
+                            alignSelf: isUser ? 'flex-end' : 'flex-start',
+                          }}
+                        >
+                          <div
+                            style={{
+                              fontSize: '0.68rem',
+                              color: 'var(--text-tertiary)',
+                              marginBottom: '2px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.3rem',
+                            }}
+                          >
+                            {isUser ? <User size={10} /> : <Bot size={10} />}
+                            <span>{isUser ? 'Caller' : `${business.name} Receptionist`}</span>
+                          </div>
+                          <div
+                            style={{
+                              background: isUser ? '#ffffff' : 'var(--bg-surface-hover)',
+                              color: isUser ? '#07080a' : 'var(--text-primary)',
+                              padding: '0.6rem 0.85rem',
+                              borderRadius: 'var(--radius-sm)',
+                              fontSize: '0.82rem',
+                              lineHeight: 1.5,
+                              border: isUser ? 'none' : '1px solid var(--border-subtle)',
+                              fontWeight: isUser ? 500 : 400,
+                            }}
+                          >
+                            {turn.content || turn.text || turn.message || ''}
+                          </div>
                         </div>
-                        <div style={{ fontSize: '0.86rem', color: 'var(--slate-800)', lineHeight: 1.5, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-                          {turn.content}
-                        </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })
+                  ) : (
+                    <div style={{ color: 'var(--text-tertiary)', fontStyle: 'italic', fontSize: '0.82rem', padding: '1rem 0' }}>
+                      Audio session completed. Full transcription archived in telephony store.
+                    </div>
+                  )}
                 </div>
-              ) : (
-                <div style={{ background: 'var(--slate-50)', border: '1px solid var(--slate-200)', padding: '1rem', borderRadius: 'var(--radius-sm)', fontSize: '0.84rem', color: 'var(--slate-500)', fontStyle: 'italic', textAlign: 'center' }}>
-                  No turn-by-turn dialogue messages were recorded for this session.
-                </div>
-              )}
+              </div>
+            </>
+          ) : (
+            <div style={{ textAlign: 'center', padding: '4rem 1rem', color: 'var(--text-tertiary)' }}>
+              Select a call session from the left stream to inspect turns and tool interventions.
             </div>
-          </div>
+          )}
         </div>
-      )}
+      </div>
     </section>
   );
 }

@@ -22,88 +22,89 @@ const S = {
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
-    padding: '2rem 1rem 3rem',
+    padding: '2rem 1rem 3.5rem',
     minHeight: '100%',
   },
-  pageHeader: { textAlign: 'center', marginBottom: '2rem' },
-  pageTitle: { fontSize: '1.5rem', fontWeight: 800, color: 'var(--slate-800)', letterSpacing: '-0.02em', marginBottom: '0.35rem' },
-  pageSubtitle: { fontSize: '0.88rem', color: 'var(--slate-500)', fontWeight: 500 },
+  pageHeader: { textAlign: 'center', marginBottom: '1.75rem' },
+  pageTitle: { fontSize: '1.5rem', fontWeight: 700, color: '#ffffff', letterSpacing: '-0.03em', marginBottom: '0.35rem' },
+  pageSubtitle: { fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 400 },
   errorBanner: {
-    width: '100%', maxWidth: '440px', marginBottom: '1rem',
-    padding: '0.7rem 1rem', borderRadius: '10px',
-    background: '#fff1f2', border: '1px solid #fecdd3',
-    color: '#be123c', fontSize: '0.83rem', fontWeight: 600,
+    width: '100%', maxWidth: '420px', marginBottom: '1rem',
+    padding: '0.65rem 0.85rem', borderRadius: 'var(--radius-sm)',
+    background: 'rgba(244, 63, 94, 0.1)', border: '1px solid rgba(244, 63, 94, 0.3)',
+    color: '#fb7185', fontSize: '0.8rem', fontWeight: 500,
     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
   },
   card: {
-    width: '100%', maxWidth: '420px', borderRadius: '24px',
-    background: 'linear-gradient(160deg, #0f172a 0%, #1e293b 100%)',
-    boxShadow: '0 24px 60px rgba(0,0,0,0.38), 0 8px 24px rgba(0,0,0,0.18)',
+    width: '100%', maxWidth: '420px', borderRadius: 'var(--radius-lg)',
+    background: 'var(--bg-card)',
+    border: '1px solid var(--border-medium)',
+    boxShadow: 'var(--shadow-lg), var(--specular-top)',
     overflow: 'hidden', display: 'flex', flexDirection: 'column',
   },
   topBar: {
     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-    padding: '14px 18px 10px', borderBottom: '1px solid rgba(255,255,255,0.06)',
+    padding: '16px 20px 12px', borderBottom: '1px solid rgba(255,255,255,0.08)',
   },
   topBarLeft: { display: 'flex', alignItems: 'center', gap: '6px' },
-  topBarLabel: { fontSize: '0.74rem', fontWeight: 700, letterSpacing: '0.04em', color: 'rgba(255,255,255,0.55)', textTransform: 'uppercase' },
-  topBarTimer: { fontSize: '0.8rem', fontWeight: 700, color: 'rgba(255,255,255,0.9)', fontVariantNumeric: 'tabular-nums', letterSpacing: '0.05em', fontFamily: 'monospace' },
+  topBarLabel: { fontSize: '0.74rem', fontWeight: 700, letterSpacing: '0.04em', color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase' },
+  topBarTimer: { fontSize: '0.82rem', fontWeight: 700, color: 'rgba(255,255,255,0.95)', fontVariantNumeric: 'tabular-nums', letterSpacing: '0.05em', fontFamily: 'monospace' },
   langSwitcher: {
     display: 'flex', alignItems: 'center',
-    background: 'rgba(255,255,255,0.06)', borderRadius: '99px',
-    padding: '3px', gap: '2px', border: '1px solid rgba(255,255,255,0.1)',
+    background: 'rgba(255,255,255,0.08)', borderRadius: '99px',
+    padding: '3px', gap: '2px', border: '1px solid rgba(255,255,255,0.12)',
   },
-  avatarZone: { display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '2rem 1.5rem 1.25rem', gap: '0.75rem' },
-  bizName: { fontSize: '1.2rem', fontWeight: 800, color: 'white', textAlign: 'center', letterSpacing: '-0.01em' },
+  avatarZone: { display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '2rem 1.5rem 1.25rem', gap: '0.85rem' },
+  bizName: { fontSize: '1.25rem', fontWeight: 800, color: 'white', textAlign: 'center', letterSpacing: '-0.015em' },
   waveform: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', height: '36px', padding: '0 1.5rem', marginBottom: '0.25rem' },
   transcriptArea: {
-    margin: '0 1rem', borderRadius: '14px',
-    background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.07)',
-    padding: '0.85rem', height: '200px', overflowY: 'auto',
-    display: 'flex', flexDirection: 'column', gap: '0.5rem',
+    margin: '0 1.15rem', borderRadius: '16px',
+    background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.08)',
+    padding: '0.9rem', height: '210px', overflowY: 'auto',
+    display: 'flex', flexDirection: 'column', gap: '0.55rem',
   },
   transcriptEmpty: {
     flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
-    flexDirection: 'column', gap: '0.5rem', color: 'rgba(255,255,255,0.25)',
-    fontSize: '0.83rem', textAlign: 'center', fontWeight: 500,
+    flexDirection: 'column', gap: '0.5rem', color: 'rgba(255,255,255,0.3)',
+    fontSize: '0.84rem', textAlign: 'center', fontWeight: 500,
   },
-  inputRow: { display: 'flex', gap: '8px', margin: '10px 1rem 0' },
+  inputRow: { display: 'flex', gap: '8px', margin: '10px 1.15rem 0' },
   textInput: {
-    flex: 1, background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)',
+    flex: 1, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.14)',
     borderRadius: '12px', color: 'white', fontSize: '0.85rem', padding: '10px 14px', outline: 'none',
   },
   controlsBar: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1.75rem', padding: '1.5rem 1.5rem 1rem' },
   controlItem: { display: 'flex', flexDirection: 'column', alignItems: 'center' },
-  settingsStrip: { borderTop: '1px solid rgba(255,255,255,0.06)', padding: '0.75rem 1.25rem 1.25rem', display: 'flex', flexDirection: 'column', gap: '0.6rem' },
+  settingsStrip: { borderTop: '1px solid rgba(255,255,255,0.08)', padding: '0.85rem 1.35rem 1.35rem', display: 'flex', flexDirection: 'column', gap: '0.65rem' },
   settingsRow: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' },
-  settingsLabel: { fontSize: '0.72rem', color: 'rgba(255,255,255,0.4)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' },
+  settingsLabel: { fontSize: '0.74rem', color: 'rgba(255,255,255,0.5)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' },
   pauseChips: { display: 'flex', gap: '4px' },
   toolBadge: {
-    display: 'inline-flex', alignItems: 'center', gap: '3px', marginTop: '4px',
-    padding: '2px 7px', borderRadius: '6px', background: 'rgba(255,255,255,0.12)',
-    color: 'rgba(255,255,255,0.7)', fontSize: '0.68rem', fontWeight: 700,
+    display: 'inline-flex', alignItems: 'center', gap: '4px', marginTop: '4px',
+    padding: '2px 8px', borderRadius: '6px', background: 'rgba(20, 184, 166, 0.25)',
+    color: '#5eead4', fontSize: '0.7rem', fontWeight: 700, border: '1px solid rgba(20, 184, 166, 0.35)',
   },
-  bubbleSpeaker: { fontSize: '0.68rem', fontWeight: 800, opacity: 0.65, marginBottom: '3px', letterSpacing: '0.03em', textTransform: 'uppercase' },
+  bubbleSpeaker: { fontSize: '0.68rem', fontWeight: 800, opacity: 0.7, marginBottom: '3px', letterSpacing: '0.03em', textTransform: 'uppercase' },
 };
 
 function dotColor(isListening, isSpeaking, isTurnLoading, isConnecting, callActive) {
   if (!callActive && !isConnecting) return '#64748b';
   if (isListening)   return '#10b981';
-  if (isSpeaking)    return '#818cf8';
-  if (isTurnLoading) return '#38bdf8';
+  if (isSpeaking)    return '#a78bfa';
+  if (isTurnLoading) return '#6366f1';
   if (isConnecting)  return '#f59e0b';
-  return '#0ea5e9';
+  return '#4f46e5';
 }
 
 function pillStyle(type) {
   const map = {
-    idle:       { bg: 'rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.45)' },
-    connecting: { bg: 'rgba(245,158,11,0.18)',  color: '#fbbf24' },
-    listening:  { bg: 'rgba(16,185,129,0.18)',  color: '#34d399' },
-    speaking:   { bg: 'rgba(99,102,241,0.2)',   color: '#a78bfa' },
-    thinking:   { bg: 'rgba(14,165,233,0.18)',  color: '#38bdf8' },
-    active:     { bg: 'rgba(14,165,233,0.12)',  color: '#7dd3fc' },
-    muted:      { bg: 'rgba(239,68,68,0.18)',   color: '#f87171' },
+    idle:       { bg: 'rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.5)' },
+    connecting: { bg: 'rgba(245,158,11,0.2)',   color: '#fbbf24' },
+    listening:  { bg: 'rgba(16,185,129,0.2)',   color: '#34d399' },
+    speaking:   { bg: 'rgba(139,92,246,0.22)',  color: '#c4b5fd' },
+    thinking:   { bg: 'rgba(99,102,241,0.22)',  color: '#818cf8' },
+    active:     { bg: 'rgba(99,102,241,0.18)',  color: '#a5b4fc' },
+    muted:      { bg: 'rgba(239,68,68,0.2)',    color: '#f87171' },
   };
   const s = map[type] || map.idle;
   return {
@@ -111,7 +112,7 @@ function pillStyle(type) {
     padding: '5px 14px', borderRadius: '99px',
     background: s.bg, color: s.color,
     fontSize: '0.78rem', fontWeight: 700, letterSpacing: '0.02em',
-    border: `1px solid ${s.color}30`,
+    border: `1px solid ${s.color}35`,
   };
 }
 
@@ -119,21 +120,21 @@ function langBtnStyle(active) {
   return {
     padding: '4px 14px', borderRadius: '99px', fontSize: '0.74rem', fontWeight: 700,
     border: 'none', cursor: 'pointer',
-    background: active ? '#0ea5e9' : 'transparent',
-    color: active ? 'white' : 'rgba(255,255,255,0.5)',
+    background: active ? 'linear-gradient(135deg, #4338ca, #6366f1)' : 'transparent',
+    color: active ? 'white' : 'rgba(255,255,255,0.55)',
     transition: 'all 0.18s ease', letterSpacing: '0.02em',
   };
 }
 
 function ctrlBtn(variant) {
   const variants = {
-    call:        { w: 72, bg: 'linear-gradient(135deg,#10b981,#059669)', shadow: '0 8px 24px rgba(16,185,129,0.45)' },
+    call:        { w: 72, bg: 'linear-gradient(135deg,#059669,#10b981)', shadow: '0 8px 24px rgba(16,185,129,0.45)' },
     endcall:     { w: 72, bg: 'linear-gradient(135deg,#ef4444,#dc2626)', shadow: '0 8px 24px rgba(239,68,68,0.45)' },
-    mic:         { w: 60, bg: 'linear-gradient(135deg,#0ea5e9,#0284c7)', shadow: '0 6px 18px rgba(14,165,233,0.4)' },
-    'mic-on':    { w: 60, bg: 'linear-gradient(135deg,#10b981,#059669)', shadow: '0 6px 24px rgba(16,185,129,0.55)' },
-    'mic-muted': { w: 60, bg: 'rgba(255,255,255,0.09)', shadow: 'none', border: '1px solid rgba(255,255,255,0.12)' },
-    speaker:     { w: 52, bg: 'rgba(255,255,255,0.07)', shadow: 'none', border: '1px solid rgba(255,255,255,0.1)' },
-    'spk-active':{ w: 52, bg: 'rgba(129,140,248,0.18)', shadow: 'none', border: '1px solid rgba(129,140,248,0.4)' },
+    mic:         { w: 60, bg: 'linear-gradient(135deg,#3730a3,#4f46e5)', shadow: '0 6px 18px rgba(79,70,229,0.4)' },
+    'mic-on':    { w: 60, bg: 'linear-gradient(135deg,#059669,#10b981)', shadow: '0 6px 24px rgba(16,185,129,0.55)' },
+    'mic-muted': { w: 60, bg: 'rgba(255,255,255,0.09)', shadow: 'none', border: '1px solid rgba(255,255,255,0.14)' },
+    speaker:     { w: 52, bg: 'rgba(255,255,255,0.08)', shadow: 'none', border: '1px solid rgba(255,255,255,0.12)' },
+    'spk-active':{ w: 52, bg: 'rgba(139,92,246,0.22)', shadow: 'none', border: '1px solid rgba(139,92,246,0.45)' },
   };
   const v = variants[variant] || variants.speaker;
   return {
@@ -147,10 +148,10 @@ function ctrlBtn(variant) {
 
 function pauseChipStyle(active) {
   return {
-    padding: '3px 9px', borderRadius: '6px', fontSize: '0.69rem', fontWeight: 700,
+    padding: '3px 9px', borderRadius: '6px', fontSize: '0.7rem', fontWeight: 700,
     border: 'none', cursor: 'pointer',
-    background: active ? '#0ea5e9' : 'rgba(255,255,255,0.08)',
-    color: active ? 'white' : 'rgba(255,255,255,0.4)',
+    background: active ? 'linear-gradient(135deg, #4338ca, #6366f1)' : 'rgba(255,255,255,0.08)',
+    color: active ? 'white' : 'rgba(255,255,255,0.45)',
     transition: 'all 0.15s',
   };
 }
@@ -160,11 +161,12 @@ function bubbleStyle(role) {
     maxWidth: '88%',
     alignSelf: role === 'user' ? 'flex-end' : 'flex-start',
     background: role === 'user'
-      ? 'linear-gradient(135deg,#0ea5e9,#0284c7)'
+      ? 'linear-gradient(135deg,#3730a3,#4f46e5)'
       : 'rgba(255,255,255,0.1)',
     color: 'white',
     borderRadius: role === 'user' ? '14px 14px 4px 14px' : '14px 14px 14px 4px',
-    padding: '8px 12px', fontSize: '0.83rem', lineHeight: '1.45',
+    padding: '8px 12px', fontSize: '0.84rem', lineHeight: '1.45',
+    border: role === 'user' ? '1px solid rgba(99,102,241,0.35)' : '1px solid rgba(255,255,255,0.08)',
   };
 }
 
@@ -178,7 +180,7 @@ function Waveform({ active }) {
           width: '3px',
           height: active ? `${Math.round(h * 28)}px` : '6px',
           borderRadius: '3px',
-          background: active ? `rgba(14,165,233,${0.5 + h * 0.5})` : 'rgba(255,255,255,0.12)',
+          background: active ? `rgba(167,139,250,${0.5 + h * 0.5})` : 'rgba(255,255,255,0.12)',
           transition: `height ${0.18 + i * 0.04}s ease`,
           animation: active ? `wbAnim${i} 0.9s ease-in-out ${i * 0.1}s infinite alternate` : 'none',
         }} />
@@ -193,7 +195,7 @@ function Toggle({ checked, onChange }) {
     <button type="button" role="switch" aria-checked={checked} onClick={() => onChange(!checked)}
       style={{
         width: '32px', height: '18px', borderRadius: '9px', position: 'relative',
-        background: checked ? '#0ea5e9' : 'rgba(255,255,255,0.15)',
+        background: checked ? '#4f46e5' : 'rgba(255,255,255,0.15)',
         border: 'none', cursor: 'pointer', transition: 'background 0.2s ease', flexShrink: 0,
       }}
     >
@@ -603,8 +605,25 @@ export default function WebPhone({ business }) {
     <section style={S.page}>
       {/* Page header */}
       <div style={S.pageHeader}>
-        <h1 style={S.pageTitle}>📞 Web Voice Phone</h1>
-        <p style={S.pageSubtitle}>Natural back-and-forth AI receptionist with memory & thinking-pause tolerance</p>
+        <div
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.4rem',
+            padding: '0.25rem 0.65rem',
+            borderRadius: 'var(--radius-full)',
+            background: 'var(--bg-surface-elevated)',
+            border: '1px solid var(--border-subtle)',
+            color: 'var(--text-secondary)',
+            fontSize: '0.74rem',
+            fontWeight: 600,
+            marginBottom: '0.45rem',
+          }}
+        >
+          <Phone size={12} /> Low-Latency WebRTC Gateway
+        </div>
+        <h1 style={S.pageTitle}>Inbound Voice Phone</h1>
+        <p style={S.pageSubtitle}>Natural back-and-forth voice receptionist with memory & thinking-pause tolerance for {business.name}</p>
       </div>
 
       {/* Error banner */}

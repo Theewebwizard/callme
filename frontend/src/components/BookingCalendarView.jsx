@@ -248,16 +248,17 @@ export default function BookingCalendarView({
   }, [reservations]);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', width: '100%' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', width: '100%' }}>
       {/* Feedback Banner */}
       {feedback && (
         <div
           style={{
             padding: '0.75rem 1rem',
             borderRadius: 'var(--radius-md)',
-            background: feedback.type === 'success' ? 'var(--emerald-100)' : 'var(--rose-100)',
-            color: feedback.type === 'success' ? 'var(--emerald-700)' : 'var(--rose-700)',
-            fontSize: '0.875rem',
+            background: feedback.type === 'success' ? 'rgba(16, 185, 129, 0.12)' : 'rgba(244, 63, 94, 0.12)',
+            border: `1px solid ${feedback.type === 'success' ? 'rgba(16, 185, 129, 0.3)' : 'rgba(244, 63, 94, 0.3)'}`,
+            color: feedback.type === 'success' ? 'var(--color-emerald)' : 'var(--color-rose)',
+            fontSize: '0.85rem',
             fontWeight: 600,
             display: 'flex',
             alignItems: 'center',
@@ -269,7 +270,7 @@ export default function BookingCalendarView({
             onClick={() => setFeedback(null)}
             style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit' }}
           >
-            <X size={16} />
+            <X size={15} />
           </button>
         </div>
       )}
@@ -282,9 +283,6 @@ export default function BookingCalendarView({
           display: 'flex',
           flexDirection: 'column',
           gap: '1rem',
-          border: '1px solid var(--slate-200)',
-          borderRadius: 'var(--radius-lg)',
-          boxShadow: 'var(--shadow-sm)',
         }}
       >
         <div
@@ -298,33 +296,36 @@ export default function BookingCalendarView({
         >
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <CalendarIcon size={20} color="var(--sky-600)" />
-              <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--slate-900)', margin: 0 }}>
+              <div style={{ width: '30px', height: '30px', borderRadius: 'var(--radius-sm)', background: 'rgba(16, 185, 129, 0.1)', color: 'var(--color-emerald)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <CalendarIcon size={16} />
+              </div>
+              <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.02em' }}>
                 Interactive Booking Calendar & Timeline
               </h3>
             </div>
-            <p style={{ fontSize: '0.82rem', color: 'var(--slate-500)', marginTop: '2px', margin: 0 }}>
-              Live occupancy grid for rooms and dining tables. Inspect occupied nights, seatings, and guest reservations.
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)', marginTop: '3px', margin: 0 }}>
+              Live occupancy grid for rooms, tables, and consultation suites. Inspect occupied nights, seatings, and guest reservations.
             </p>
           </div>
 
           {/* Quick Metrics */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
             <div
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 gap: '6px',
-                background: 'var(--slate-100)',
+                background: 'var(--bg-surface-elevated)',
+                border: '1px solid var(--border-subtle)',
                 padding: '4px 10px',
-                borderRadius: 'var(--radius-md)',
-                fontSize: '0.78rem',
-                color: 'var(--slate-700)',
+                borderRadius: 'var(--radius-sm)',
+                fontSize: '0.76rem',
+                color: 'var(--text-secondary)',
                 fontWeight: 600,
               }}
             >
               <span>Total Resources:</span>
-              <strong style={{ color: 'var(--slate-900)' }}>{resources.length}</strong>
+              <strong style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-mono)' }}>{resources.length}</strong>
             </div>
 
             <div
@@ -332,16 +333,17 @@ export default function BookingCalendarView({
                 display: 'flex',
                 alignItems: 'center',
                 gap: '6px',
-                background: 'var(--emerald-100)',
+                background: 'rgba(16, 185, 129, 0.08)',
+                border: '1px solid rgba(16, 185, 129, 0.25)',
                 padding: '4px 10px',
-                borderRadius: 'var(--radius-md)',
-                fontSize: '0.78rem',
-                color: 'var(--emerald-700)',
+                borderRadius: 'var(--radius-sm)',
+                fontSize: '0.76rem',
+                color: 'var(--color-emerald)',
                 fontWeight: 600,
               }}
             >
-              <span>Confirmed Bookings:</span>
-              <strong>{activeBookingsCount}</strong>
+              <span>Confirmed:</span>
+              <strong style={{ fontFamily: 'var(--font-mono)' }}>{activeBookingsCount}</strong>
             </div>
 
             <button
@@ -351,13 +353,13 @@ export default function BookingCalendarView({
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '6px',
-                padding: '0.45rem 0.9rem',
-                fontSize: '0.85rem',
-                fontWeight: 700,
+                gap: '5px',
+                padding: '0.4rem 0.85rem',
+                fontSize: '0.8rem',
+                fontWeight: 600,
               }}
             >
-              <Plus size={16} /> New Booking
+              <Plus size={15} /> New Booking
             </button>
           </div>
         </div>
@@ -370,8 +372,8 @@ export default function BookingCalendarView({
             justifyContent: 'space-between',
             flexWrap: 'wrap',
             gap: '0.75rem',
-            paddingTop: '0.75rem',
-            borderTop: '1px solid var(--slate-100)',
+            paddingTop: '0.85rem',
+            borderTop: '1px solid var(--border-subtle)',
           }}
         >
           {/* Date Navigator */}
@@ -383,14 +385,14 @@ export default function BookingCalendarView({
               title="Previous Range"
               style={{ padding: '0.35rem 0.55rem' }}
             >
-              <ChevronLeft size={16} />
+              <ChevronLeft size={15} />
             </button>
 
             <button
               type="button"
               className="btn-secondary"
               onClick={handleToday}
-              style={{ padding: '0.35rem 0.75rem', fontSize: '0.8rem', fontWeight: 700 }}
+              style={{ padding: '0.35rem 0.75rem', fontSize: '0.78rem', fontWeight: 600 }}
             >
               Today
             </button>
@@ -402,7 +404,7 @@ export default function BookingCalendarView({
               title="Next Range"
               style={{ padding: '0.35rem 0.55rem' }}
             >
-              <ChevronRight size={16} />
+              <ChevronRight size={15} />
             </button>
 
             <input
@@ -410,10 +412,10 @@ export default function BookingCalendarView({
               className="form-input"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
-              style={{ padding: '0.3rem 0.6rem', fontSize: '0.82rem', width: 'auto' }}
+              style={{ padding: '0.3rem 0.6rem', fontSize: '0.8rem', width: 'auto' }}
             />
 
-            <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--slate-800)', marginLeft: '4px' }}>
+            <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-primary)', marginLeft: '4px' }}>
               {viewMode === 'timeline'
                 ? `${timelineDays[0]?.monthDay} — ${timelineDays[6]?.monthDay}, ${new Date(selectedDate).getFullYear()}`
                 : new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', {
@@ -429,12 +431,12 @@ export default function BookingCalendarView({
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
             {/* Resource Type Filter */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <Filter size={14} color="var(--slate-400)" />
+              <Filter size={13} color="var(--text-tertiary)" />
               <select
                 className="form-input"
                 value={filterType}
                 onChange={(e) => setFilterType(e.target.value)}
-                style={{ padding: '0.3rem 0.6rem', fontSize: '0.8rem', width: 'auto' }}
+                style={{ padding: '0.3rem 0.6rem', fontSize: '0.78rem', width: 'auto' }}
               >
                 <option value="all">All Types ({resources.length})</option>
                 <option value="room">🏨 Hotel Rooms & Suites</option>
@@ -447,10 +449,10 @@ export default function BookingCalendarView({
             <div
               style={{
                 display: 'flex',
-                background: 'var(--slate-100)',
+                background: 'var(--bg-surface-elevated)',
                 borderRadius: 'var(--radius-sm)',
                 padding: '2px',
-                border: '1px solid var(--slate-200)',
+                border: '1px solid var(--border-subtle)',
               }}
             >
               <button
@@ -460,18 +462,19 @@ export default function BookingCalendarView({
                   display: 'flex',
                   alignItems: 'center',
                   gap: '4px',
-                  padding: '4px 10px',
-                  fontSize: '0.78rem',
+                  padding: '4px 9px',
+                  fontSize: '0.76rem',
                   fontWeight: 600,
                   border: 'none',
                   borderRadius: 'var(--radius-sm)',
                   cursor: 'pointer',
-                  background: viewMode === 'timeline' ? 'white' : 'transparent',
-                  color: viewMode === 'timeline' ? 'var(--sky-600)' : 'var(--slate-600)',
+                  background: viewMode === 'timeline' ? 'rgba(255, 255, 255, 0.08)' : 'transparent',
+                  color: viewMode === 'timeline' ? 'var(--text-primary)' : 'var(--text-tertiary)',
                   boxShadow: viewMode === 'timeline' ? 'var(--shadow-sm)' : 'none',
+                  transition: 'all 0.15s ease',
                 }}
               >
-                <Grid size={13} /> Multi-Day
+                <Grid size={12} /> Multi-Day
               </button>
 
               <button
@@ -481,18 +484,19 @@ export default function BookingCalendarView({
                   display: 'flex',
                   alignItems: 'center',
                   gap: '4px',
-                  padding: '4px 10px',
-                  fontSize: '0.78rem',
+                  padding: '4px 9px',
+                  fontSize: '0.76rem',
                   fontWeight: 600,
                   border: 'none',
                   borderRadius: 'var(--radius-sm)',
                   cursor: 'pointer',
-                  background: viewMode === 'day' ? 'white' : 'transparent',
-                  color: viewMode === 'day' ? 'var(--sky-600)' : 'var(--slate-600)',
+                  background: viewMode === 'day' ? 'rgba(255, 255, 255, 0.08)' : 'transparent',
+                  color: viewMode === 'day' ? 'var(--text-primary)' : 'var(--text-tertiary)',
                   boxShadow: viewMode === 'day' ? 'var(--shadow-sm)' : 'none',
+                  transition: 'all 0.15s ease',
                 }}
               >
-                <Clock size={13} /> Day Slots
+                <Clock size={12} /> Day Slots
               </button>
 
               <button
@@ -502,18 +506,19 @@ export default function BookingCalendarView({
                   display: 'flex',
                   alignItems: 'center',
                   gap: '4px',
-                  padding: '4px 10px',
-                  fontSize: '0.78rem',
+                  padding: '4px 9px',
+                  fontSize: '0.76rem',
                   fontWeight: 600,
                   border: 'none',
                   borderRadius: 'var(--radius-sm)',
                   cursor: 'pointer',
-                  background: viewMode === 'list' ? 'white' : 'transparent',
-                  color: viewMode === 'list' ? 'var(--sky-600)' : 'var(--slate-600)',
+                  background: viewMode === 'list' ? 'rgba(255, 255, 255, 0.08)' : 'transparent',
+                  color: viewMode === 'list' ? 'var(--text-primary)' : 'var(--text-tertiary)',
                   boxShadow: viewMode === 'list' ? 'var(--shadow-sm)' : 'none',
+                  transition: 'all 0.15s ease',
                 }}
               >
-                <ListIcon size={13} /> List View
+                <ListIcon size={12} /> List View
               </button>
             </div>
 
@@ -525,7 +530,7 @@ export default function BookingCalendarView({
                 title="Refresh schedule"
                 style={{ padding: '0.35rem 0.55rem' }}
               >
-                <RefreshCw size={14} />
+                <RefreshCw size={13} />
               </button>
             )}
           </div>
@@ -541,14 +546,11 @@ export default function BookingCalendarView({
           style={{
             padding: 0,
             overflowX: 'auto',
-            border: '1px solid var(--slate-200)',
-            borderRadius: 'var(--radius-lg)',
-            boxShadow: 'var(--shadow-sm)',
           }}
         >
           {filteredResources.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--slate-500)' }}>
-              No resources found for the selected filter. Register a room or table below to enable timeline scheduling.
+            <div style={{ textAlign: 'center', padding: '3.5rem', color: 'var(--text-tertiary)' }}>
+              No resources found for the selected filter. Register a room or table to enable timeline scheduling.
             </div>
           ) : (
             <table
@@ -560,15 +562,17 @@ export default function BookingCalendarView({
               }}
             >
               <thead>
-                <tr style={{ background: 'var(--slate-50)', borderBottom: '2px solid var(--slate-200)' }}>
+                <tr style={{ background: 'var(--bg-surface-elevated)', borderBottom: '1px solid var(--border-subtle)' }}>
                   <th
                     style={{
                       width: '230px',
                       padding: '0.85rem 1rem',
-                      fontSize: '0.8rem',
+                      fontSize: '0.75rem',
                       fontWeight: 700,
-                      color: 'var(--slate-700)',
-                      borderRight: '1px solid var(--slate-200)',
+                      color: 'var(--text-tertiary)',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.04em',
+                      borderRight: '1px solid var(--border-subtle)',
                     }}
                   >
                     RESOURCE (ROOM / TABLE)
@@ -578,20 +582,21 @@ export default function BookingCalendarView({
                       key={td.date}
                       style={{
                         padding: '0.65rem 0.5rem',
-                        fontSize: '0.78rem',
+                        fontSize: '0.76rem',
                         textAlign: 'center',
-                        color: td.isToday ? 'var(--sky-700)' : 'var(--slate-700)',
-                        background: td.isToday ? 'var(--sky-50)' : 'transparent',
-                        borderRight: '1px solid var(--slate-200)',
+                        color: td.isToday ? 'var(--color-emerald)' : 'var(--text-secondary)',
+                        background: td.isToday ? 'rgba(16, 185, 129, 0.05)' : 'transparent',
+                        borderRight: '1px solid var(--border-subtle)',
                         minWidth: '105px',
                       }}
                     >
-                      <div style={{ fontWeight: 800, fontSize: '0.82rem' }}>{td.dayName}</div>
+                      <div style={{ fontWeight: 700, fontSize: '0.8rem' }}>{td.dayName}</div>
                       <div
                         style={{
                           fontSize: '0.72rem',
-                          color: td.isToday ? 'var(--sky-600)' : 'var(--slate-500)',
-                          fontWeight: td.isToday ? 700 : 500,
+                          color: td.isToday ? 'var(--color-emerald)' : 'var(--text-tertiary)',
+                          fontFamily: 'var(--font-mono)',
+                          marginTop: '1px',
                         }}
                       >
                         {td.monthDay}
@@ -601,11 +606,12 @@ export default function BookingCalendarView({
                           style={{
                             display: 'inline-block',
                             marginTop: '2px',
-                            fontSize: '0.65rem',
-                            background: 'var(--sky-500)',
-                            color: 'white',
-                            padding: '1px 6px',
-                            borderRadius: '10px',
+                            fontSize: '0.62rem',
+                            background: 'rgba(16, 185, 129, 0.15)',
+                            color: 'var(--color-emerald)',
+                            border: '1px solid rgba(16, 185, 129, 0.3)',
+                            padding: '1px 5px',
+                            borderRadius: 'var(--radius-full)',
                             fontWeight: 700,
                           }}
                         >
@@ -621,19 +627,19 @@ export default function BookingCalendarView({
                   <tr
                     key={res.id}
                     style={{
-                      borderBottom: '1px solid var(--slate-200)',
-                      background: idx % 2 === 0 ? 'white' : 'var(--slate-50)',
+                      borderBottom: '1px solid var(--border-subtle)',
+                      background: idx % 2 === 0 ? 'transparent' : 'rgba(255, 255, 255, 0.015)',
                     }}
                   >
                     {/* Resource Header Cell */}
                     <td
                       style={{
                         padding: '0.85rem 1rem',
-                        borderRight: '1px solid var(--slate-200)',
+                        borderRight: '1px solid var(--border-subtle)',
                         verticalAlign: 'top',
                       }}
                     >
-                      <div style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--slate-900)' }}>
+                      <div style={{ fontWeight: 600, fontSize: '0.86rem', color: 'var(--text-primary)' }}>
                         {res.name}
                       </div>
                       <div
@@ -647,32 +653,39 @@ export default function BookingCalendarView({
                       >
                         <span
                           style={{
-                            fontSize: '0.7rem',
+                            fontSize: '0.68rem',
                             padding: '2px 6px',
-                            borderRadius: '4px',
-                            fontWeight: 700,
+                            borderRadius: 'var(--radius-sm)',
+                            fontWeight: 600,
                             background:
                               res.resource_type === 'room'
-                                ? 'var(--sky-100)'
+                                ? 'rgba(56, 189, 248, 0.1)'
                                 : res.resource_type === 'table'
-                                ? 'var(--emerald-100)'
-                                : 'var(--slate-200)',
+                                ? 'rgba(16, 185, 129, 0.1)'
+                                : 'rgba(255, 255, 255, 0.05)',
                             color:
                               res.resource_type === 'room'
-                                ? 'var(--sky-700)'
+                                ? '#38bdf8'
                                 : res.resource_type === 'table'
-                                ? 'var(--emerald-700)'
-                                : 'var(--slate-700)',
+                                ? 'var(--color-emerald)'
+                                : 'var(--text-secondary)',
+                            border: `1px solid ${
+                              res.resource_type === 'room'
+                                ? 'rgba(56, 189, 248, 0.25)'
+                                : res.resource_type === 'table'
+                                ? 'rgba(16, 185, 129, 0.25)'
+                                : 'var(--border-subtle)'
+                            }`,
                           }}
                         >
                           {res.resource_type === 'room' ? 'Room' : res.resource_type === 'table' ? 'Table' : 'Suite'}
                         </span>
                         {res.section && (
-                          <span style={{ fontSize: '0.72rem', color: 'var(--slate-500)' }}>
+                          <span style={{ fontSize: '0.72rem', color: 'var(--text-tertiary)' }}>
                             • {res.section}
                           </span>
                         )}
-                        <span style={{ fontSize: '0.72rem', color: 'var(--slate-500)' }}>
+                        <span style={{ fontSize: '0.72rem', color: 'var(--text-tertiary)', fontFamily: 'var(--font-mono)' }}>
                           • {res.min_party_size}–{res.max_party_size} pax
                         </span>
                       </div>
@@ -687,10 +700,10 @@ export default function BookingCalendarView({
                         <td
                           key={td.date}
                           style={{
-                            padding: '0.5rem',
-                            borderRight: '1px solid var(--slate-200)',
+                            padding: '0.45rem',
+                            borderRight: '1px solid var(--border-subtle)',
                             verticalAlign: 'top',
-                            background: td.isToday ? 'rgba(240, 249, 255, 0.4)' : 'transparent',
+                            background: td.isToday ? 'rgba(16, 185, 129, 0.02)' : 'transparent',
                             position: 'relative',
                             minHeight: '60px',
                           }}
@@ -702,18 +715,23 @@ export default function BookingCalendarView({
                                   key={b.id}
                                   onClick={() => setSelectedBooking(b)}
                                   style={{
-                                    padding: '5px 8px',
-                                    borderRadius: '6px',
+                                    padding: '5px 7px',
+                                    borderRadius: '5px',
                                     background:
                                       b.status === 'confirmed'
-                                        ? 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)'
-                                        : 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-                                    color: 'white',
-                                    fontSize: '0.74rem',
+                                        ? 'rgba(16, 185, 129, 0.12)'
+                                        : 'rgba(245, 158, 11, 0.12)',
+                                    border: `1px solid ${
+                                      b.status === 'confirmed'
+                                        ? 'rgba(16, 185, 129, 0.3)'
+                                        : 'rgba(245, 158, 11, 0.3)'
+                                    }`,
+                                    color: b.status === 'confirmed' ? 'var(--color-emerald)' : 'var(--color-amber)',
+                                    fontSize: '0.72rem',
                                     fontWeight: 600,
                                     cursor: 'pointer',
-                                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                                    transition: 'transform 0.15s ease',
+                                    boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+                                    transition: 'all 0.15s ease',
                                     overflow: 'hidden',
                                     textOverflow: 'ellipsis',
                                     whiteSpace: 'nowrap',
@@ -721,10 +739,10 @@ export default function BookingCalendarView({
                                   title={`Guest: ${b.customer_name} (${b.party_size} guests)\nClick to inspect details`}
                                 >
                                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <span style={{ fontWeight: 700 }}>{b.customer_name}</span>
-                                    <span style={{ fontSize: '0.68rem', opacity: 0.9 }}>👥 {b.party_size}</span>
+                                    <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{b.customer_name}</span>
+                                    <span style={{ fontSize: '0.66rem', opacity: 0.85, fontFamily: 'var(--font-mono)' }}>{b.party_size}p</span>
                                   </div>
-                                  <div style={{ fontSize: '0.68rem', opacity: 0.85, marginTop: '2px' }}>
+                                  <div style={{ fontSize: '0.66rem', opacity: 0.8, marginTop: '2px', fontFamily: 'var(--font-mono)' }}>
                                     {b.start_time?.includes('T') ? b.start_time.split('T')[1].slice(0, 5) : ''}
                                   </div>
                                 </div>
@@ -741,13 +759,12 @@ export default function BookingCalendarView({
                                 justifyContent: 'center',
                                 cursor: 'pointer',
                                 borderRadius: '4px',
-                                transition: 'background 0.15s ease',
-                                color: 'var(--slate-400)',
+                                color: 'var(--text-tertiary)',
                               }}
                               className="calendar-empty-slot"
                               title={`Empty slot: Click to book ${res.name} on ${td.date}`}
                             >
-                              <span style={{ fontSize: '0.7rem', opacity: 0.4 }}>+ Reserve</span>
+                              <span style={{ fontSize: '0.68rem', opacity: 0.5 }}>+ Reserve</span>
                             </div>
                           )}
                         </td>
@@ -770,13 +787,10 @@ export default function BookingCalendarView({
           style={{
             padding: 0,
             overflowX: 'auto',
-            border: '1px solid var(--slate-200)',
-            borderRadius: 'var(--radius-lg)',
-            boxShadow: 'var(--shadow-sm)',
           }}
         >
           {filteredResources.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--slate-500)' }}>
+            <div style={{ textAlign: 'center', padding: '3.5rem', color: 'var(--text-tertiary)' }}>
               No resources available for this view.
             </div>
           ) : (
@@ -789,15 +803,17 @@ export default function BookingCalendarView({
               }}
             >
               <thead>
-                <tr style={{ background: 'var(--slate-50)', borderBottom: '2px solid var(--slate-200)' }}>
+                <tr style={{ background: 'var(--bg-surface-elevated)', borderBottom: '1px solid var(--border-subtle)' }}>
                   <th
                     style={{
                       width: '200px',
                       padding: '0.85rem 1rem',
-                      fontSize: '0.8rem',
+                      fontSize: '0.75rem',
                       fontWeight: 700,
-                      color: 'var(--slate-700)',
-                      borderRight: '1px solid var(--slate-200)',
+                      color: 'var(--text-tertiary)',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.04em',
+                      borderRight: '1px solid var(--border-subtle)',
                     }}
                   >
                     RESOURCE
@@ -807,12 +823,13 @@ export default function BookingCalendarView({
                       key={hour}
                       style={{
                         padding: '0.65rem 0.4rem',
-                        fontSize: '0.75rem',
+                        fontSize: '0.74rem',
                         textAlign: 'center',
-                        color: 'var(--slate-700)',
-                        borderRight: '1px solid var(--slate-200)',
+                        color: 'var(--text-secondary)',
+                        borderRight: '1px solid var(--border-subtle)',
                         minWidth: '65px',
-                        fontWeight: 700,
+                        fontWeight: 600,
+                        fontFamily: 'var(--font-mono)',
                       }}
                     >
                       {hour}
@@ -825,21 +842,21 @@ export default function BookingCalendarView({
                   <tr
                     key={res.id}
                     style={{
-                      borderBottom: '1px solid var(--slate-200)',
-                      background: idx % 2 === 0 ? 'white' : 'var(--slate-50)',
+                      borderBottom: '1px solid var(--border-subtle)',
+                      background: idx % 2 === 0 ? 'transparent' : 'rgba(255, 255, 255, 0.015)',
                     }}
                   >
                     <td
                       style={{
                         padding: '0.75rem 1rem',
-                        borderRight: '1px solid var(--slate-200)',
+                        borderRight: '1px solid var(--border-subtle)',
                         verticalAlign: 'top',
                       }}
                     >
-                      <div style={{ fontWeight: 700, fontSize: '0.86rem', color: 'var(--slate-900)' }}>
+                      <div style={{ fontWeight: 600, fontSize: '0.86rem', color: 'var(--text-primary)' }}>
                         {res.name}
                       </div>
-                      <div style={{ fontSize: '0.72rem', color: 'var(--slate-500)', marginTop: '2px' }}>
+                      <div style={{ fontSize: '0.72rem', color: 'var(--text-tertiary)', marginTop: '2px' }}>
                         {res.section || 'General'} • {res.capacity} seats
                       </div>
                     </td>
@@ -852,10 +869,10 @@ export default function BookingCalendarView({
                         <td
                           key={hour}
                           style={{
-                            padding: '0.4rem',
-                            borderRight: '1px solid var(--slate-200)',
+                            padding: '0.35rem',
+                            borderRight: '1px solid var(--border-subtle)',
                             verticalAlign: 'top',
-                            minHeight: '50px',
+                            minHeight: '48px',
                           }}
                         >
                           {isOccupied ? (
@@ -866,10 +883,11 @@ export default function BookingCalendarView({
                                   onClick={() => setSelectedBooking(b)}
                                   style={{
                                     padding: '4px 6px',
-                                    borderRadius: '5px',
-                                    background: 'var(--sky-500)',
-                                    color: 'white',
-                                    fontSize: '0.7rem',
+                                    borderRadius: '4px',
+                                    background: 'rgba(16, 185, 129, 0.12)',
+                                    border: '1px solid rgba(16, 185, 129, 0.3)',
+                                    color: 'var(--color-emerald)',
+                                    fontSize: '0.68rem',
                                     fontWeight: 600,
                                     cursor: 'pointer',
                                     overflow: 'hidden',
@@ -893,7 +911,7 @@ export default function BookingCalendarView({
                                 justifyContent: 'center',
                                 cursor: 'pointer',
                                 borderRadius: '4px',
-                                color: 'var(--slate-300)',
+                                color: 'var(--text-tertiary)',
                                 fontSize: '0.65rem',
                               }}
                               className="calendar-empty-slot"
@@ -922,88 +940,90 @@ export default function BookingCalendarView({
           style={{
             padding: 0,
             overflowX: 'auto',
-            border: '1px solid var(--slate-200)',
-            borderRadius: 'var(--radius-lg)',
-            boxShadow: 'var(--shadow-sm)',
           }}
         >
           {reservations.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--slate-500)' }}>
+            <div style={{ textAlign: 'center', padding: '3.5rem', color: 'var(--text-tertiary)' }}>
               No active reservations committed to the database.
             </div>
           ) : (
-            <table
-              style={{
-                width: '100%',
-                borderCollapse: 'collapse',
-                textAlign: 'left',
-                fontSize: '0.85rem',
-              }}
-            >
+            <table className="modern-table">
               <thead>
-                <tr style={{ background: 'var(--slate-50)', borderBottom: '2px solid var(--slate-200)' }}>
-                  <th style={{ padding: '0.85rem 1rem', color: 'var(--slate-700)', fontWeight: 700 }}>GUEST</th>
-                  <th style={{ padding: '0.85rem 1rem', color: 'var(--slate-700)', fontWeight: 700 }}>PHONE</th>
-                  <th style={{ padding: '0.85rem 1rem', color: 'var(--slate-700)', fontWeight: 700 }}>RESOURCE</th>
-                  <th style={{ padding: '0.85rem 1rem', color: 'var(--slate-700)', fontWeight: 700 }}>START TIME</th>
-                  <th style={{ padding: '0.85rem 1rem', color: 'var(--slate-700)', fontWeight: 700 }}>END TIME</th>
-                  <th style={{ padding: '0.85rem 1rem', color: 'var(--slate-700)', fontWeight: 700 }}>GUESTS</th>
-                  <th style={{ padding: '0.85rem 1rem', color: 'var(--slate-700)', fontWeight: 700 }}>STATUS</th>
-                  <th style={{ padding: '0.85rem 1rem', color: 'var(--slate-700)', fontWeight: 700, textAlign: 'right' }}>ACTIONS</th>
+                <tr>
+                  <th>GUEST</th>
+                  <th>PHONE</th>
+                  <th>RESOURCE</th>
+                  <th>START TIME</th>
+                  <th>END TIME</th>
+                  <th>GUESTS</th>
+                  <th>STATUS</th>
+                  <th style={{ textAlign: 'right' }}>ACTIONS</th>
                 </tr>
               </thead>
               <tbody>
-                {reservations.map((b, idx) => (
-                  <tr
-                    key={b.id}
-                    style={{
-                      borderBottom: '1px solid var(--slate-200)',
-                      background: idx % 2 === 0 ? 'white' : 'var(--slate-50)',
-                    }}
-                  >
-                    <td style={{ padding: '0.85rem 1rem', fontWeight: 700, color: 'var(--slate-900)' }}>
-                      {b.customer_name}
+                {reservations.map((b) => (
+                  <tr key={b.id}>
+                    <td>
+                      <strong style={{ color: 'var(--text-primary)' }}>{b.customer_name}</strong>
                     </td>
-                    <td style={{ padding: '0.85rem 1rem', color: 'var(--slate-600)' }}>
-                      {b.customer_phone}
+                    <td>
+                      <code style={{ fontFamily: 'var(--font-mono)', fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+                        {b.customer_phone}
+                      </code>
                     </td>
-                    <td style={{ padding: '0.85rem 1rem', color: 'var(--slate-800)', fontWeight: 600 }}>
-                      {b.resource_name || b.resource_id || 'Auto-Assigned'}
+                    <td>
+                      <span style={{
+                        background: 'rgba(255, 255, 255, 0.04)',
+                        border: '1px solid var(--border-subtle)',
+                        padding: '2px 7px',
+                        borderRadius: '4px',
+                        fontSize: '0.75rem',
+                        color: 'var(--text-primary)',
+                      }}>
+                        {b.resource_name || b.resource_id || 'Auto-Assigned'}
+                      </span>
                     </td>
-                    <td style={{ padding: '0.85rem 1rem', color: 'var(--slate-700)' }}>
+                    <td style={{ fontFamily: 'var(--font-mono)', fontSize: '0.76rem', color: 'var(--text-secondary)' }}>
                       {b.start_time?.replace('T', ' ').slice(0, 16)}
                     </td>
-                    <td style={{ padding: '0.85rem 1rem', color: 'var(--slate-700)' }}>
+                    <td style={{ fontFamily: 'var(--font-mono)', fontSize: '0.76rem', color: 'var(--text-secondary)' }}>
                       {b.end_time?.replace('T', ' ').slice(0, 16)}
                     </td>
-                    <td style={{ padding: '0.85rem 1rem', color: 'var(--slate-700)' }}>
+                    <td style={{ fontFamily: 'var(--font-mono)', fontSize: '0.76rem', color: 'var(--text-primary)' }}>
                       {b.party_size}
                     </td>
-                    <td style={{ padding: '0.85rem 1rem' }}>
+                    <td>
                       <span
                         style={{
                           fontSize: '0.72rem',
                           padding: '2px 8px',
-                          borderRadius: '10px',
+                          borderRadius: 'var(--radius-full)',
                           fontWeight: 700,
                           background:
                             b.status === 'confirmed'
-                              ? 'var(--emerald-100)'
+                              ? 'rgba(16, 185, 129, 0.1)'
                               : b.status === 'cancelled'
-                              ? 'var(--rose-100)'
-                              : 'var(--amber-100)',
+                              ? 'rgba(244, 63, 94, 0.1)'
+                              : 'rgba(245, 158, 11, 0.1)',
                           color:
                             b.status === 'confirmed'
-                              ? 'var(--emerald-700)'
+                              ? 'var(--color-emerald)'
                               : b.status === 'cancelled'
-                              ? 'var(--rose-700)'
-                              : 'var(--amber-800)',
+                              ? 'var(--color-rose)'
+                              : 'var(--color-amber)',
+                          border: `1px solid ${
+                            b.status === 'confirmed'
+                              ? 'rgba(16, 185, 129, 0.25)'
+                              : b.status === 'cancelled'
+                              ? 'rgba(244, 63, 94, 0.25)'
+                              : 'rgba(245, 158, 11, 0.25)'
+                          }`,
                         }}
                       >
                         {b.status}
                       </span>
                     </td>
-                    <td style={{ padding: '0.85rem 1rem', textAlign: 'right' }}>
+                    <td style={{ textAlign: 'right' }}>
                       <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
                         <button
                           type="button"
@@ -1021,10 +1041,10 @@ export default function BookingCalendarView({
                             style={{
                               padding: '0.3rem 0.6rem',
                               fontSize: '0.75rem',
-                              background: 'none',
-                              border: '1px solid var(--rose-200)',
+                              background: 'rgba(244, 63, 94, 0.08)',
+                              border: '1px solid rgba(244, 63, 94, 0.25)',
                               borderRadius: 'var(--radius-sm)',
-                              color: 'var(--rose-600)',
+                              color: 'var(--color-rose)',
                               cursor: 'pointer',
                             }}
                           >
@@ -1042,7 +1062,7 @@ export default function BookingCalendarView({
       )}
 
       {/* =========================================================================
-         MODAL 1: RESERVATION DETAILS & INSPECTION MODAL
+         MODAL 1: RESERVATION DETAILS & INSPECTION MODAL (Obsidian Sheet)
          ========================================================================= */}
       {selectedBooking && (
         <div className="modal-backdrop" onClick={() => setSelectedBooking(null)}>
@@ -1056,91 +1076,99 @@ export default function BookingCalendarView({
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
-                borderBottom: '1px solid var(--slate-200)',
-                paddingBottom: '0.75rem',
-                marginBottom: '1rem',
+                borderBottom: '1px solid var(--border-subtle)',
+                padding: '1.25rem 1.4rem',
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <CheckCircle2 size={20} color="var(--emerald-500)" />
-                <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: 'var(--slate-900)' }}>
-                  Reservation Details
+                <CheckCircle2 size={18} color="var(--color-emerald)" />
+                <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                  Reservation Telemetry
                 </h3>
               </div>
               <button
                 type="button"
                 onClick={() => setSelectedBooking(null)}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--slate-400)' }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-tertiary)' }}
               >
-                <X size={18} />
+                <X size={16} />
               </button>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', fontSize: '0.88rem' }}>
+            <div style={{ padding: '1.25rem 1.4rem', display: 'flex', flexDirection: 'column', gap: '0.75rem', fontSize: '0.84rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <User size={16} color="var(--slate-400)" />
-                <span style={{ color: 'var(--slate-500)', width: '90px' }}>Guest Name:</span>
-                <strong style={{ color: 'var(--slate-900)' }}>{selectedBooking.customer_name}</strong>
+                <User size={15} color="var(--text-tertiary)" />
+                <span style={{ color: 'var(--text-tertiary)', width: '95px' }}>Guest Name:</span>
+                <strong style={{ color: 'var(--text-primary)' }}>{selectedBooking.customer_name}</strong>
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Phone size={16} color="var(--slate-400)" />
-                <span style={{ color: 'var(--slate-500)', width: '90px' }}>Contact Phone:</span>
-                <strong style={{ color: 'var(--slate-900)' }}>{selectedBooking.customer_phone}</strong>
+                <Phone size={15} color="var(--text-tertiary)" />
+                <span style={{ color: 'var(--text-tertiary)', width: '95px' }}>Contact Phone:</span>
+                <code style={{ fontFamily: 'var(--font-mono)', color: 'var(--color-mint)' }}>{selectedBooking.customer_phone}</code>
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Users size={16} color="var(--slate-400)" />
-                <span style={{ color: 'var(--slate-500)', width: '90px' }}>Party Size:</span>
-                <strong style={{ color: 'var(--slate-900)' }}>{selectedBooking.party_size} guests</strong>
+                <Users size={15} color="var(--text-tertiary)" />
+                <span style={{ color: 'var(--text-tertiary)', width: '95px' }}>Party Size:</span>
+                <strong style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-mono)' }}>{selectedBooking.party_size} guests</strong>
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <MapPin size={16} color="var(--slate-400)" />
-                <span style={{ color: 'var(--slate-500)', width: '90px' }}>Assigned To:</span>
-                <strong style={{ color: 'var(--slate-900)' }}>
+                <MapPin size={15} color="var(--text-tertiary)" />
+                <span style={{ color: 'var(--text-tertiary)', width: '95px' }}>Assigned To:</span>
+                <strong style={{ color: 'var(--text-primary)' }}>
                   {selectedBooking.resource_name || selectedBooking.resource_id || 'Standard Inventory'}
                 </strong>
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Clock size={16} color="var(--slate-400)" />
-                <span style={{ color: 'var(--slate-500)', width: '90px' }}>Start Time:</span>
-                <strong style={{ color: 'var(--slate-900)' }}>
+                <Clock size={15} color="var(--text-tertiary)" />
+                <span style={{ color: 'var(--text-tertiary)', width: '95px' }}>Start Time:</span>
+                <strong style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-mono)' }}>
                   {selectedBooking.start_time?.replace('T', ' ').slice(0, 16)}
                 </strong>
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Clock size={16} color="var(--slate-400)" />
-                <span style={{ color: 'var(--slate-500)', width: '90px' }}>End Time:</span>
-                <strong style={{ color: 'var(--slate-900)' }}>
+                <Clock size={15} color="var(--text-tertiary)" />
+                <span style={{ color: 'var(--text-tertiary)', width: '95px' }}>End Time:</span>
+                <strong style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-mono)' }}>
                   {selectedBooking.end_time?.replace('T', ' ').slice(0, 16)}
                 </strong>
               </div>
 
               {selectedBooking.special_requests && (
-                <div style={{ marginTop: '0.5rem', padding: '0.75rem', background: 'var(--slate-50)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--slate-200)' }}>
-                  <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--slate-500)', marginBottom: '2px' }}>
+                <div style={{ marginTop: '0.5rem', padding: '0.75rem', background: 'var(--bg-surface-elevated)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)' }}>
+                  <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '2px' }}>
                     SPECIAL REQUESTS / NOTES:
                   </div>
-                  <div style={{ color: 'var(--slate-800)', fontSize: '0.82rem' }}>
+                  <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>
                     {selectedBooking.special_requests}
                   </div>
                 </div>
               )}
 
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '0.5rem', paddingTop: '0.75rem', borderTop: '1px solid var(--slate-100)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '0.5rem', paddingTop: '0.75rem', borderTop: '1px solid var(--border-subtle)' }}>
                 <span
                   style={{
-                    fontSize: '0.75rem',
-                    padding: '3px 10px',
-                    borderRadius: '12px',
+                    fontSize: '0.72rem',
+                    padding: '3px 9px',
+                    borderRadius: 'var(--radius-full)',
                     fontWeight: 700,
                     background:
-                      selectedBooking.status === 'confirmed' ? 'var(--emerald-100)' : 'var(--amber-100)',
+                      selectedBooking.status === 'confirmed'
+                        ? 'rgba(16, 185, 129, 0.1)'
+                        : 'rgba(245, 158, 11, 0.1)',
                     color:
-                      selectedBooking.status === 'confirmed' ? 'var(--emerald-700)' : 'var(--amber-800)',
+                      selectedBooking.status === 'confirmed'
+                        ? 'var(--color-emerald)'
+                        : 'var(--color-amber)',
+                    border: `1px solid ${
+                      selectedBooking.status === 'confirmed'
+                        ? 'rgba(16, 185, 129, 0.25)'
+                        : 'rgba(245, 158, 11, 0.25)'
+                    }`,
                   }}
                 >
                   Status: {selectedBooking.status.toUpperCase()}
@@ -1155,17 +1183,17 @@ export default function BookingCalendarView({
                       display: 'flex',
                       alignItems: 'center',
                       gap: '5px',
-                      padding: '0.4rem 0.8rem',
-                      background: 'none',
-                      border: '1px solid var(--rose-200)',
+                      padding: '0.35rem 0.75rem',
+                      background: 'rgba(244, 63, 94, 0.08)',
+                      border: '1px solid rgba(244, 63, 94, 0.25)',
                       borderRadius: 'var(--radius-sm)',
-                      color: 'var(--rose-600)',
-                      fontSize: '0.8rem',
+                      color: 'var(--color-rose)',
+                      fontSize: '0.78rem',
                       fontWeight: 600,
                       cursor: 'pointer',
                     }}
                   >
-                    <Trash2 size={14} /> Cancel Reservation
+                    <Trash2 size={13} /> Cancel Reservation
                   </button>
                 )}
               </div>
@@ -1175,7 +1203,7 @@ export default function BookingCalendarView({
       )}
 
       {/* =========================================================================
-         MODAL 2: QUICK NEW RESERVATION MODAL
+         MODAL 2: QUICK NEW RESERVATION MODAL (Obsidian Sheet)
          ========================================================================= */}
       {isNewModalOpen && (
         <div className="modal-backdrop" onClick={() => setIsNewModalOpen(false)}>
@@ -1189,27 +1217,26 @@ export default function BookingCalendarView({
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
-                borderBottom: '1px solid var(--slate-200)',
-                paddingBottom: '0.75rem',
-                marginBottom: '1rem',
+                borderBottom: '1px solid var(--border-subtle)',
+                padding: '1.25rem 1.4rem',
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Plus size={20} color="var(--sky-600)" />
-                <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: 'var(--slate-900)' }}>
+                <Plus size={18} color="var(--color-emerald)" />
+                <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-primary)' }}>
                   New Reservation / Room Night
                 </h3>
               </div>
               <button
                 type="button"
                 onClick={() => setIsNewModalOpen(false)}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--slate-400)' }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-tertiary)' }}
               >
-                <X size={18} />
+                <X size={16} />
               </button>
             </div>
 
-            <form onSubmit={handleCreateReservation} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <form onSubmit={handleCreateReservation} style={{ padding: '1.25rem 1.4rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div className="form-group">
                   <label className="form-label">Guest Full Name *</label>

@@ -192,17 +192,17 @@ export default function GoogleAuthModal({
             <div>
               <div
                 style={{
-                  background: 'var(--sky-50)',
-                  border: '1px solid var(--sky-200)',
+                  background: 'linear-gradient(135deg, rgba(238, 242, 255, 0.8), rgba(245, 243, 255, 0.8))',
+                  border: '1px solid rgba(167, 139, 250, 0.35)',
                   padding: '1rem',
                   borderRadius: 'var(--radius-md)',
                   marginBottom: '1.25rem',
                 }}
               >
-                <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--sky-900)', marginBottom: '0.25rem' }}>
+                <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--indigo-950)', marginBottom: '0.25rem' }}>
                   No Workspace Found for {unregisteredData.email}
                 </div>
-                <div style={{ fontSize: '0.8rem', color: 'var(--sky-800)', lineHeight: 1.4 }}>
+                <div style={{ fontSize: '0.8rem', color: 'var(--indigo-800)', lineHeight: 1.4 }}>
                   Would you like to deploy a new 24/7 AI Receptionist agent linked to this Google account now?
                 </div>
               </div>
@@ -282,7 +282,7 @@ export default function GoogleAuthModal({
                       <div style={{ fontWeight: 700, fontSize: '0.88rem', color: '#202124' }}>
                         {acc.name}
                       </div>
-                      <span style={{ fontSize: '0.72rem', background: 'var(--sky-100)', color: 'var(--sky-800)', padding: '1px 6px', borderRadius: '8px', fontWeight: 600 }}>
+                      <span style={{ fontSize: '0.72rem', background: 'rgba(79, 70, 229, 0.1)', color: 'var(--indigo-800)', border: '1px solid rgba(167, 139, 250, 0.3)', padding: '1px 6px', borderRadius: '8px', fontWeight: 600 }}>
                         {acc.tag}
                       </span>
                     </div>
@@ -327,7 +327,7 @@ export default function GoogleAuthModal({
                 <button
                   type="button"
                   onClick={() => setShowCustomInput(false)}
-                  style={{ background: 'transparent', border: 'none', color: 'var(--sky-600)', fontSize: '0.78rem', cursor: 'pointer', fontWeight: 600 }}
+                  style={{ background: 'transparent', border: 'none', color: 'var(--indigo-600)', fontSize: '0.78rem', cursor: 'pointer', fontWeight: 600 }}
                 >
                   ← Back to list
                 </button>
