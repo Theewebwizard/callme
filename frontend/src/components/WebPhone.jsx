@@ -11,201 +11,110 @@ import {
   Zap,
   Volume2,
   Loader2,
+  User,
+  ShieldCheck,
+  Languages,
+  Clock,
+  Layers,
+  ArrowRight,
 } from 'lucide-react';
 import { api } from '../api';
-
-/* ─────────────────────────────────────────────────────────
-   Inline style objects — self-contained, no external CSS clash
-───────────────────────────────────────────────────────── */
-const S = {
-  page: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    padding: '2rem 1rem 3.5rem',
-    minHeight: '100%',
-  },
-  pageHeader: { textAlign: 'center', marginBottom: '1.75rem' },
-  pageTitle: { fontSize: '1.5rem', fontWeight: 700, color: '#ffffff', letterSpacing: '-0.03em', marginBottom: '0.35rem' },
-  pageSubtitle: { fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 400 },
-  errorBanner: {
-    width: '100%', maxWidth: '420px', marginBottom: '1rem',
-    padding: '0.65rem 0.85rem', borderRadius: 'var(--radius-sm)',
-    background: 'rgba(244, 63, 94, 0.1)', border: '1px solid rgba(244, 63, 94, 0.3)',
-    color: '#fb7185', fontSize: '0.8rem', fontWeight: 500,
-    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-  },
-  card: {
-    width: '100%', maxWidth: '420px', borderRadius: 'var(--radius-lg)',
-    background: 'var(--bg-card)',
-    border: '1px solid var(--border-medium)',
-    boxShadow: 'var(--shadow-lg), var(--specular-top)',
-    overflow: 'hidden', display: 'flex', flexDirection: 'column',
-  },
-  topBar: {
-    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-    padding: '16px 20px 12px', borderBottom: '1px solid rgba(255,255,255,0.08)',
-  },
-  topBarLeft: { display: 'flex', alignItems: 'center', gap: '6px' },
-  topBarLabel: { fontSize: '0.74rem', fontWeight: 700, letterSpacing: '0.04em', color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase' },
-  topBarTimer: { fontSize: '0.82rem', fontWeight: 700, color: 'rgba(255,255,255,0.95)', fontVariantNumeric: 'tabular-nums', letterSpacing: '0.05em', fontFamily: 'monospace' },
-  langSwitcher: {
-    display: 'flex', alignItems: 'center',
-    background: 'rgba(255,255,255,0.08)', borderRadius: '99px',
-    padding: '3px', gap: '2px', border: '1px solid rgba(255,255,255,0.12)',
-  },
-  avatarZone: { display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '2rem 1.5rem 1.25rem', gap: '0.85rem' },
-  bizName: { fontSize: '1.25rem', fontWeight: 800, color: 'white', textAlign: 'center', letterSpacing: '-0.015em' },
-  waveform: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', height: '36px', padding: '0 1.5rem', marginBottom: '0.25rem' },
-  transcriptArea: {
-    margin: '0 1.15rem', borderRadius: '16px',
-    background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.08)',
-    padding: '0.9rem', height: '210px', overflowY: 'auto',
-    display: 'flex', flexDirection: 'column', gap: '0.55rem',
-  },
-  transcriptEmpty: {
-    flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
-    flexDirection: 'column', gap: '0.5rem', color: 'rgba(255,255,255,0.3)',
-    fontSize: '0.84rem', textAlign: 'center', fontWeight: 500,
-  },
-  inputRow: { display: 'flex', gap: '8px', margin: '10px 1.15rem 0' },
-  textInput: {
-    flex: 1, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.14)',
-    borderRadius: '12px', color: 'white', fontSize: '0.85rem', padding: '10px 14px', outline: 'none',
-  },
-  controlsBar: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1.75rem', padding: '1.5rem 1.5rem 1rem' },
-  controlItem: { display: 'flex', flexDirection: 'column', alignItems: 'center' },
-  settingsStrip: { borderTop: '1px solid rgba(255,255,255,0.08)', padding: '0.85rem 1.35rem 1.35rem', display: 'flex', flexDirection: 'column', gap: '0.65rem' },
-  settingsRow: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' },
-  settingsLabel: { fontSize: '0.74rem', color: 'rgba(255,255,255,0.5)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' },
-  pauseChips: { display: 'flex', gap: '4px' },
-  toolBadge: {
-    display: 'inline-flex', alignItems: 'center', gap: '4px', marginTop: '4px',
-    padding: '2px 8px', borderRadius: '6px', background: 'rgba(20, 184, 166, 0.25)',
-    color: '#5eead4', fontSize: '0.7rem', fontWeight: 700, border: '1px solid rgba(20, 184, 166, 0.35)',
-  },
-  bubbleSpeaker: { fontSize: '0.68rem', fontWeight: 800, opacity: 0.7, marginBottom: '3px', letterSpacing: '0.03em', textTransform: 'uppercase' },
-};
-
-function dotColor(isListening, isSpeaking, isTurnLoading, isConnecting, callActive) {
-  if (!callActive && !isConnecting) return '#64748b';
-  if (isListening)   return '#10b981';
-  if (isSpeaking)    return '#a78bfa';
-  if (isTurnLoading) return '#6366f1';
-  if (isConnecting)  return '#f59e0b';
-  return '#4f46e5';
-}
-
-function pillStyle(type) {
-  const map = {
-    idle:       { bg: 'rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.5)' },
-    connecting: { bg: 'rgba(245,158,11,0.2)',   color: '#fbbf24' },
-    listening:  { bg: 'rgba(16,185,129,0.2)',   color: '#34d399' },
-    speaking:   { bg: 'rgba(139,92,246,0.22)',  color: '#c4b5fd' },
-    thinking:   { bg: 'rgba(99,102,241,0.22)',  color: '#818cf8' },
-    active:     { bg: 'rgba(99,102,241,0.18)',  color: '#a5b4fc' },
-    muted:      { bg: 'rgba(239,68,68,0.2)',    color: '#f87171' },
-  };
-  const s = map[type] || map.idle;
-  return {
-    display: 'inline-flex', alignItems: 'center', gap: '6px',
-    padding: '5px 14px', borderRadius: '99px',
-    background: s.bg, color: s.color,
-    fontSize: '0.78rem', fontWeight: 700, letterSpacing: '0.02em',
-    border: `1px solid ${s.color}35`,
-  };
-}
-
-function langBtnStyle(active) {
-  return {
-    padding: '4px 14px', borderRadius: '99px', fontSize: '0.74rem', fontWeight: 700,
-    border: 'none', cursor: 'pointer',
-    background: active ? 'linear-gradient(135deg, #4338ca, #6366f1)' : 'transparent',
-    color: active ? 'white' : 'rgba(255,255,255,0.55)',
-    transition: 'all 0.18s ease', letterSpacing: '0.02em',
-  };
-}
-
-function ctrlBtn(variant) {
-  const variants = {
-    call:        { w: 72, bg: 'linear-gradient(135deg,#059669,#10b981)', shadow: '0 8px 24px rgba(16,185,129,0.45)' },
-    endcall:     { w: 72, bg: 'linear-gradient(135deg,#ef4444,#dc2626)', shadow: '0 8px 24px rgba(239,68,68,0.45)' },
-    mic:         { w: 60, bg: 'linear-gradient(135deg,#3730a3,#4f46e5)', shadow: '0 6px 18px rgba(79,70,229,0.4)' },
-    'mic-on':    { w: 60, bg: 'linear-gradient(135deg,#059669,#10b981)', shadow: '0 6px 24px rgba(16,185,129,0.55)' },
-    'mic-muted': { w: 60, bg: 'rgba(255,255,255,0.09)', shadow: 'none', border: '1px solid rgba(255,255,255,0.14)' },
-    speaker:     { w: 52, bg: 'rgba(255,255,255,0.08)', shadow: 'none', border: '1px solid rgba(255,255,255,0.12)' },
-    'spk-active':{ w: 52, bg: 'rgba(139,92,246,0.22)', shadow: 'none', border: '1px solid rgba(139,92,246,0.45)' },
-  };
-  const v = variants[variant] || variants.speaker;
-  return {
-    width: `${v.w}px`, height: `${v.w}px`, borderRadius: '50%',
-    border: v.border || 'none', cursor: 'pointer',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    background: v.bg, boxShadow: v.shadow || 'none', color: 'white',
-    transition: 'all 0.2s cubic-bezier(0.16,1,0.3,1)', flexShrink: 0,
-  };
-}
-
-function pauseChipStyle(active) {
-  return {
-    padding: '3px 9px', borderRadius: '6px', fontSize: '0.7rem', fontWeight: 700,
-    border: 'none', cursor: 'pointer',
-    background: active ? 'linear-gradient(135deg, #4338ca, #6366f1)' : 'rgba(255,255,255,0.08)',
-    color: active ? 'white' : 'rgba(255,255,255,0.45)',
-    transition: 'all 0.15s',
-  };
-}
-
-function bubbleStyle(role) {
-  return {
-    maxWidth: '88%',
-    alignSelf: role === 'user' ? 'flex-end' : 'flex-start',
-    background: role === 'user'
-      ? 'linear-gradient(135deg,#3730a3,#4f46e5)'
-      : 'rgba(255,255,255,0.1)',
-    color: 'white',
-    borderRadius: role === 'user' ? '14px 14px 4px 14px' : '14px 14px 14px 4px',
-    padding: '8px 12px', fontSize: '0.84rem', lineHeight: '1.45',
-    border: role === 'user' ? '1px solid rgba(99,102,241,0.35)' : '1px solid rgba(255,255,255,0.08)',
-  };
-}
-
-/* Animated waveform */
-function Waveform({ active }) {
-  const heights = [0.5, 0.85, 1, 0.7, 0.9, 0.6, 0.8];
-  return (
-    <div style={S.waveform}>
-      {heights.map((h, i) => (
-        <div key={i} style={{
-          width: '3px',
-          height: active ? `${Math.round(h * 28)}px` : '6px',
-          borderRadius: '3px',
-          background: active ? `rgba(167,139,250,${0.5 + h * 0.5})` : 'rgba(255,255,255,0.12)',
-          transition: `height ${0.18 + i * 0.04}s ease`,
-          animation: active ? `wbAnim${i} 0.9s ease-in-out ${i * 0.1}s infinite alternate` : 'none',
-        }} />
-      ))}
-    </div>
-  );
-}
 
 /* Toggle switch */
 function Toggle({ checked, onChange }) {
   return (
-    <button type="button" role="switch" aria-checked={checked} onClick={() => onChange(!checked)}
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      onClick={() => onChange(!checked)}
       style={{
-        width: '32px', height: '18px', borderRadius: '9px', position: 'relative',
-        background: checked ? '#4f46e5' : 'rgba(255,255,255,0.15)',
-        border: 'none', cursor: 'pointer', transition: 'background 0.2s ease', flexShrink: 0,
+        width: '32px',
+        height: '18px',
+        borderRadius: '9px',
+        position: 'relative',
+        background: checked ? 'var(--mint-500)' : 'rgba(255, 255, 255, 0.15)',
+        border: 'none',
+        cursor: 'pointer',
+        transition: 'background 0.2s ease',
+        flexShrink: 0,
       }}
     >
-      <span style={{
-        position: 'absolute', top: '2px', left: checked ? '16px' : '2px',
-        width: '14px', height: '14px', borderRadius: '50%', background: 'white',
-        transition: 'left 0.2s ease', boxShadow: '0 1px 3px rgba(0,0,0,0.25)',
-        display: 'block',
-      }} />
+      <span
+        style={{
+          position: 'absolute',
+          top: '2px',
+          left: checked ? '16px' : '2px',
+          width: '14px',
+          height: '14px',
+          borderRadius: '50%',
+          background: 'white',
+          transition: 'left 0.2s ease',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.25)',
+          display: 'block',
+        }}
+      />
     </button>
+  );
+}
+
+/* Dynamic State-Driven Waveform */
+function DynamicAudioWaveform({ state }) {
+  // state: 'idle' | 'connecting' | 'listening' | 'speaking' | 'loading'
+  const isSpeaking = state === 'speaking';
+  const isListening = state === 'listening';
+  const isConnecting = state === 'connecting';
+  const isTurnLoading = state === 'loading';
+
+  const barCount = 18;
+  const bars = Array.from({ length: barCount }, (_, i) => i);
+
+  return (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: '4px',
+        height: '42px',
+        width: '100%',
+        padding: '0.5rem 0',
+      }}
+    >
+      {bars.map((i) => {
+        let height = 4;
+        let color = 'rgba(255, 255, 255, 0.12)';
+        let anim = 'none';
+
+        if (isSpeaking) {
+          height = Math.round(10 + Math.sin(i * 0.6) * 14 + 10);
+          color = 'var(--mint-400)';
+          anim = `wbAnim${i % 7} 0.7s ease-in-out ${i * 0.05}s infinite alternate`;
+        } else if (isListening) {
+          height = Math.round(8 + Math.sin(i * 0.8) * 12 + 8);
+          color = '#38bdf8';
+          anim = `wbAnim${i % 7} 0.5s ease-in-out ${i * 0.04}s infinite alternate`;
+        } else if (isConnecting || isTurnLoading) {
+          height = Math.round(6 + (i % 4) * 5);
+          color = 'var(--amber-400)';
+          anim = `wbAnim${i % 7} 0.9s ease-in-out ${i * 0.08}s infinite alternate`;
+        }
+
+        return (
+          <div
+            key={i}
+            style={{
+              width: '3px',
+              height: `${height}px`,
+              borderRadius: '3px',
+              background: color,
+              transition: 'all 0.2s ease',
+              animation: anim,
+            }}
+          />
+        );
+      })}
+    </div>
   );
 }
 
@@ -226,26 +135,30 @@ export default function WebPhone({ business }) {
   const [isTurnLoading, setIsTurnLoading] = useState(false);
 
   const [speechLang, setSpeechLang] = useState(() => {
-    try { return localStorage.getItem('callme_speech_lang') || 'hi-IN'; } catch { return 'hi-IN'; }
+    try {
+      return localStorage.getItem('callme_speech_lang') || 'hi-IN';
+    } catch {
+      return 'hi-IN';
+    }
   });
 
   // Refs (prevent stale closures)
-  const callActiveRef       = useRef(false);
-  const isStartingCallRef   = useRef(false);
-  const currentTurnIdRef    = useRef(0);
-  const cooloffTimerRef     = useRef(null);
-  const sessionIdRef        = useRef(null);
-  const isSpeakingRef       = useRef(false);
-  const isListeningRef      = useRef(false);
-  const isMicMutedRef       = useRef(false);
-  const handsFreeRef        = useRef(true);
-  const speechLangRef       = useRef(speechLang);
-  const isTurnInFlightRef   = useRef(false);
-  const silenceTimerRef     = useRef(null);
+  const callActiveRef = useRef(false);
+  const isStartingCallRef = useRef(false);
+  const currentTurnIdRef = useRef(0);
+  const cooloffTimerRef = useRef(null);
+  const sessionIdRef = useRef(null);
+  const isSpeakingRef = useRef(false);
+  const isListeningRef = useRef(false);
+  const isMicMutedRef = useRef(false);
+  const handsFreeRef = useRef(true);
+  const speechLangRef = useRef(speechLang);
+  const isTurnInFlightRef = useRef(false);
+  const silenceTimerRef = useRef(null);
   const accumulatedSpeechRef = useRef('');
-  const timerRef            = useRef(null);
-  const currentAudioRef     = useRef(null);
-  const recognitionRef      = useRef(null);
+  const timerRef = useRef(null);
+  const currentAudioRef = useRef(null);
+  const recognitionRef = useRef(null);
   const transcriptBottomRef = useRef(null);
 
   useEffect(() => { callActiveRef.current = callActive; }, [callActive]);
@@ -287,8 +200,6 @@ export default function WebPhone({ business }) {
       }, 150);
     }
   };
-
-  // ── Audio helpers ──────────────────────────────────────────────────────────
 
   const stopRecognition = () => {
     if (recognitionRef.current) {
@@ -346,8 +257,6 @@ export default function WebPhone({ business }) {
       if (!callActiveRef.current) { stopAllAudio(); return; }
       isSpeakingRef.current = false; setIsSpeaking(false); currentAudioRef.current = null;
       if (cooloffTimerRef.current) clearTimeout(cooloffTimerRef.current);
-      // BUG FIX: do NOT gate on isTurnInFlightRef here — onEnd itself resets it.
-      // Without this fix the callback never fires and the mic never re-arms.
       cooloffTimerRef.current = setTimeout(() => {
         if (callActiveRef.current && !isSpeakingRef.current && onEnd) onEnd();
       }, 350);
@@ -375,13 +284,6 @@ export default function WebPhone({ business }) {
     audio.play().catch(() => speakFallback(fallbackText));
   };
 
-  // ── Speech recognition ─────────────────────────────────────────────────────
-
-  // ── Smart VAD speech listening ────────────────────────────────────────────
-  // Uses continuous=false so the browser's own Voice Activity Detection
-  // auto-detects when the user STOPS speaking (no fixed pause timer needed).
-  // When the browser fires `onend` we check if we collected speech and send it,
-  // or restart listening if nothing was captured.
   const startSpeechListening = () => {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) { setCallStatus('Browser speech not supported — type below'); return; }
@@ -390,7 +292,6 @@ export default function WebPhone({ business }) {
 
     try {
       const rec = new SR();
-      // continuous=false → browser's built-in VAD stops recording when you pause
       rec.continuous = false;
       rec.interimResults = true;
       rec.lang = speechLangRef.current || 'hi-IN';
@@ -406,7 +307,6 @@ export default function WebPhone({ business }) {
       };
 
       rec.onresult = (event) => {
-        // Echo guard: if AI started speaking, discard
         if (isSpeakingRef.current || !callActiveRef.current || isTurnInFlightRef.current) {
           accumulatedSpeechRef.current = ''; setInterimText(''); return;
         }
@@ -417,428 +317,736 @@ export default function WebPhone({ business }) {
           else interim += item[0].transcript;
         }
         if (finalChunk) accumulatedSpeechRef.current += ' ' + finalChunk;
-        // Show live interim text in the UI
         const display = (accumulatedSpeechRef.current + ' ' + interim).trim();
         setInterimText(display);
       };
 
       rec.onerror = (e) => {
-        if (e.error === 'no-speech') {
-          // No speech detected this round — re-arm silently
-          return;
-        }
+        if (e.error === 'no-speech') return;
         if (e.error === 'not-allowed') {
           setErrorMsg('Microphone access blocked. Enable mic permissions in browser settings.');
           isListeningRef.current = false; setIsListening(false); return;
         }
-        console.warn('SpeechRecognition error:', e.error);
       };
 
       rec.onend = () => {
         isListeningRef.current = false;
         setIsListening(false);
-
-        // Call was ended or AI is speaking — do nothing
         if (!callActiveRef.current || isSpeakingRef.current || isTurnInFlightRef.current) return;
-
         const captured = accumulatedSpeechRef.current.trim();
-
         if (captured && captured.length > 1 && handsFreeRef.current && !isMicMutedRef.current) {
-          // Browser VAD detected end-of-speech and we have content → send it
           accumulatedSpeechRef.current = '';
           setInterimText('');
           executeSendTurn(captured);
-        } else if (!captured && handsFreeRef.current && !isMicMutedRef.current) {
-          // Nothing captured (silence / noise) → re-arm immediately
+        } else {
           accumulatedSpeechRef.current = '';
           setInterimText('');
-          setTimeout(() => {
-            if (callActiveRef.current && !isSpeakingRef.current && !isTurnInFlightRef.current && !isMicMutedRef.current)
-              startSpeechListening();
-          }, 80);
+          if (callActiveRef.current && !isSpeakingRef.current && !isTurnInFlightRef.current && !isMicMutedRef.current && handsFreeRef.current) {
+            setTimeout(startSpeechListening, 200);
+          }
         }
-        // If not hands-free, just stop (push-to-talk handles its own flow)
       };
 
       rec.start();
-    } catch (e) {
-      console.warn('Could not start SpeechRecognition:', e);
-      isListeningRef.current = false; setIsListening(false);
+    } catch {
+      isListeningRef.current = false;
+      setIsListening(false);
     }
   };
-
-  const handleImmediateSendSpeech = () => {
-    if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
-    const toSend = (accumulatedSpeechRef.current + ' ' + interimText).trim();
-    if (toSend && !isTurnInFlightRef.current && callActiveRef.current) {
-      accumulatedSpeechRef.current = ''; setInterimText(''); executeSendTurn(toSend);
-    }
-  };
-
-  // ── Turn ──────────────────────────────────────────────────────────────────
 
   const executeSendTurn = async (textToSend) => {
-    const sid = sessionIdRef.current;
-    if (!sid || !textToSend?.trim() || isTurnInFlightRef.current || !callActiveRef.current) return;
-    const turnId = ++currentTurnIdRef.current;
-    isTurnInFlightRef.current = true; setIsTurnLoading(true);
-    stopRecognition(); stopAllAudio();
-    if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
-    accumulatedSpeechRef.current = ''; setInterimText('');
-
-    const cleanText = textToSend.trim();
-    setTranscript(prev => [...prev, { role: 'user', speaker: 'You', text: cleanText }]);
+    if (!textToSend || !callActiveRef.current || isTurnInFlightRef.current) return;
+    isTurnInFlightRef.current = true;
+    setIsTurnLoading(true);
     setCallStatus('thinking');
+    stopRecognition();
+
+    const turnId = ++currentTurnIdRef.current;
+    setTranscript((prev) => [
+      ...prev,
+      { id: turnId, role: 'user', text: textToSend, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) },
+    ]);
 
     try {
-      const res = await api.sendWebCallTurn(sid, null, cleanText);
-      if (!callActiveRef.current || currentTurnIdRef.current !== turnId) {
-        stopAllAudio(); isTurnInFlightRef.current = false; setIsTurnLoading(false); return;
-      }
-      const aText = res.assistant_text || res.response_text || 'Thank you.';
-      const toolUsed = res.tool_used || res.tool_calls?.[0];
-      setTranscript(prev => [...prev, { role: 'assistant', speaker: business?.name || 'Receptionist', text: aText, toolUsed }]);
-      setIsTurnLoading(false);
+      const resp = await api.sendWebCallTurn(sessionIdRef.current, null, textToSend);
+      if (!callActiveRef.current) return;
 
-      if (res.should_terminate) { playAudio(res.audio_base64, res.audio_mime, aText, () => endCall()); return; }
+      const aiText = resp.text || resp.message || 'I hear you.';
+      setTranscript((prev) => [
+        ...prev,
+        {
+          id: ++currentTurnIdRef.current,
+          role: 'assistant',
+          text: aiText,
+          tool: resp.tool_executed || null,
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        },
+      ]);
 
-      playAudio(res.audio_base64, res.audio_mime, aText, () => {
-        isTurnInFlightRef.current = false; accumulatedSpeechRef.current = ''; setInterimText('');
-        if (callActiveRef.current && handsFreeRef.current && !isMicMutedRef.current) startSpeechListening();
-        else setCallStatus('active');
+      setCallStatus('speaking');
+      playAudio(resp.audio_base64, resp.audio_mime, aiText, () => {
+        isTurnInFlightRef.current = false;
+        setIsTurnLoading(false);
+        if (callActiveRef.current && handsFreeRef.current && !isMicMutedRef.current) {
+          startSpeechListening();
+        } else if (callActiveRef.current) {
+          setCallStatus('active');
+        }
       });
     } catch (err) {
-      if (!callActiveRef.current || currentTurnIdRef.current !== turnId) {
-        isTurnInFlightRef.current = false; setIsTurnLoading(false); return;
+      isTurnInFlightRef.current = false;
+      setIsTurnLoading(false);
+      setErrorMsg(err.message || 'Turn error');
+      if (callActiveRef.current && handsFreeRef.current && !isMicMutedRef.current) {
+        startSpeechListening();
       }
-      setErrorMsg(`Turn failed: ${err.message}`);
-      setCallStatus('active');
-      isTurnInFlightRef.current = false; setIsTurnLoading(false);
-      if (callActiveRef.current && handsFreeRef.current && !isMicMutedRef.current) startSpeechListening();
     }
   };
 
-  // ── Call lifecycle ─────────────────────────────────────────────────────────
-
   const startCall = async () => {
+    if (callActive || isConnecting) return;
+    setErrorMsg(null);
+    setIsConnecting(true);
+    setCallStatus('connecting');
     unlockAudioForMobile();
-    if (callActiveRef.current || isStartingCallRef.current) return;
-    if (!business) { setErrorMsg('No business selected. Register or select a business first.'); return; }
-    isStartingCallRef.current = true;
-    setIsConnecting(true); setErrorMsg(null); setCallStatus('connecting');
-    isTurnInFlightRef.current = false; accumulatedSpeechRef.current = ''; setInterimText('');
-    stopAllAudio(); stopRecognition();
 
     try {
-      const data = await api.startWebCall(business.id);
-      if (!isStartingCallRef.current) {
-        if (data?.session_id) api.hangupWebCall(data.session_id).catch(() => {}); return;
-      }
-      sessionIdRef.current = data.session_id; setSessionId(data.session_id);
-      callActiveRef.current = true; setCallActive(true); setIsConnecting(false);
-      isStartingCallRef.current = false; setDuration(0);
-      if (timerRef.current) clearInterval(timerRef.current);
-      timerRef.current = setInterval(() => setDuration(prev => prev + 1), 1000);
+      const resp = await api.startWebCall(business.id);
+      setSessionId(resp.session_id);
+      sessionIdRef.current = resp.session_id;
+      setCallActive(true);
+      callActiveRef.current = true;
+      setIsConnecting(false);
 
-      const greeting = data.greeting_text || `Namaste and welcome to ${business.name}! How can I help you?`;
-      setTranscript([{ role: 'assistant', speaker: data.business_name || business.name, text: greeting }]);
-      playAudio(data.audio_base64, data.audio_mime, greeting, () => {
-        isTurnInFlightRef.current = false;
-        if (callActiveRef.current && handsFreeRef.current && !isMicMutedRef.current) startSpeechListening();
-        else setCallStatus('active');
+      const greetingText = resp.greeting_text || business.greeting_message || 'Namaste! How can I help?';
+      setTranscript([
+        {
+          id: 0,
+          role: 'assistant',
+          text: greetingText,
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        },
+      ]);
+
+      // Timer
+      timerRef.current = setInterval(() => {
+        setDuration((prev) => prev + 1);
+      }, 1000);
+
+      setCallStatus('speaking');
+      playAudio(resp.greeting_audio_base64, resp.greeting_audio_mime, greetingText, () => {
+        if (callActiveRef.current && handsFreeRef.current && !isMicMutedRef.current) {
+          startSpeechListening();
+        } else if (callActiveRef.current) {
+          setCallStatus('active');
+        }
       });
     } catch (err) {
-      setErrorMsg(`Failed to start call: ${err.message}`);
-      setCallStatus('idle'); callActiveRef.current = false;
-      isStartingCallRef.current = false; setIsConnecting(false); setCallActive(false);
+      setIsConnecting(false);
+      setCallActive(false);
+      callActiveRef.current = false;
+      setErrorMsg(err.message || 'Call initialization failed');
+      setCallStatus('idle');
     }
   };
 
   const endCall = async () => {
-    isStartingCallRef.current = false; setIsConnecting(false);
-    currentTurnIdRef.current++;
-    callActiveRef.current = false; setCallActive(false);
-    stopAllAudio(); stopRecognition();
+    callActiveRef.current = false;
+    setCallActive(false);
+    setIsConnecting(false);
     if (timerRef.current) clearInterval(timerRef.current);
-    if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
-    if (cooloffTimerRef.current) clearTimeout(cooloffTimerRef.current);
-    isSpeakingRef.current = false; isListeningRef.current = false; isTurnInFlightRef.current = false;
-    accumulatedSpeechRef.current = ''; setInterimText('');
-    setIsSpeaking(false); setIsListening(false); setIsTurnLoading(false); setCallStatus('idle');
-    const activeId = sessionIdRef.current || sessionId;
-    sessionIdRef.current = null; setSessionId(null);
-    if (activeId) api.hangupWebCall(activeId).catch(err => console.error('Hangup:', err));
+    stopAllAudio();
+    stopRecognition();
+    setCallStatus('ended');
+
+    if (sessionIdRef.current) {
+      try {
+        await api.hangupWebCall(sessionIdRef.current);
+      } catch {}
+    }
+  };
+
+  const toggleMute = () => {
+    const next = !isMicMuted;
+    setIsMicMuted(next);
+    isMicMutedRef.current = next;
+    if (next) {
+      stopRecognition();
+      setCallStatus('muted');
+    } else if (callActive && !isSpeaking && !isTurnLoading) {
+      startSpeechListening();
+    }
   };
 
   const handleTextSubmit = (e) => {
     e.preventDefault();
-    if (!textInput.trim() || !callActiveRef.current || isTurnInFlightRef.current) return;
-    const txt = textInput.trim(); setTextInput('');
-    stopAllAudio(); stopRecognition(); executeSendTurn(txt);
+    if (!textInput.trim() || isTurnLoading) return;
+    const txt = textInput.trim();
+    setTextInput('');
+    executeSendTurn(txt);
   };
 
-  const toggleMute = () => {
-    const next = !isMicMutedRef.current; isMicMutedRef.current = next; setIsMicMuted(next);
-    if (next) stopRecognition();
-    else if (callActiveRef.current && !isSpeakingRef.current) startSpeechListening();
+  const handleImmediateSendSpeech = () => {
+    if (interimText.trim()) {
+      const txt = interimText.trim();
+      accumulatedSpeechRef.current = '';
+      setInterimText('');
+      executeSendTurn(txt);
+    }
   };
 
-  const handlePTTStart = () => {
-    if (!callActiveRef.current || isSpeakingRef.current || isTurnInFlightRef.current || handsFree) return;
-    startSpeechListening();
-  };
-  const handlePTTEnd = () => {
-    if (!callActiveRef.current || isSpeakingRef.current || isTurnInFlightRef.current || handsFree) return;
-    handleImmediateSendSpeech();
-  };
-
-  // ── Derived UI values ──────────────────────────────────────────────────────
-  const micVariant = isMicMuted ? 'mic-muted' : isListening ? 'mic-on' : 'mic';
-  const spkVariant = isSpeaking ? 'spk-active' : 'speaker';
-
-  const pillType = isMicMuted ? 'muted' : isTurnLoading ? 'thinking' : isSpeaking ? 'speaking' : isListening ? 'listening' : isConnecting ? 'connecting' : callActive ? 'active' : 'idle';
-  const pillLabel = isMicMuted ? '🔴 Mic Muted' : isTurnLoading ? '⚡ Thinking...' : isSpeaking ? '🔊 AI Speaking' : isListening ? '🟢 Listening...' : isConnecting ? 'Connecting...' : callActive ? 'Call Active' : 'Ready to Call';
-  const dot = dotColor(isListening, isSpeaking, isTurnLoading, isConnecting, callActive);
-  const pulsing = isListening || isSpeaking || isTurnLoading || isConnecting;
+  // Derive active waveform state
+  const waveformState = (() => {
+    if (isSpeaking) return 'speaking';
+    if (isListening) return 'listening';
+    if (isConnecting) return 'connecting';
+    if (isTurnLoading) return 'loading';
+    return 'idle';
+  })();
 
   return (
-    <section style={S.page}>
-      {/* Page header */}
-      <div style={S.pageHeader}>
+    <section className="main-content" aria-label="Web Voice Telephony Console" style={{ padding: '1.75rem 2rem 2.5rem' }}>
+      {/* 1. Header with Breadcrumb and Inbound DID badge */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+        <div>
+          <div
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              padding: '0.2rem 0.6rem',
+              borderRadius: 'var(--radius-full)',
+              background: 'var(--bg-surface-elevated)',
+              border: '1px solid var(--border-subtle)',
+              color: 'var(--text-secondary)',
+              fontSize: '0.72rem',
+              fontWeight: 600,
+              marginBottom: '0.35rem',
+            }}
+          >
+            <Radio size={12} className={callActive ? 'animate-pulse text-emerald-400' : ''} /> Low-Latency WebRTC Gateway
+          </div>
+          <h1 className="section-title" style={{ margin: 0 }}>
+            Inbound Voice Phone Console
+          </h1>
+          <p className="section-subtitle" style={{ margin: '3px 0 0' }}>
+            Direct bidirectional WebRTC acoustic phone link with <strong>{business?.name}</strong>'s AI receptionist.
+          </p>
+        </div>
+
+        {errorMsg && (
+          <div
+            style={{
+              background: 'rgba(244, 63, 94, 0.1)',
+              border: '1px solid rgba(244, 63, 94, 0.3)',
+              color: '#fb7185',
+              padding: '0.35rem 0.75rem',
+              borderRadius: 'var(--radius-sm)',
+              fontSize: '0.76rem',
+              fontWeight: 500,
+            }}
+          >
+            {errorMsg}
+          </div>
+        )}
+      </div>
+
+      {/* 2. Two-Column Telephony Station Layout */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'minmax(340px, 400px) minmax(0, 1fr)',
+          gap: '1.75rem',
+          alignItems: 'start',
+        }}
+      >
+        {/* Left Column: Voice Phone Controller */}
         <div
+          className="card"
           style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '0.4rem',
-            padding: '0.25rem 0.65rem',
-            borderRadius: 'var(--radius-full)',
-            background: 'var(--bg-surface-elevated)',
-            border: '1px solid var(--border-subtle)',
-            color: 'var(--text-secondary)',
-            fontSize: '0.74rem',
-            fontWeight: 600,
-            marginBottom: '0.45rem',
+            display: 'flex',
+            flexDirection: 'column',
+            padding: '1.5rem',
+            gap: '1.25rem',
+            boxShadow: 'var(--shadow-md), var(--specular-top)',
           }}
         >
-          <Phone size={12} /> Low-Latency WebRTC Gateway
-        </div>
-        <h1 style={S.pageTitle}>Inbound Voice Phone</h1>
-        <p style={S.pageSubtitle}>Natural back-and-forth voice receptionist with memory & thinking-pause tolerance for {business.name}</p>
-      </div>
+          {/* Controller Top Bar: State & Timer */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '5px',
+                padding: '3px 9px',
+                borderRadius: 'var(--radius-full)',
+                fontSize: '0.72rem',
+                fontFamily: 'var(--font-mono)',
+                fontWeight: 600,
+                background: callActive ? 'rgba(16, 185, 129, 0.12)' : 'var(--bg-surface-elevated)',
+                color: callActive ? 'var(--mint-400)' : 'var(--text-tertiary)',
+                border: '1px solid',
+                borderColor: callActive ? 'rgba(16, 185, 129, 0.3)' : 'var(--border-subtle)',
+              }}
+            >
+              <span
+                style={{
+                  width: '6px',
+                  height: '6px',
+                  borderRadius: '50%',
+                  background: callActive ? 'var(--mint-500)' : 'var(--text-tertiary)',
+                }}
+              />
+              {callActive ? 'LIVE WEBRTC CALL' : isConnecting ? 'CONNECTING...' : 'STANDBY'}
+            </span>
 
-      {/* Error banner */}
-      {errorMsg && (
-        <div style={S.errorBanner}>
-          <span>⚠️ {errorMsg}</span>
-          <button onClick={() => setErrorMsg(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', fontWeight: 800, fontSize: '1rem', lineHeight: 1 }}>✕</button>
-        </div>
-      )}
-
-      {/* Phone card */}
-      <div style={S.card}>
-
-        {/* Top bar */}
-        <div style={S.topBar}>
-          <div style={S.topBarLeft}>
-            <div style={{
-              width: '8px', height: '8px', borderRadius: '50%', background: dot, flexShrink: 0,
-              boxShadow: pulsing ? `0 0 0 3px ${dot}30` : 'none',
-              animation: pulsing ? 'wpPulse 1.5s ease-in-out infinite' : 'none',
-            }} />
-            <span style={S.topBarLabel}>{isConnecting ? 'Connecting' : callActive ? 'Live' : 'Standby'}</span>
+            <span
+              style={{
+                fontFamily: 'var(--font-mono)',
+                fontSize: '0.85rem',
+                fontWeight: 700,
+                color: callActive ? '#ffffff' : 'var(--text-tertiary)',
+              }}
+            >
+              {formatDuration(duration)}
+            </span>
           </div>
 
-          {/* Language switcher */}
-          <div style={S.langSwitcher}>
-            <button style={langBtnStyle(speechLang === 'hi-IN')} onClick={() => changeSpeechLanguage('hi-IN')}>हिंदी</button>
-            <button style={langBtnStyle(speechLang === 'en-IN')} onClick={() => changeSpeechLanguage('en-IN')}>English</button>
-          </div>
-
-          {callActive && <span style={S.topBarTimer}>{formatDuration(duration)}</span>}
-        </div>
-
-        {/* Avatar zone */}
-        <div style={S.avatarZone}>
-          <div style={{
-            width: '86px', height: '86px', borderRadius: '50%',
-            background: (callActive || isConnecting) ? 'linear-gradient(135deg,#0ea5e9 0%,#6366f1 100%)' : 'rgba(255,255,255,0.08)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: (callActive || isConnecting) ? '0 0 0 6px rgba(14,165,233,0.18),0 0 0 12px rgba(14,165,233,0.08)' : 'none',
-            transition: 'all 0.4s cubic-bezier(0.16,1,0.3,1)',
-          }}>
-            {isConnecting
-              ? <Loader2 size={38} color="white" style={{ animation: 'wpSpin 1s linear infinite' }} />
-              : <Bot size={38} color="white" style={{ opacity: 0.95 }} />
-            }
-          </div>
-          <div style={S.bizName}>{business?.name || 'AI Receptionist'}</div>
-          <div style={pillStyle(pillType)}>
-            {pulsing && <Radio size={12} style={{ flexShrink: 0, animation: 'wpPulse 1.2s ease-in-out infinite' }} />}
-            {pillLabel}
-          </div>
-        </div>
-
-        {/* Waveform */}
-        <Waveform active={isSpeaking || isListening} />
-
-        {/* Transcript */}
-        <div style={S.transcriptArea}>
-          {transcript.length === 0 ? (
-            <div style={S.transcriptEmpty}>
-              <Phone size={28} style={{ opacity: 0.3 }} />
-              <span>Tap the green call button to speak with your AI receptionist</span>
+          {/* Business Identity & Line */}
+          <div style={{ textAlign: 'center', padding: '0.5rem 0' }}>
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.02em', margin: '0 0 4px 0' }}>
+              {business?.name || 'Reception Line'}
+            </h2>
+            <div style={{ fontSize: '0.76rem', color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)' }}>
+              Inbound DID: {business?.phone_number || '+91 80 4123 5678'}
             </div>
-          ) : transcript.map((item, i) => (
-            <div key={i} style={bubbleStyle(item.role)}>
-              <div style={S.bubbleSpeaker}>{item.speaker}</div>
-              <div>{item.text}</div>
-              {item.toolUsed && (
-                <div style={S.toolBadge}><Sparkles size={10} /> {item.toolUsed}</div>
-              )}
-            </div>
-          ))}
+          </div>
 
-          {interimText && (
-            <div style={{
-              maxWidth: '88%', alignSelf: 'flex-end',
-              background: 'rgba(14,165,233,0.2)', border: '1px solid rgba(14,165,233,0.35)',
-              color: '#7dd3fc', borderRadius: '14px 14px 4px 14px',
-              padding: '8px 12px', fontSize: '0.83rem', fontStyle: 'italic',
-            }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                <span style={{ fontSize: '0.68rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em', opacity: 0.7 }}>You (speaking…)</span>
-                <button type="button" onClick={handleImmediateSendSpeech} style={{
-                  background: '#0ea5e9', color: 'white', border: 'none', borderRadius: '8px',
-                  padding: '2px 8px', fontSize: '0.68rem', fontWeight: 700, cursor: 'pointer',
-                  display: 'inline-flex', alignItems: 'center', gap: '3px',
-                }}>
-                  <Zap size={10} /> Send
-                </button>
-              </div>
-              {interimText}
-            </div>
-          )}
-          <div ref={transcriptBottomRef} />
-        </div>
+          {/* Acoustic Waveform Visualization */}
+          <div
+            style={{
+              background: 'var(--bg-app)',
+              border: '1px solid var(--border-subtle)',
+              borderRadius: 'var(--radius-md)',
+              padding: '1rem',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <DynamicAudioWaveform state={waveformState} />
+            <span
+              style={{
+                fontSize: '0.72rem',
+                color: isSpeaking ? 'var(--mint-400)' : isListening ? '#38bdf8' : 'var(--text-tertiary)',
+                fontFamily: 'var(--font-mono)',
+                marginTop: '4px',
+              }}
+            >
+              {isSpeaking
+                ? 'AI Receptionist is Speaking (24kHz HD)'
+                : isListening
+                ? 'Listening to Caller Microphone...'
+                : isTurnLoading
+                ? 'Reasoning & Querying Calendar...'
+                : callActive
+                ? 'Voice Link Connected'
+                : 'Acoustic Standby'}
+            </span>
+          </div>
 
-        {/* Text input */}
-        {callActive && (
-          <form onSubmit={handleTextSubmit} style={S.inputRow}>
-            <input
-              type="text"
-              placeholder={speechLang === 'hi-IN' ? 'हिंदी या English में टाइप करें...' : 'Type or speak...'}
-              value={textInput}
-              onChange={e => setTextInput(e.target.value)}
-              style={S.textInput}
-            />
-            <button type="submit" disabled={!textInput.trim() || isTurnInFlightRef.current}
-              style={{ ...S.sendBtn || {}, width: '42px', height: '42px', borderRadius: '12px', background: '#0ea5e9', border: 'none', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, opacity: !textInput.trim() ? 0.4 : 1, transition: 'opacity 0.15s' }}>
-              <Send size={17} />
-            </button>
-          </form>
-        )}
-
-        {/* Controls */}
-        <div style={S.controlsBar}>
-          {!callActive && !isConnecting && (
-            <div style={S.controlItem}>
-              <button style={ctrlBtn('call')} onClick={startCall} onTouchStart={unlockAudioForMobile} title="Start Call">
-                <Phone size={30} />
+          {/* Primary Action Button (Call / End Call) */}
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '0.5rem 0' }}>
+            {!callActive && !isConnecting && (
+              <button
+                type="button"
+                onClick={startCall}
+                onTouchStart={unlockAudioForMobile}
+                style={{
+                  width: '68px',
+                  height: '68px',
+                  borderRadius: '50%',
+                  background: 'linear-gradient(135deg, #059669, #10b981)',
+                  boxShadow: '0 8px 24px rgba(16, 185, 129, 0.45)',
+                  border: 'none',
+                  color: '#ffffff',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                }}
+                title="Start Live Voice Call"
+              >
+                <Phone size={28} />
               </button>
-              <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#34d399', marginTop: '6px', textAlign: 'center', letterSpacing: '0.03em' }}>Call</span>
-            </div>
-          )}
+            )}
 
-          {isConnecting && (
-            <div style={S.controlItem}>
-              <button style={ctrlBtn('endcall')} onClick={endCall} title="Cancel">
+            {isConnecting && (
+              <button
+                type="button"
+                onClick={endCall}
+                style={{
+                  width: '68px',
+                  height: '68px',
+                  borderRadius: '50%',
+                  background: 'linear-gradient(135deg, #ef4444, #dc2626)',
+                  border: 'none',
+                  color: '#ffffff',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                }}
+                title="Cancel Connection"
+              >
                 <PhoneOff size={26} />
               </button>
-              <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#f87171', marginTop: '6px', textAlign: 'center', letterSpacing: '0.03em' }}>Cancel</span>
-            </div>
-          )}
-
-          {callActive && (
-            <>
-              {/* Mic */}
-              <div style={S.controlItem}>
-                <button
-                  style={ctrlBtn(micVariant)}
-                  onClick={handsFree ? toggleMute : undefined}
-                  onMouseDown={!handsFree ? handlePTTStart : undefined}
-                  onMouseUp={!handsFree ? handlePTTEnd : undefined}
-                  onTouchStart={!handsFree ? handlePTTStart : undefined}
-                  onTouchEnd={!handsFree ? handlePTTEnd : undefined}
-                  title={handsFree ? (isMicMuted ? 'Unmute' : 'Mute') : 'Hold to Speak'}
-                >
-                  {isMicMuted ? <MicOff size={24} /> : <Mic size={24} />}
-                </button>
-                <span style={{ fontSize: '0.7rem', fontWeight: 700, color: isMicMuted ? '#f87171' : isListening ? '#34d399' : 'rgba(255,255,255,0.55)', marginTop: '6px', textAlign: 'center', letterSpacing: '0.03em' }}>
-                  {isMicMuted ? 'Muted' : isListening ? 'Listening' : 'Mic'}
-                </span>
-              </div>
-
-              {/* Speaker indicator */}
-              <div style={S.controlItem}>
-                <div style={{ ...ctrlBtn(spkVariant), cursor: 'default' }}>
-                  <Volume2 size={22} color={isSpeaking ? '#a78bfa' : 'rgba(255,255,255,0.4)'} />
-                </div>
-                <span style={{ fontSize: '0.7rem', fontWeight: 700, color: isSpeaking ? '#a78bfa' : 'rgba(255,255,255,0.3)', marginTop: '6px', textAlign: 'center', letterSpacing: '0.03em' }}>
-                  {isSpeaking ? 'Speaking' : 'Speaker'}
-                </span>
-              </div>
-
-              {/* End call */}
-              <div style={S.controlItem}>
-                <button style={ctrlBtn('endcall')} onClick={endCall} title="End Call">
-                  <PhoneOff size={26} />
-                </button>
-                <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#f87171', marginTop: '6px', textAlign: 'center', letterSpacing: '0.03em' }}>End Call</span>
-              </div>
-            </>
-          )}
-        </div>
-
-        {/* Settings strip */}
-        {callActive && (
-          <div style={S.settingsStrip}>
-            <div style={S.settingsRow}>
-              <span style={S.settingsLabel}><Mic size={12} /> Hands-Free Auto-Turn</span>
-              <Toggle checked={handsFree} onChange={(val) => {
-                setHandsFree(val); handsFreeRef.current = val;
-                if (val && callActiveRef.current && !isSpeakingRef.current) startSpeechListening();
-                else if (!val) stopRecognition();
-              }} />
-            </div>
-
-            {handsFree && (
-              <div style={{ ...S.settingsRow, justifyContent: 'center' }}>
-                <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.3)', fontWeight: 600, textAlign: 'center' }}>
-                  🧠 Smart VAD — mic auto-stops when you finish speaking
-                </span>
-              </div>
             )}
 
-            {!handsFree && (
-              <div style={{ fontSize: '0.71rem', color: 'rgba(255,255,255,0.35)', textAlign: 'center', fontWeight: 600 }}>
-                💡 Hold the mic button to speak, release to send
+            {callActive && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
+                <button
+                  type="button"
+                  onClick={toggleMute}
+                  style={{
+                    width: '52px',
+                    height: '52px',
+                    borderRadius: '50%',
+                    background: isMicMuted ? 'rgba(239, 68, 68, 0.2)' : 'var(--bg-surface-elevated)',
+                    border: '1px solid',
+                    borderColor: isMicMuted ? '#ef4444' : 'var(--border-medium)',
+                    color: isMicMuted ? '#ef4444' : '#ffffff',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                  }}
+                  title={isMicMuted ? 'Unmute Microphone' : 'Mute Microphone'}
+                >
+                  {isMicMuted ? <MicOff size={20} /> : <Mic size={20} />}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={endCall}
+                  style={{
+                    width: '64px',
+                    height: '64px',
+                    borderRadius: '50%',
+                    background: 'linear-gradient(135deg, #ef4444, #dc2626)',
+                    boxShadow: '0 8px 20px rgba(239, 68, 68, 0.45)',
+                    border: 'none',
+                    color: '#ffffff',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                  }}
+                  title="Hang Up Call"
+                >
+                  <PhoneOff size={26} />
+                </button>
               </div>
             )}
           </div>
-        )}
+
+          {/* Language & Voice Settings */}
+          <div
+            style={{
+              borderTop: '1px solid var(--border-subtle)',
+              paddingTop: '0.85rem',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0.75rem',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: '0.76rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                <Languages size={13} style={{ color: 'var(--text-tertiary)' }} />
+                <span>Call Language:</span>
+              </span>
+
+              <div style={{ display: 'flex', gap: '3px' }}>
+                {[
+                  { id: 'hi-IN', label: 'Hindi' },
+                  { id: 'en-IN', label: 'English' },
+                ].map((l) => (
+                  <button
+                    key={l.id}
+                    type="button"
+                    onClick={() => changeSpeechLanguage(l.id)}
+                    style={{
+                      background: speechLang === l.id ? 'var(--mint-500)' : 'var(--bg-surface-elevated)',
+                      color: speechLang === l.id ? '#07080a' : 'var(--text-secondary)',
+                      border: '1px solid',
+                      borderColor: speechLang === l.id ? 'var(--mint-500)' : 'var(--border-subtle)',
+                      borderRadius: 'var(--radius-sm)',
+                      padding: '2px 8px',
+                      fontSize: '0.72rem',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {l.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: '0.76rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                <Mic size={13} style={{ color: 'var(--text-tertiary)' }} />
+                <span>Hands-Free Auto-Turn:</span>
+              </span>
+
+              <Toggle
+                checked={handsFree}
+                onChange={(val) => {
+                  setHandsFree(val);
+                  handsFreeRef.current = val;
+                  if (val && callActiveRef.current && !isSpeakingRef.current) startSpeechListening();
+                  else if (!val) stopRecognition();
+                }}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Right Column: Live Turn-by-Turn Acoustic Transcript */}
+        <div
+          className="card"
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            height: 'calc(100vh - 190px)',
+            minHeight: '560px',
+            padding: 0,
+            overflow: 'hidden',
+          }}
+        >
+          {/* Header */}
+          <div
+            style={{
+              padding: '1rem 1.25rem',
+              borderBottom: '1px solid var(--border-subtle)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }}
+          >
+            <div>
+              <div style={{ fontSize: '0.86rem', fontWeight: 700, color: '#ffffff' }}>
+                Live Spoken Turn Transcript
+              </div>
+              <div style={{ fontSize: '0.72rem', color: 'var(--text-tertiary)', fontFamily: 'var(--font-mono)' }}>
+                {sessionId ? `Session: ${sessionId}` : 'Awaiting incoming call connection'}
+              </div>
+            </div>
+
+            {callActive && (
+              <span style={{ fontSize: '0.72rem', color: 'var(--mint-400)', fontFamily: 'var(--font-mono)' }}>
+                ● WEBRTC ACTIVE
+              </span>
+            )}
+          </div>
+
+          {/* Transcript Scroll Area */}
+          <div
+            style={{
+              flex: 1,
+              overflowY: 'auto',
+              padding: '1.25rem',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '1rem',
+            }}
+          >
+            {transcript.length === 0 ? (
+              <div
+                style={{
+                  flex: 1,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'var(--text-tertiary)',
+                  textAlign: 'center',
+                  padding: '2rem',
+                }}
+              >
+                <Phone size={32} style={{ marginBottom: '0.75rem', opacity: 0.4 }} />
+                <div style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                  Voice Telephony Ready
+                </div>
+                <p style={{ fontSize: '0.78rem', maxWidth: '340px', marginTop: '0.4rem', lineHeight: 1.5 }}>
+                  Click the green Call button to start a bidirectional voice session. Caller and AI turn transcriptions will appear here in real time.
+                </p>
+              </div>
+            ) : (
+              transcript.map((t) => {
+                const isAssistant = t.role === 'assistant';
+                return (
+                  <div
+                    key={t.id}
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: isAssistant ? 'flex-start' : 'flex-end',
+                      maxWidth: '85%',
+                      alignSelf: isAssistant ? 'flex-start' : 'flex-end',
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.4rem',
+                        marginBottom: '3px',
+                        fontSize: '0.7rem',
+                        color: 'var(--text-tertiary)',
+                        fontFamily: 'var(--font-mono)',
+                      }}
+                    >
+                      {isAssistant ? (
+                        <>
+                          <Bot size={11} style={{ color: 'var(--mint-400)' }} />
+                          <span style={{ color: 'var(--mint-400)', fontWeight: 600 }}>{business?.name || 'Receptionist'}</span>
+                        </>
+                      ) : (
+                        <>
+                          <span style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>Caller</span>
+                          <User size={11} style={{ color: 'var(--text-secondary)' }} />
+                        </>
+                      )}
+                      <span>• {t.time}</span>
+                    </div>
+
+                    <div
+                      style={{
+                        padding: '0.7rem 0.95rem',
+                        borderRadius: isAssistant ? '4px 14px 14px 14px' : '14px 4px 14px 14px',
+                        background: isAssistant ? 'var(--bg-surface-elevated)' : 'rgba(255, 255, 255, 0.1)',
+                        border: '1px solid',
+                        borderColor: isAssistant ? 'var(--border-subtle)' : 'var(--border-medium)',
+                        color: '#EDEDED',
+                        fontSize: '0.84rem',
+                        lineHeight: 1.5,
+                      }}
+                    >
+                      {t.text}
+                    </div>
+
+                    {t.tool && (
+                      <div
+                        style={{
+                          marginTop: '4px',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          fontSize: '0.68rem',
+                          fontFamily: 'var(--font-mono)',
+                          color: '#38bdf8',
+                          background: 'rgba(56, 189, 248, 0.1)',
+                          border: '1px solid rgba(56, 189, 248, 0.25)',
+                          padding: '1px 6px',
+                          borderRadius: '4px',
+                        }}
+                      >
+                        <Zap size={10} />
+                        <span>Executed: {t.tool}</span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })
+            )}
+
+            {/* Interim live spoken speech */}
+            {interimText && (
+              <div
+                style={{
+                  maxWidth: '85%',
+                  alignSelf: 'flex-end',
+                  background: 'rgba(56, 189, 248, 0.15)',
+                  border: '1px solid rgba(56, 189, 248, 0.35)',
+                  borderRadius: '14px 4px 14px 14px',
+                  padding: '0.7rem 0.95rem',
+                  fontSize: '0.84rem',
+                  color: '#7dd3fc',
+                  fontStyle: 'italic',
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                  <span style={{ fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', fontFamily: 'var(--font-mono)' }}>
+                    Speaking...
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleImmediateSendSpeech}
+                    style={{
+                      background: '#0ea5e9',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '4px',
+                      padding: '2px 6px',
+                      fontSize: '0.68rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Send Now
+                  </button>
+                </div>
+                {interimText}
+              </div>
+            )}
+
+            <div ref={transcriptBottomRef} />
+          </div>
+
+          {/* Text input fallback during call */}
+          {callActive && (
+            <form
+              onSubmit={handleTextSubmit}
+              style={{
+                padding: '0.75rem 1rem',
+                borderTop: '1px solid var(--border-subtle)',
+                background: 'var(--bg-card)',
+                display: 'flex',
+                gap: '0.65rem',
+              }}
+            >
+              <input
+                type="text"
+                placeholder={speechLang === 'hi-IN' ? 'हिंदी या English में टाइप करें...' : 'Type text fallback...'}
+                value={textInput}
+                onChange={(e) => setTextInput(e.target.value)}
+                className="form-input"
+                style={{ flex: 1 }}
+              />
+              <button
+                type="submit"
+                className="btn-primary"
+                disabled={!textInput.trim() || isTurnLoading}
+                style={{ padding: '0.45rem 0.85rem' }}
+              >
+                <Send size={14} />
+              </button>
+            </form>
+          )}
+        </div>
       </div>
 
-      {/* Keyframe animations */}
       <style>{`
-        @keyframes wpPulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
-        @keyframes wpSpin  { from { transform:rotate(0deg); } to { transform:rotate(360deg); } }
-        @keyframes wbAnim0 { from { height:6px; }  to { height:20px; } }
-        @keyframes wbAnim1 { from { height:8px; }  to { height:26px; } }
-        @keyframes wbAnim2 { from { height:10px; } to { height:28px; } }
-        @keyframes wbAnim3 { from { height:7px; }  to { height:22px; } }
-        @keyframes wbAnim4 { from { height:9px; }  to { height:25px; } }
-        @keyframes wbAnim5 { from { height:6px; }  to { height:19px; } }
-        @keyframes wbAnim6 { from { height:8px; }  to { height:23px; } }
+        @keyframes wbAnim0 { from { height: 6px; } to { height: 20px; } }
+        @keyframes wbAnim1 { from { height: 8px; } to { height: 26px; } }
+        @keyframes wbAnim2 { from { height: 10px; } to { height: 28px; } }
+        @keyframes wbAnim3 { from { height: 7px; } to { height: 22px; } }
+        @keyframes wbAnim4 { from { height: 9px; } to { height: 25px; } }
+        @keyframes wbAnim5 { from { height: 6px; } to { height: 19px; } }
+        @keyframes wbAnim6 { from { height: 8px; } to { height: 23px; } }
       `}</style>
     </section>
   );

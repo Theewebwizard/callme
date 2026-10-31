@@ -394,54 +394,113 @@ export default function ToolLibrary({ business }) {
     }
   };
 
-  const getCapabilityBadge = (status) => {
+  const getConfigurationBadge = (status) => {
     switch (status) {
       case 'ready':
         return (
-          <span style={{ background: 'var(--emerald-100)', color: 'var(--emerald-700)', padding: '3px 9px', borderRadius: '12px', fontSize: '0.72rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-            <CheckCircle2 size={13} /> Ready & Verified
-          </span>
-        );
-      case 'pending_provider_approval':
-        return (
-          <span style={{ background: '#fef3c7', color: '#b45309', border: '1px solid #fde68a', padding: '3px 9px', borderRadius: '12px', fontSize: '0.72rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-            <AlertCircle size={13} /> Pending Partner Approval
-          </span>
-        );
-      case 'awaiting_authorization':
-        return (
-          <span style={{ background: '#ede9fe', color: '#6d28d9', padding: '3px 9px', borderRadius: '12px', fontSize: '0.72rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-            <AlertCircle size={13} /> Awaiting Auth
+          <span
+            style={{
+              background: 'rgba(16, 185, 129, 0.1)',
+              color: 'var(--mint-400)',
+              border: '1px solid rgba(16, 185, 129, 0.25)',
+              padding: '2px 8px',
+              borderRadius: 'var(--radius-full)',
+              fontSize: '0.7rem',
+              fontWeight: 600,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '4px',
+              fontFamily: 'var(--font-mono)',
+            }}
+          >
+            <CheckCircle2 size={11} /> Configured
           </span>
         );
       case 'needs_input':
+      case 'not_configured':
+      default:
         return (
-          <span style={{ background: 'var(--amber-100)', color: 'var(--amber-800)', padding: '3px 9px', borderRadius: '12px', fontSize: '0.72rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-            <AlertCircle size={13} /> Needs Configuration
+          <span
+            style={{
+              background: 'rgba(245, 158, 11, 0.1)',
+              color: 'var(--amber-400)',
+              border: '1px solid rgba(245, 158, 11, 0.25)',
+              padding: '2px 8px',
+              borderRadius: 'var(--radius-full)',
+              fontSize: '0.7rem',
+              fontWeight: 600,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '4px',
+              fontFamily: 'var(--font-mono)',
+            }}
+          >
+            <AlertCircle size={11} /> Needs Setup
+          </span>
+        );
+    }
+  };
+
+  const getVerificationBadge = (status) => {
+    switch (status) {
+      case 'ready':
+        return (
+          <span
+            style={{
+              background: 'rgba(56, 189, 248, 0.1)',
+              color: '#38bdf8',
+              border: '1px solid rgba(56, 189, 248, 0.25)',
+              padding: '2px 8px',
+              borderRadius: 'var(--radius-full)',
+              fontSize: '0.7rem',
+              fontWeight: 600,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '4px',
+              fontFamily: 'var(--font-mono)',
+            }}
+          >
+            <ShieldCheck size={11} /> Verified Live
           </span>
         );
       case 'validating':
         return (
-          <span style={{ background: 'rgba(79, 70, 229, 0.1)', color: 'var(--indigo-700)', padding: '3px 9px', borderRadius: '12px', fontSize: '0.72rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-            <RefreshCw size={13} /> Validating
-          </span>
-        );
-      case 'degraded':
-        return (
-          <span style={{ background: '#ffedd5', color: '#c2410c', padding: '3px 9px', borderRadius: '12px', fontSize: '0.72rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-            <AlertCircle size={13} /> Degraded
-          </span>
-        );
-      case 'disconnected':
-        return (
-          <span style={{ background: 'var(--rose-100)', color: 'var(--rose-700)', padding: '3px 9px', borderRadius: '12px', fontSize: '0.72rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-            <X size={13} /> Disconnected
+          <span
+            style={{
+              background: 'rgba(255, 255, 255, 0.06)',
+              color: 'var(--text-secondary)',
+              border: '1px solid var(--border-subtle)',
+              padding: '2px 8px',
+              borderRadius: 'var(--radius-full)',
+              fontSize: '0.7rem',
+              fontWeight: 600,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '4px',
+              fontFamily: 'var(--font-mono)',
+            }}
+          >
+            <RefreshCw size={11} className="animate-spin" /> Validating
           </span>
         );
       default:
         return (
-          <span style={{ background: 'var(--slate-100)', color: 'var(--slate-600)', padding: '3px 9px', borderRadius: '12px', fontSize: '0.72rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-            ⚙️ Not Configured
+          <span
+            style={{
+              background: 'rgba(255, 255, 255, 0.04)',
+              color: 'var(--text-tertiary)',
+              border: '1px solid var(--border-subtle)',
+              padding: '2px 8px',
+              borderRadius: 'var(--radius-full)',
+              fontSize: '0.7rem',
+              fontWeight: 500,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '4px',
+              fontFamily: 'var(--font-mono)',
+            }}
+          >
+            <Clock size={11} /> Unverified
           </span>
         );
     }
@@ -456,43 +515,6 @@ export default function ToolLibrary({ business }) {
       return 'unconfigured';
     }
     return isEnabled ? 'enabled' : 'disabled';
-  };
-
-  const getDiscoveryBadge = (status) => {
-    switch (status) {
-      case 'enabled':
-        return (
-          <span style={{ background: '#dcfce7', color: '#15803d', border: '1px solid #bbf7d0', padding: '2px 8px', borderRadius: '10px', fontSize: '0.72rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
-            🟢 Enabled
-          </span>
-        );
-      case 'disabled':
-        return (
-          <span style={{ background: '#f1f5f9', color: '#475569', border: '1px solid #e2e8f0', padding: '2px 8px', borderRadius: '10px', fontSize: '0.72rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
-            ⚪ Disabled
-          </span>
-        );
-      case 'unconfigured':
-        return (
-          <span style={{ background: '#fef3c7', color: '#b45309', border: '1px solid #fde68a', padding: '2px 8px', borderRadius: '10px', fontSize: '0.72rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
-            🟡 Unconfigured
-          </span>
-        );
-      case 'unavailable':
-        return (
-          <span style={{ background: '#fee2e2', color: '#b91c1c', border: '1px solid #fecaca', padding: '2px 8px', borderRadius: '10px', fontSize: '0.72rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
-            🔴 Unavailable
-          </span>
-        );
-      case 'not_implemented':
-        return (
-          <span style={{ background: '#f3e8ff', color: '#7e22ce', border: '1px solid #e9d5ff', padding: '2px 8px', borderRadius: '10px', fontSize: '0.72rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
-            🟣 Not Yet Implemented
-          </span>
-        );
-      default:
-        return null;
-    }
   };
 
   const currentOption = wizardSchema?.supported_options?.find((o) => o.option_id === selectedOptionId);
@@ -783,98 +805,117 @@ export default function ToolLibrary({ business }) {
               </button>
             </div>
           ) : (
-            <div className="tool-grid">
-              {filteredTools.map((t) => {
-                const IconComponent = TOOL_ICONS[t.id] || Wrench;
-                const isEnabled = !!enabledMap[t.id];
-                const cap = capabilities[t.id];
-                const capStatus = cap?.status || (isEnabled ? 'ready' : 'not_configured');
-                const discStatus = getDiscoveryStatus(t);
-                const authSource = cap?.authoritative_source || 'Platform Default';
-                const selectedOptionName = cap?.selected_option_name || 'Built-in Architecture';
+            <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+              <div className="table-wrapper" style={{ border: 'none' }}>
+                <table className="modern-table">
+                  <thead>
+                    <tr>
+                      <th style={{ width: '42%' }}>Capability & Purpose</th>
+                      <th style={{ width: '16%' }}>Telephony Voice Link</th>
+                      <th style={{ width: '14%' }}>Configuration State</th>
+                      <th style={{ width: '14%' }}>Verification Status</th>
+                      <th style={{ width: '14%', textAlign: 'right' }}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredTools.map((t) => {
+                      const IconComponent = TOOL_ICONS[t.id] || Wrench;
+                      const isEnabled = !!enabledMap[t.id];
+                      const cap = capabilities[t.id];
+                      const capStatus = cap?.status || (isEnabled ? 'ready' : 'not_configured');
+                      const authSource = cap?.authoritative_source || 'Platform Default Engine';
 
-                return (
-                  <div key={t.id} className={`tool-card ${isEnabled ? 'enabled' : ''}`} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                    <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start', width: '100%' }}>
-                      <div
-                        style={{
-                          width: '38px',
-                          height: '38px',
-                          borderRadius: 'var(--radius-sm)',
-                          background: isEnabled ? '#ffffff' : 'var(--bg-surface-elevated)',
-                          color: isEnabled ? '#07080a' : 'var(--text-secondary)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          flexShrink: 0,
-                          border: '1px solid var(--border-medium)',
-                        }}
-                      >
-                        <IconComponent size={18} />
-                      </div>
+                      return (
+                        <tr key={t.id}>
+                          <td>
+                            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
+                              <div
+                                style={{
+                                  width: '32px',
+                                  height: '32px',
+                                  borderRadius: 'var(--radius-sm)',
+                                  background: isEnabled ? '#ffffff' : 'var(--bg-surface-elevated)',
+                                  color: isEnabled ? '#07080a' : 'var(--text-secondary)',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  flexShrink: 0,
+                                  border: '1px solid var(--border-medium)',
+                                  marginTop: '2px',
+                                }}
+                              >
+                                <IconComponent size={15} />
+                              </div>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                  <span style={{ fontWeight: 600, fontSize: '0.86rem', color: '#ffffff' }}>
+                                    {t.name}
+                                  </span>
+                                  <span style={{ fontSize: '0.68rem', fontFamily: 'var(--font-mono)', background: 'var(--bg-surface-elevated)', border: '1px solid var(--border-subtle)', color: 'var(--text-tertiary)', padding: '1px 5px', borderRadius: '4px' }}>
+                                    {authSource}
+                                  </span>
+                                </div>
+                                <div style={{ fontSize: '0.76rem', color: 'var(--text-secondary)', lineHeight: 1.4, maxWidth: '420px' }}>
+                                  {t.description}
+                                </div>
+                              </div>
+                            </div>
+                          </td>
 
-                      <div style={{ flex: 1 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px', flexWrap: 'wrap' }}>
-                          <span style={{ fontWeight: 600, fontSize: '0.92rem', color: '#ffffff' }}>
-                            {t.name}
-                          </span>
-                          <label className="switch">
-                            <input
-                              type="checkbox"
-                              checked={isEnabled}
-                              disabled={t.is_implemented === false}
-                              onChange={() => handleToggle(t.id)}
-                            />
-                            <span className="slider" />
-                          </label>
-                        </div>
+                          <td>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                              <label className="switch">
+                                <input
+                                  type="checkbox"
+                                  checked={isEnabled}
+                                  disabled={t.is_implemented === false}
+                                  onChange={() => handleToggle(t.id)}
+                                />
+                                <span className="slider" />
+                              </label>
+                              <span style={{ fontSize: '0.74rem', fontFamily: 'var(--font-mono)', color: isEnabled ? 'var(--mint-400)' : 'var(--text-tertiary)' }}>
+                                {isEnabled ? 'Active' : 'Disabled'}
+                              </span>
+                            </div>
+                          </td>
 
-                        <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginTop: '4px', flexWrap: 'wrap' }}>
-                          {getDiscoveryBadge(discStatus)}
-                          {getCapabilityBadge(capStatus)}
-                          <span style={{ fontSize: '0.7rem', background: 'var(--bg-surface-elevated)', border: '1px solid var(--border-subtle)', color: 'var(--text-tertiary)', padding: '2px 7px', borderRadius: '4px', fontWeight: 500 }}>
-                            {selectedOptionName}
-                          </span>
-                        </div>
+                          <td>
+                            {getConfigurationBadge(capStatus)}
+                          </td>
 
-                        <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '8px', lineHeight: 1.45 }}>
-                          {t.description}
-                        </div>
+                          <td>
+                            {getVerificationBadge(capStatus)}
+                          </td>
 
-                        <div style={{ marginTop: '10px', fontSize: '0.74rem', color: 'var(--text-tertiary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          <Server size={12} style={{ color: 'var(--text-secondary)' }} /> Source of Truth: <strong style={{ color: 'var(--text-primary)' }}>{authSource}</strong>
-                        </div>
-
-                        {cap?.missing_requirements && cap.missing_requirements.length > 0 && (
-                          <div style={{ marginTop: '8px', padding: '6px 10px', background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.3)', borderRadius: 'var(--radius-sm)', fontSize: '0.74rem', color: '#fbbf24' }}>
-                            {cap.missing_requirements[0]}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    <div style={{ display: 'flex', gap: '0.5rem', borderTop: '1px solid var(--slate-100)', paddingTop: '0.75rem', marginTop: 'auto' }}>
-                      <button
-                        type="button"
-                        className="btn-secondary"
-                        onClick={() => openWizard(t)}
-                        style={{ flex: 1, padding: '0.4rem', fontSize: '0.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}
-                      >
-                        <Sliders size={14} color="var(--indigo-600)" /> Configure Setup
-                      </button>
-                      <button
-                        type="button"
-                        className="btn-secondary"
-                        onClick={() => handleTestConnection(t.id)}
-                        title="Test live connectivity and verify permissions"
-                        style={{ padding: '0.4rem 0.6rem', fontSize: '0.8rem' }}
-                      >
-                        <ShieldCheck size={14} color="var(--teal-600)" /> Test
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
+                          <td style={{ textAlign: 'right' }}>
+                            <div style={{ display: 'inline-flex', gap: '0.4rem', justifyContent: 'flex-end' }}>
+                              <button
+                                type="button"
+                                className="btn-secondary"
+                                onClick={() => openWizard(t)}
+                                style={{ padding: '0.25rem 0.6rem', fontSize: '0.74rem' }}
+                                title="Open guided configuration wizard"
+                              >
+                                <Sliders size={12} />
+                                <span>Configure</span>
+                              </button>
+                              <button
+                                type="button"
+                                className="btn-secondary"
+                                onClick={() => handleTestConnection(t.id)}
+                                style={{ padding: '0.25rem 0.5rem', fontSize: '0.74rem' }}
+                                title="Test live connectivity and verify permissions"
+                              >
+                                <ShieldCheck size={12} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
         </div>

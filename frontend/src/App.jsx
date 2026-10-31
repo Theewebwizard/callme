@@ -154,10 +154,10 @@ export default function App() {
     );
   }
 
-  // View 3: Strictly Isolated Business Person Workspace
+  // View 3: Strictly Isolated Business Person Workspace (Linear / Raycast Architecture)
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg-app)' }}>
-      {/* Isolated Taskbar */}
+    <div className="workspace-layout">
+      {/* Sidebar Command Navigation */}
       <Taskbar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
@@ -166,45 +166,97 @@ export default function App() {
         health={health}
       />
 
-      {/* Main Business Section Content */}
-      <main style={{ flex: 1, width: '100%', maxWidth: '100vw', boxSizing: 'border-box', overflowX: 'hidden' }}>
-        {activeTab === 'overview' && (
-          <Dashboard
-            business={activeBusiness}
-            calls={recentCalls}
-            onNavigate={(tab) => setActiveTab(tab)}
-          />
-        )}
+      {/* Main Business Viewport */}
+      <div className="workspace-main">
+        {/* Top Operational Command Bar */}
+        <header className="workspace-topbar">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+            <span style={{ fontSize: '0.78rem', color: 'var(--text-tertiary)', fontFamily: 'var(--font-mono)' }}>
+              {activeBusiness.name}
+            </span>
+            <span style={{ color: 'var(--border-strong)', fontSize: '0.75rem' }}>/</span>
+            <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#ffffff' }}>
+              {activeTab === 'overview' && 'Cockpit'}
+              {activeTab === 'setup' && 'Voice Persona & Knowledge'}
+              {activeTab === 'playground' && 'AI Dialogue Simulator'}
+              {activeTab === 'webphone' && 'Inbound Web Phone'}
+              {activeTab === 'calls' && 'Audit Trail & Telemetry'}
+              {activeTab === 'tools' && 'Capabilities & Inventory'}
+            </span>
+          </div>
 
-        {activeTab === 'setup' && (
-          <BusinessSetup
-            business={activeBusiness}
-            onBusinessSaved={(updated) => {
-              setActiveBusiness(updated);
-            }}
-          />
-        )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            {/* Live Operational Indicator */}
+            <div
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '5px',
+                padding: '2px 8px',
+                borderRadius: 'var(--radius-full)',
+                background: 'rgba(16, 185, 129, 0.08)',
+                border: '1px solid rgba(16, 185, 129, 0.25)',
+                fontSize: '0.7rem',
+                color: 'var(--mint-400)',
+                fontFamily: 'var(--font-mono)',
+              }}
+            >
+              <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: 'var(--mint-400)' }} />
+              <span>LIVE LINE • RTT 280ms</span>
+            </div>
 
-        {activeTab === 'playground' && (
-          <Playground business={activeBusiness} />
-        )}
+            {/* Quick Inbound Test Call Action */}
+            <button
+              type="button"
+              className="btn-primary"
+              style={{ padding: '0.3rem 0.75rem', fontSize: '0.76rem' }}
+              onClick={() => setActiveTab('webphone')}
+            >
+              <span>Test Inbound Call</span>
+            </button>
+          </div>
+        </header>
 
-        {activeTab === 'webphone' && (
-          <WebPhone business={activeBusiness} />
-        )}
+        {/* Viewport Content */}
+        <main className="workspace-content">
+          {activeTab === 'overview' && (
+            <Dashboard
+              business={activeBusiness}
+              calls={recentCalls}
+              onNavigate={(tab) => setActiveTab(tab)}
+            />
+          )}
 
-        {activeTab === 'calls' && (
-          <CallHistory
-            business={activeBusiness}
-            initialCalls={recentCalls}
-            onCallsUpdated={setRecentCalls}
-          />
-        )}
+          {activeTab === 'setup' && (
+            <BusinessSetup
+              business={activeBusiness}
+              onBusinessSaved={(updated) => {
+                setActiveBusiness(updated);
+              }}
+            />
+          )}
 
-        {activeTab === 'tools' && (
-          <ToolLibrary business={activeBusiness} />
-        )}
-      </main>
+          {activeTab === 'playground' && (
+            <Playground business={activeBusiness} />
+          )}
+
+          {activeTab === 'webphone' && (
+            <WebPhone business={activeBusiness} />
+          )}
+
+          {activeTab === 'calls' && (
+            <CallHistory
+              business={activeBusiness}
+              initialCalls={recentCalls}
+              onCallsUpdated={setRecentCalls}
+            />
+          )}
+
+          {activeTab === 'tools' && (
+            <ToolLibrary business={activeBusiness} />
+          )}
+        </main>
+      </div>
     </div>
   );
 }

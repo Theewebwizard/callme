@@ -34,6 +34,10 @@ import {
 import { api } from '../api';
 import GoogleAuthModal, { GoogleIcon } from './GoogleAuthModal';
 import InstallAppPrompt from './InstallAppPrompt';
+import CinematicHeroBackground from './CinematicHeroBackground';
+import AnimatedReceptionistDemo from './AnimatedReceptionistDemo';
+import ScrollStorytellingSection from './ScrollStorytellingSection';
+import useScrollReveal from './useScrollReveal';
 
 const INDUSTRY_PREVIEWS = [
   {
@@ -116,6 +120,9 @@ export default function LandingPage({ onEnterWorkspace, onEnterAdmin }) {
   // Active industry tab for hero simulation
   const [activeIndustryId, setActiveIndustryId] = useState('Restaurant');
   const activePreview = INDUSTRY_PREVIEWS.find((p) => p.id === activeIndustryId) || INDUSTRY_PREVIEWS[0];
+
+  // Initialize IntersectionObserver scroll reveals
+  useScrollReveal('.reveal-on-scroll');
 
   // Google OAuth modal
   const [googleModalOpen, setGoogleModalOpen] = useState(false);
@@ -261,8 +268,8 @@ export default function LandingPage({ onEnterWorkspace, onEnterAdmin }) {
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg-app)', color: 'var(--text-primary)', display: 'flex', flexDirection: 'column' }}>
-      {/* 1. Sticky Navigation Bar */}
-      <header className="landing-nav" role="banner">
+      {/* 1. Sticky Navigation Bar with Entrance Animation */}
+      <header className="landing-nav hero-enter-nav" role="banner">
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
           <div className="brand-icon" title="CallMe AI Voice Platform">
             <PhoneCall size={16} strokeWidth={2.5} />
@@ -288,6 +295,7 @@ export default function LandingPage({ onEnterWorkspace, onEnterAdmin }) {
         <nav className="landing-nav-links" aria-label="Main Navigation">
           <a href="#overview">Product</a>
           <a href="#industries">Industries</a>
+          <a href="#workflow">Workflow</a>
           <a href="#capabilities">Capabilities</a>
           <a href="#auth-section">Access Portal</a>
         </nav>
@@ -314,218 +322,69 @@ export default function LandingPage({ onEnterWorkspace, onEnterAdmin }) {
         </div>
       </header>
 
-      {/* 2. Hero Section */}
-      <section className="landing-hero" id="overview">
-        {/* Subtle Status Pill */}
-        <div className="landing-badge">
-          <span className="pulse-dot" />
-          <span>AUTONOMOUS INBOUND VOICE TELEPHONY • ZERO HUMAN INTERVENTION</span>
-        </div>
+      {/* 2. Cinematic Hero Section with Animated Canvas Background & Entrance Orchestration */}
+      <section className="landing-hero" id="overview" style={{ position: 'relative', overflow: 'hidden' }}>
+        {/* Cinematic Ambient Motion & Audio Mesh Background */}
+        <CinematicHeroBackground />
 
-        {/* Product-First Headline */}
-        <h1 className="landing-title">
-          Your front desk, handled.<br />
-          <span>An AI receptionist that actually sounds human.</span>
-        </h1>
-
-        <p className="landing-subtitle">
-          Picks up on the first ring. Answers caller questions using your verified business knowledge base, checks live room or table availability, confirms reservations, and guards your business 24/7.
-        </p>
-
-        {/* Action CTAs */}
-        <div className="landing-cta-group">
-          <button
-            type="button"
-            className="landing-btn-primary"
-            onClick={() => scrollToAuth('business', 'register')}
-          >
-            <Sparkles size={16} />
-            <span>Provision AI Receptionist</span>
-          </button>
-
-          <button
-            type="button"
-            className="landing-btn-secondary"
-            onClick={() => scrollToAuth('business', 'login')}
-          >
-            <KeyRound size={15} />
-            <span>Sign In to Console</span>
-          </button>
-        </div>
-
-        {/* 3. Interactive Product Hero Mockup (Raycast Style) */}
-        <div className="call-simulation-container" id="industries">
-          {/* Header Bar */}
-          <div className="call-simulation-header">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-              <span
-                style={{
-                  width: '7px',
-                  height: '7px',
-                  borderRadius: '50%',
-                  background: 'var(--mint-500)',
-                  boxShadow: '0 0 8px rgba(16, 185, 129, 0.7)',
-                }}
-              />
-              <span style={{ fontSize: '0.78rem', fontWeight: 600, color: '#ffffff', fontFamily: 'var(--font-mono)' }}>
-                {activePreview.businessName} • {activePreview.phone}
-              </span>
-            </div>
-
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <span
-                style={{
-                  fontSize: '0.72rem',
-                  fontFamily: 'var(--font-mono)',
-                  color: 'var(--mint-400)',
-                  background: 'rgba(16, 185, 129, 0.1)',
-                  border: '1px solid rgba(16, 185, 129, 0.25)',
-                  padding: '2px 7px',
-                  borderRadius: '4px',
-                }}
-              >
-                RTT: 280ms
-              </span>
-              <span
-                style={{
-                  fontSize: '0.72rem',
-                  color: 'var(--text-tertiary)',
-                  fontFamily: 'var(--font-mono)',
-                }}
-              >
-                LIVE WEBRTC
-              </span>
-            </div>
+        {/* Hero Content Wrapper */}
+        <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
+          {/* Subtle Status Pill */}
+          <div className="landing-badge hero-enter-badge">
+            <span className="pulse-dot" />
+            <span>AUTONOMOUS INBOUND VOICE TELEPHONY • ZERO HUMAN INTERVENTION</span>
           </div>
 
-          {/* Industry Switcher Segmented Bar */}
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.4rem',
-              padding: '0.75rem 1.25rem',
-              borderBottom: '1px solid var(--border-subtle)',
-              background: 'var(--bg-card)',
-              overflowX: 'auto',
-            }}
-          >
-            <span style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-tertiary)', marginRight: '0.25rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-              Industry Mode:
-            </span>
-            {INDUSTRY_PREVIEWS.map((p) => (
-              <button
-                key={p.id}
-                type="button"
-                onClick={() => setActiveIndustryId(p.id)}
-                style={{
-                  padding: '0.25rem 0.65rem',
-                  borderRadius: 'var(--radius-sm)',
-                  border: '1px solid',
-                  borderColor: activeIndustryId === p.id ? 'var(--border-strong)' : 'var(--border-subtle)',
-                  background: activeIndustryId === p.id ? 'var(--bg-surface-elevated)' : 'transparent',
-                  color: activeIndustryId === p.id ? '#ffffff' : 'var(--text-secondary)',
-                  fontSize: '0.76rem',
-                  fontWeight: 500,
-                  cursor: 'pointer',
-                  transition: 'all var(--transition-fast)',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {p.title}
-              </button>
-            ))}
-          </div>
+          {/* Product-First Headline */}
+          <h1 className="landing-title hero-enter-title">
+            Your front desk, handled.<br />
+            <span>An AI receptionist that actually sounds human.</span>
+          </h1>
 
-          {/* Body: Live Streaming Dialogue & Tool Traces */}
-          <div className="call-simulation-body">
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-              {activePreview.dialogue.map((turn, idx) => {
-                if (turn.speaker === 'tool') {
-                  return (
-                    <div
-                      key={idx}
-                      style={{
-                        alignSelf: 'center',
-                        background: 'var(--bg-surface-elevated)',
-                        border: '1px solid var(--border-medium)',
-                        padding: '0.45rem 0.85rem',
-                        borderRadius: 'var(--radius-full)',
-                        fontSize: '0.74rem',
-                        fontFamily: 'var(--font-mono)',
-                        color: 'var(--mint-400)',
-                        boxShadow: 'var(--specular-top)',
-                      }}
-                    >
-                      {turn.text}
-                    </div>
-                  );
-                }
+          <p className="landing-subtitle hero-enter-subtitle">
+            Picks up on the first ring. Answers caller questions using your verified business knowledge base, checks live room or table availability, confirms reservations, and guards your business 24/7.
+          </p>
 
-                const isCaller = turn.speaker === 'caller';
-                return (
-                  <div
-                    key={idx}
-                    style={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: isCaller ? 'flex-start' : 'flex-end',
-                      maxWidth: '85%',
-                      alignSelf: isCaller ? 'flex-start' : 'flex-end',
-                    }}
-                  >
-                    <div style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', marginBottom: '3px' }}>
-                      {isCaller ? 'Incoming Caller' : `${activePreview.businessName} Receptionist`}
-                    </div>
-                    <div
-                      style={{
-                        background: isCaller ? 'var(--bg-surface-elevated)' : '#ffffff',
-                        color: isCaller ? 'var(--text-primary)' : '#07080a',
-                        border: isCaller ? '1px solid var(--border-subtle)' : 'none',
-                        padding: '0.65rem 0.95rem',
-                        borderRadius: 'var(--radius-sm)',
-                        fontSize: '0.84rem',
-                        lineHeight: 1.5,
-                        fontWeight: isCaller ? 400 : 500,
-                      }}
-                    >
-                      {turn.text}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Confirmed Resolution Card */}
-            <div
-              style={{
-                marginTop: '0.5rem',
-                background: 'rgba(16, 185, 129, 0.08)',
-                border: '1px solid rgba(16, 185, 129, 0.25)',
-                padding: '0.75rem 1rem',
-                borderRadius: 'var(--radius-sm)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-              }}
+          {/* Action CTAs */}
+          <div className="landing-cta-group hero-enter-cta">
+            <button
+              type="button"
+              className="landing-btn-primary"
+              onClick={() => scrollToAuth('business', 'register')}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <CheckCircle2 size={16} style={{ color: 'var(--mint-400)' }} />
-                <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#ffffff' }}>
-                  Session Outcome: {activePreview.outcome}
-                </span>
-              </div>
-              <span style={{ fontSize: '0.72rem', color: 'var(--mint-400)', fontFamily: 'var(--font-mono)' }}>
-                DISPATCHED 0.4s
-              </span>
-            </div>
+              <Sparkles size={16} />
+              <span>Provision AI Receptionist</span>
+            </button>
+
+            <button
+              type="button"
+              className="landing-btn-secondary"
+              onClick={() => scrollToAuth('business', 'login')}
+            >
+              <KeyRound size={15} />
+              <span>Sign In to Console</span>
+            </button>
+          </div>
+
+          {/* 3. Interactive Product Hero Mockup with Real-Time Waveform & 6 Demonstration Stages */}
+          <div className="hero-enter-console" style={{ width: '100%', maxWidth: '820px' }}>
+            <AnimatedReceptionistDemo
+              activePreview={activePreview}
+              activeIndustryId={activeIndustryId}
+              onSelectIndustry={(id) => setActiveIndustryId(id)}
+              industries={INDUSTRY_PREVIEWS}
+            />
           </div>
         </div>
       </section>
 
-      {/* 4. Product Capabilities Matrix */}
+      {/* 3. Scroll-Triggered Storytelling Section (5-Stage Interactive Telephony Lifecycle) */}
+      <ScrollStorytellingSection />
+
+      {/* 4. Product Capabilities Matrix with Scroll Reveal & Stagger */}
       <section
         id="capabilities"
+        className="reveal-on-scroll"
         style={{
           maxWidth: '1100px',
           margin: '0 auto',
@@ -543,7 +402,7 @@ export default function LandingPage({ onEnterWorkspace, onEnterAdmin }) {
           </p>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.25rem' }}>
+        <div className="reveal-stagger" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.25rem' }}>
           <div className="card">
             <div className="stat-icon" style={{ marginBottom: '1rem' }}>
               <Radio size={18} />
@@ -586,9 +445,10 @@ export default function LandingPage({ onEnterWorkspace, onEnterAdmin }) {
         </div>
       </section>
 
-      {/* 5. Clean Access Portal / Auth Card */}
+      {/* 5. Clean Access Portal / Auth Card with Scroll Reveal */}
       <section
         id="auth-section"
+        className="reveal-on-scroll"
         style={{
           maxWidth: '520px',
           margin: '0 auto 6rem',
