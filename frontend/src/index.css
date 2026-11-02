@@ -80,61 +80,65 @@
   --specular-top: inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
-/* ---------- LIGHT THEME (Exact Lovable Inspiration & Screenshot match) ---------- */
+/* ---------- LIGHT THEME (White + Light Blue Signature Palette) ---------- */
 html.light {
   color-scheme: light;
 
-  /* Canvas & Surfaces (Luminous airy canvas) */
-  --bg-app: oklch(0.97 0.015 235);
-  --bg-canvas: oklch(0.97 0.015 235);
+  /* Canvas & Base (Crisp luminous sky-white canvas) */
+  --bg-app: #f4f9fd;
+  --bg-canvas: #f4f9fd;
+
+  /* Pure White Cards & Surfaces */
   --bg-card: #ffffff;
   --bg-surface: #ffffff;
-  --bg-surface-elevated: oklch(0.955 0.028 238);
-  --bg-surface-hover: oklch(0.935 0.035 237);
-  --bg-surface-active: oklch(0.91 0.04 237);
-  --bg-subtle: oklch(0 0 0 / 3%);
-  --bg-overlay: oklch(0.97 0.015 235 / 85%);
 
-  /* Borders & Dividers (Soft cool slate-blue hairline borders) */
-  --border-subtle: oklch(0.55 0.08 240 / 18%);
-  --border-medium: oklch(0.55 0.08 240 / 30%);
-  --border-strong: oklch(0.55 0.08 240 / 46%);
-  --border-active: oklch(0.54 0.14 243 / 60%);
+  /* Pastel Light Blue Elevated Surfaces (Tabs, Banners, Pills) */
+  --bg-surface-elevated: #e8f3fc;
+  --bg-surface-hover: #ddedfa;
+  --bg-surface-active: #d0e6f7;
+  --bg-subtle: rgba(2, 132, 199, 0.05);
+  --bg-overlay: rgba(244, 249, 253, 0.88);
 
-  /* Typography Colors (High-contrast, elegant readability) */
-  --text-primary: oklch(0.22 0.04 245);
-  --text-secondary: oklch(0.48 0.055 244);
-  --text-tertiary: oklch(0.60 0.04 244);
-  --text-muted: oklch(0.48 0.055 244);
+  /* Delicate Light Blue Borders */
+  --border-subtle: #e1edf8;
+  --border-medium: #cbe0f4;
+  --border-strong: #aed1f0;
+  --border-active: #0284c7;
+
+  /* Typography Colors (High-contrast slate for readability on white & light blue) */
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-tertiary: #64748b;
+  --text-muted: #64748b;
   --text-inverse: #ffffff;
 
-  /* Primary Accent & Glow (Electric Sapphire Blue from screenshot) */
-  --color-primary: oklch(0.54 0.14 243);
-  --color-primary-glow: oklch(0.6 0.14 236);
-  --color-emerald: oklch(0.54 0.14 243);
-  --mint-400: oklch(0.54 0.14 243);
-  --mint-500: oklch(0.54 0.14 243);
-  --mint-600: oklch(0.46 0.14 243);
-  --mint-100: rgba(2, 132, 199, 0.12);
-  --mint-50: rgba(2, 132, 199, 0.06);
+  /* Primary Accent & Glow (Vibrant Electric Sky / Sapphire Blue) */
+  --color-primary: #0284c7;
+  --color-primary-glow: #38bdf8;
+  --color-emerald: #0284c7;
+  --mint-400: #38bdf8;
+  --mint-500: #0284c7;
+  --mint-600: #0369a1;
+  --mint-100: #e0f2fe;
+  --mint-50: #f0f9ff;
 
-  --gradient-primary: linear-gradient(120deg, oklch(0.54 0.14 243), oklch(0.6 0.14 236));
-  --shadow-glow: 0 0 60px -14px color-mix(in oklab, oklch(0.54 0.14 243) 32%, transparent);
-  --card-shadow: 0 1px 2px oklch(0.5 0.1 240 / 10%), 0 14px 34px -14px oklch(0.45 0.14 240 / 26%);
-  --glass-bg: color-mix(in oklab, #ffffff 90%, transparent);
+  --gradient-primary: linear-gradient(135deg, #0284c7 0%, #0ea5e9 50%, #38bdf8 100%);
+  --shadow-glow: 0 0 44px -6px rgba(2, 132, 199, 0.35);
+  --card-shadow: 0 2px 4px rgba(2, 132, 199, 0.04), 0 12px 32px -8px rgba(2, 132, 199, 0.12);
+  --glass-bg: rgba(255, 255, 255, 0.94);
 
-  /* Ambient Aurora Lights (Airy, radiant daylight sky atmosphere) */
-  --aurora-1: oklch(0.78 0.13 232);
-  --aurora-2: oklch(0.82 0.1 214);
-  --aurora-3: oklch(0.8 0.12 250);
-  --aurora-beam: oklch(0.6 0.14 240);
-  --aurora-opacity: 0.65;
+  /* Ambient Aurora Lights (White + Light Blue Dreamy Sky Atmosphere) */
+  --aurora-1: #bae6fd;
+  --aurora-2: #7dd3fc;
+  --aurora-3: #c7d2fe;
+  --aurora-beam: #38bdf8;
+  --aurora-opacity: 0.7;
 
   /* Specular Elevation (Light) */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.06), 0 0 0 1px var(--border-subtle);
-  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08), 0 0 0 1px var(--border-subtle);
-  --shadow-lg: 0 16px 36px rgba(0, 0, 0, 0.12), 0 0 0 1px var(--border-medium);
-  --specular-top: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  --shadow-sm: 0 1px 2px rgba(2, 132, 199, 0.06), 0 0 0 1px var(--border-subtle);
+  --shadow-md: 0 4px 16px rgba(2, 132, 199, 0.08), 0 0 0 1px var(--border-subtle);
+  --shadow-lg: 0 16px 36px rgba(2, 132, 199, 0.12), 0 0 0 1px var(--border-medium);
+  --specular-top: inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
 
 /* ==========================================================================
@@ -2006,22 +2010,29 @@ input:checked + .slider:before {
 }
 
 /* ==========================================================================
-   Complete Light Theme Overrides & Adaptations
+   Complete Light Theme Overrides (White + Light Blue Design System)
    ========================================================================== */
 html.light {
   /* Scrollbars */
   ::-webkit-scrollbar-thumb {
-    background: rgba(0, 0, 0, 0.16);
+    background: #cbe0f4;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: rgba(0, 0, 0, 0.28);
+    background: #aed1f0;
+  }
+
+  /* Base canvas */
+  body {
+    background-color: var(--bg-app);
+    color: var(--text-primary);
   }
 
   /* Headings & Text */
   h1, h2, h3, h4, h5, h6,
   .landing-title,
   .section-title,
-  .brand-text {
+  .brand-text,
+  .hero-title {
     color: var(--text-primary);
   }
 
@@ -2030,7 +2041,7 @@ html.light {
     background: var(--bg-surface-elevated);
     border-color: var(--border-medium);
     color: var(--text-secondary);
-    box-shadow: 0 1px 0 rgba(0, 0, 0, 0.08);
+    box-shadow: 0 1px 0 rgba(2, 132, 199, 0.08);
   }
 
   /* Workspace Layout & Sidebar */
@@ -2040,23 +2051,24 @@ html.light {
 
   .workspace-sidebar {
     background: #ffffff !important;
-    border-right-color: var(--border-subtle);
+    border-right-color: var(--border-subtle) !important;
   }
 
   .workspace-topbar {
-    background: color-mix(in oklab, #ffffff 82%, transparent) !important;
-    border-bottom-color: var(--border-subtle);
+    background: rgba(255, 255, 255, 0.88) !important;
+    backdrop-filter: blur(16px);
+    border-bottom-color: var(--border-subtle) !important;
   }
 
   .workspace-mobile-header,
   .mobile-drawer-content {
     background: #ffffff !important;
-    border-color: var(--border-subtle);
+    border-color: var(--border-subtle) !important;
   }
 
   .sidebar-tenant-card {
     background: var(--bg-surface-elevated) !important;
-    border-color: var(--border-subtle);
+    border-color: var(--border-medium) !important;
   }
 
   .sidebar-tenant-name {
@@ -2068,19 +2080,20 @@ html.light {
   }
 
   .sidebar-nav-item:hover {
-    background: var(--bg-surface-elevated);
-    color: var(--text-primary) !important;
+    background: #f0f7fe !important;
+    color: var(--color-primary) !important;
   }
 
   .sidebar-nav-item.active {
-    background: var(--bg-surface-elevated);
-    border-color: var(--border-medium);
-    color: var(--color-emerald) !important;
+    background: var(--bg-surface-elevated) !important;
+    border-color: var(--border-medium) !important;
+    color: var(--color-primary) !important;
+    font-weight: 600;
   }
 
   .sidebar-user-pill {
     background: var(--bg-surface-elevated) !important;
-    border-color: var(--border-subtle);
+    border-color: var(--border-subtle) !important;
   }
 
   .sidebar-user-name {
@@ -2093,15 +2106,15 @@ html.light {
   }
 
   .sidebar-call-btn {
-    background: rgba(16, 185, 129, 0.1) !important;
-    border: 1px solid rgba(16, 185, 129, 0.25) !important;
-    color: var(--color-emerald) !important;
+    background: #e0f2fe !important;
+    border: 1px solid #bae6fd !important;
+    color: var(--color-primary) !important;
   }
 
   .sidebar-call-btn:hover {
-    background: rgba(16, 185, 129, 0.18) !important;
-    border-color: rgba(16, 185, 129, 0.4) !important;
-    color: var(--color-emerald) !important;
+    background: #bae6fd !important;
+    border-color: #7dd3fc !important;
+    color: #0369a1 !important;
   }
 
   .sidebar-exit-btn:hover {
@@ -2111,8 +2124,9 @@ html.light {
 
   /* Landing Page Nav & Components */
   .landing-nav {
-    background: color-mix(in oklab, #ffffff 84%, transparent) !important;
-    border-bottom-color: var(--border-subtle);
+    background: rgba(255, 255, 255, 0.88) !important;
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border-subtle) !important;
   }
 
   .landing-nav-links a {
@@ -2120,24 +2134,25 @@ html.light {
   }
 
   .landing-nav-links a:hover {
-    color: var(--text-primary) !important;
+    color: var(--color-primary) !important;
   }
 
+  /* Buttons */
   .hero-btn-primary,
   .landing-btn-primary,
   .btn-primary {
     background: var(--gradient-primary) !important;
     color: #ffffff !important;
     border: none !important;
-    box-shadow: var(--shadow-glow) !important;
+    box-shadow: 0 4px 14px rgba(2, 132, 199, 0.32) !important;
   }
 
   .hero-btn-primary:hover,
   .landing-btn-primary:hover,
   .btn-primary:hover {
-    background: linear-gradient(120deg, oklch(0.50 0.15 243), oklch(0.56 0.15 236)) !important;
+    background: linear-gradient(135deg, #0369a1 0%, #0284c7 100%) !important;
     color: #ffffff !important;
-    box-shadow: 0 0 50px -4px color-mix(in oklab, var(--color-primary) 50%, transparent) !important;
+    box-shadow: 0 0 50px -4px rgba(2, 132, 199, 0.45) !important;
   }
 
   .hero-btn-secondary,
@@ -2146,7 +2161,7 @@ html.light {
     background: #ffffff !important;
     border: 1px solid var(--border-medium) !important;
     color: var(--text-primary) !important;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04) !important;
+    box-shadow: 0 1px 2px rgba(2, 132, 199, 0.04) !important;
   }
 
   .hero-btn-secondary:hover,
@@ -2154,28 +2169,13 @@ html.light {
   .btn-secondary:hover {
     background: var(--bg-surface-elevated) !important;
     border-color: var(--border-strong) !important;
-    color: var(--text-primary) !important;
-  }
-
-  .landing-btn-secondary,
-  .btn-secondary {
-    background: #ffffff !important;
-    border-color: var(--border-medium) !important;
-    color: var(--text-primary) !important;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-  }
-
-  .landing-btn-secondary:hover,
-  .btn-secondary:hover {
-    background: var(--bg-surface-elevated) !important;
-    border-color: var(--border-strong) !important;
-    color: var(--text-primary) !important;
+    color: var(--color-primary) !important;
   }
 
   .landing-badge {
     background: var(--bg-surface-elevated) !important;
     border-color: var(--border-medium) !important;
-    color: var(--text-secondary) !important;
+    color: var(--color-primary) !important;
   }
 
   /* Cards, Panels & Modals */
@@ -2195,7 +2195,7 @@ html.light {
   }
 
   .agent-card::after {
-    background: linear-gradient(135deg, transparent, rgba(5, 150, 105, 0.08), transparent);
+    background: linear-gradient(135deg, transparent, rgba(2, 132, 199, 0.08), transparent);
   }
 
   .call-simulation-header {
@@ -2225,8 +2225,8 @@ html.light {
   input:focus,
   select:focus,
   textarea:focus {
-    border-color: var(--color-emerald) !important;
-    box-shadow: 0 0 0 2px rgba(5, 150, 105, 0.2) !important;
+    border-color: var(--color-primary) !important;
+    box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.18) !important;
     background: #ffffff !important;
   }
 
@@ -2238,18 +2238,19 @@ html.light {
   .industry-tab-btn {
     border-color: var(--border-subtle);
     color: var(--text-secondary);
+    background: #ffffff;
   }
 
   .industry-tab-btn:hover {
     background: var(--bg-surface-hover);
-    color: var(--text-primary);
+    color: var(--color-primary);
   }
 
   .industry-tab-btn.active {
-    background: #ffffff !important;
-    border-color: var(--border-strong) !important;
-    color: var(--text-primary) !important;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
+    background: var(--color-primary) !important;
+    border-color: var(--color-primary) !important;
+    color: #ffffff !important;
+    box-shadow: 0 2px 8px rgba(2, 132, 199, 0.28) !important;
   }
 
   .tab-pill,
@@ -2259,14 +2260,15 @@ html.light {
 
   .tab-pill:hover,
   .nav-pill:hover {
-    color: var(--text-primary);
+    color: var(--color-primary);
   }
 
   .tab-pill.active,
   .nav-pill.active {
     background: var(--bg-surface-elevated) !important;
-    border-color: var(--border-strong) !important;
-    color: var(--text-primary) !important;
+    border-color: var(--border-medium) !important;
+    color: var(--color-primary) !important;
+    font-weight: 600;
   }
 
   /* Tables */
@@ -2289,7 +2291,7 @@ html.light {
 
   .table-row:hover,
   tr:hover td {
-    background: var(--bg-surface-hover) !important;
+    background: #f0f7fe !important;
   }
 
   /* Taskbar in AdminPortal */
@@ -2306,9 +2308,9 @@ html.light {
 
   .terminal-window,
   .code-block {
-    background: oklch(0.18 0.025 230) !important;
+    background: #0f172a !important;
     border-color: var(--border-subtle) !important;
-    color: oklch(0.96 0.01 200) !important;
+    color: #f8fafc !important;
   }
 
   /* Badges & Outcomes */
@@ -2322,7 +2324,6 @@ html.light {
     color: #ffffff !important;
   }
 }
-
 
 /* ==========================================================================
    2-Column Responsive Landing Hero Grid (Matching User Inspiration)
