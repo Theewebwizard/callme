@@ -84,16 +84,17 @@ export default function ResourceInventoryCard({
           style={{
             padding: '0.75rem 1rem',
             borderRadius: 'var(--radius-md, 8px)',
-            background: feedback.type === 'success' ? 'var(--emerald-100, #d1fae5)' : 'var(--rose-100, #ffe4e6)',
-            color: feedback.type === 'success' ? 'var(--emerald-700, #047857)' : 'var(--rose-700, #be123c)',
-            fontSize: '0.85rem',
+            background: feedback.type === 'success' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(244, 63, 94, 0.1)',
+            border: `1px solid ${feedback.type === 'success' ? 'rgba(16, 185, 129, 0.25)' : 'rgba(244, 63, 94, 0.3)'}`,
+            color: feedback.type === 'success' ? 'var(--mint-400, #34d399)' : '#fb7185',
+            fontSize: '0.82rem',
             fontWeight: 600,
             display: 'flex',
             alignItems: 'center',
             gap: '0.5rem',
           }}
         >
-          {feedback.type === 'success' ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
+          {feedback.type === 'success' ? <CheckCircle2 size={15} /> : <AlertCircle size={15} />}
           {feedback.text}
         </div>
       )}
@@ -110,7 +111,7 @@ export default function ResourceInventoryCard({
         {/* Domain-Adapted Add Form */}
         <form onSubmit={handleAdd} className="card">
           <div className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Plus size={18} color="var(--sky-600)" />
+            <Plus size={18} color="var(--color-emerald)" />
             Add {rc.noun}
           </div>
           <div className="card-desc">
@@ -212,7 +213,7 @@ export default function ResourceInventoryCard({
         <div className="card">
           <div className="card-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <DomainIcon size={18} color="var(--sky-600)" />
+              <DomainIcon size={18} color="var(--color-emerald)" />
               Active {rc.title} ({resources.length})
             </span>
             <button
@@ -230,7 +231,7 @@ export default function ResourceInventoryCard({
           </div>
 
           {resources.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--slate-500)', background: 'var(--slate-50)', borderRadius: 'var(--radius-md, 8px)' }}>
+            <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-tertiary)', background: 'var(--bg-surface-elevated)', borderRadius: 'var(--radius-md, 8px)', border: '1px solid var(--border-subtle)' }}>
               No {rc.title.toLowerCase()} registered yet. Register a {rc.noun.toLowerCase()} to enable built-in booking conflict prevention.
             </div>
           ) : (
@@ -243,25 +244,25 @@ export default function ResourceInventoryCard({
                     justifyContent: 'space-between',
                     alignItems: 'center',
                     padding: '0.75rem 1rem',
-                    background: 'var(--slate-50, #f8fafc)',
-                    border: '1px solid var(--slate-200, #e2e8f0)',
+                    background: 'var(--bg-surface-elevated)',
+                    border: '1px solid var(--border-subtle)',
                     borderRadius: 'var(--radius-md, 8px)',
                   }}
                 >
                   <div>
-                    <div style={{ fontWeight: 700, color: 'var(--slate-800, #1e293b)', fontSize: '0.9rem' }}>
+                    <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.88rem' }}>
                       {res.name}
                     </div>
                     <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginTop: '4px', flexWrap: 'wrap' }}>
-                      <span style={{ fontSize: '0.72rem', background: 'var(--sky-100, #e0f2fe)', color: 'var(--sky-700, #0369a1)', padding: '2px 8px', borderRadius: '10px', fontWeight: 600 }}>
+                      <span style={{ fontSize: '0.7rem', background: 'rgba(16, 185, 129, 0.1)', color: 'var(--color-emerald)', border: '1px solid rgba(16, 185, 129, 0.25)', padding: '2px 8px', borderRadius: 'var(--radius-full)', fontWeight: 600, fontFamily: 'var(--font-mono)' }}>
                         {res.resource_type}
                       </span>
                       {res.section && (
-                        <span style={{ fontSize: '0.72rem', color: 'var(--slate-500, #64748b)' }}>
+                        <span style={{ fontSize: '0.74rem', color: 'var(--text-tertiary)' }}>
                           📍 {res.section}
                         </span>
                       )}
-                      <span style={{ fontSize: '0.72rem', color: 'var(--slate-500, #64748b)' }}>
+                      <span style={{ fontSize: '0.74rem', color: 'var(--text-tertiary)', fontFamily: 'var(--font-mono)' }}>
                         👥 Capacity: {res.capacity} (Party: {res.min_party_size}–{res.max_party_size})
                       </span>
                     </div>
@@ -274,13 +275,13 @@ export default function ResourceInventoryCard({
                     style={{
                       background: 'none',
                       border: 'none',
-                      color: 'var(--rose-500, #f43f5e)',
+                      color: 'var(--color-rose, #f43f5e)',
                       cursor: 'pointer',
                       padding: '6px',
                     }}
                     title={`Delete ${res.name}`}
                   >
-                    <Trash2 size={16} />
+                    <Trash2 size={15} />
                   </button>
                 </div>
               ))}

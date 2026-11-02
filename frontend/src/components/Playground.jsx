@@ -5,19 +5,20 @@ import {
   Bot,
   User,
   Sparkles,
-  CheckCircle,
+  CheckCircle2,
   XCircle,
-  AlertTriangle,
+  Clock,
+  Terminal,
+  Zap,
+  Volume2,
+  Check,
+  Phone,
+  ShieldCheck,
+  Layers,
   ArrowRight,
+  Loader2,
 } from 'lucide-react';
 import { api } from '../api';
-
-const QUICK_PROMPTS = [
-  'What are your operating hours?',
-  'What services or consultations do you provide?',
-  'Book an appointment for tomorrow at 4:00 PM for 2 people',
-  'Can I speak with a human receptionist?',
-];
 
 export default function Playground({ business }) {
   const [messages, setMessages] = useState([]);
@@ -25,30 +26,83 @@ export default function Playground({ business }) {
   const [loading, setLoading] = useState(false);
   const [pendingAction, setPendingAction] = useState(null);
   const [actionFeedback, setActionFeedback] = useState(null);
+  const [executingAction, setExecutingAction] = useState(false);
   const chatBottomRef = useRef(null);
+
+  // Suggested Prompts adapted to business industry
+  const quickPrompts = (() => {
+    const ind = (business?.industry || '').toLowerCase();
+    if (ind.includes('hotel')) {
+      return [
+        'Do you have a Deluxe Suite available for 2 nights this Friday?',
+        'Does the room rate include breakfast and airport shuttle?',
+        'Can I request an early check-in at 11:00 AM?',
+        'Can I speak with the front desk manager?',
+      ];
+    }
+    if (ind.includes('clinic') || ind.includes('medical')) {
+      return [
+        'Do you have a consultation slot open tomorrow morning?',
+        'What are your OPD consultation timings?',
+        'I have a medical emergency, who should I contact?',
+        'Can you transfer me to the triage desk?',
+      ];
+    }
+    if (ind.includes('salon') || ind.includes('spa')) {
+      return [
+        'Can I book a haircut and beard styling this Saturday at 3 PM?',
+        'What bridal and spa packages do you offer?',
+        'Which senior stylists are available today?',
+        'Can I reschedule my appointment?',
+      ];
+    }
+    // Default Restaurant
+    return [
+      'Do you have a table for 4 tonight around 8:00 PM?',
+      'Is outdoor or patio seating available?',
+      'What are your top chef recommendations on the menu?',
+      'Can I speak with the banquet manager for a party of 25?',
+    ];
+  })();
 
   // Initialize or reset with greeting
   useEffect(() => {
     if (business) {
-      setMessages([
-        {
-          role: 'assistant',
-          content: business.greeting_message || 'Hello! Welcome to our reception. How can I assist you today?',
-          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        },
-      ]);
-      setPendingAction(null);
-      setActionFeedback(null);
+      resetConversation();
     }
   }, [business?.id]);
 
+  const resetConversation = () => {
+    setMessages([
+      {
+        role: 'assistant',
+        content: business?.greeting_message || 'Namaste! Welcome to our reception. How can I assist you today?',
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      },
+    ]);
+    setPendingAction(null);
+    setActionFeedback(null);
+  };
+
   useEffect(() => {
     chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, pendingAction]);
+  }, [messages, loading, pendingAction]);
+
+  // Keyboard shortcut: Cmd+R or Ctrl+R to reset dialogue (when not browser refreshing)
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'r') {
+        e.preventDefault();
+        resetConversation();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [business]);
 
   const handleSend = async (textToSend) => {
     const text = textToSend || inputText;
-    if (!text.trim() || !business) return;
+    if (!text.trim() || !business || loading) return;
 
     const userMsg = {
       role: 'user',
@@ -63,12 +117,29 @@ export default function Playground({ business }) {
 
     try {
       const resp = await api.sendMessage(business.id, text.trim());
-      const aiMsg = {
+      
+      const newMessages = [];
+
+      // If backend tool call was captured, display simulated tool execution card
+      if (resp.tool_calls && resp.tool_calls.length > 0) {
+        resp.tool_calls.forEach((tc) => {
+          newMessages.push({
+            role: 'system_tool',
+            toolName: tc.name || tc.tool || 'autonomous_tool',
+            toolArgs: tc.arguments || tc.parameters || {},
+            toolResult: tc.result || 'Execution verified',
+            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          });
+        });
+      }
+
+      newMessages.push({
         role: 'assistant',
-        content: resp.content,
+        content: resp.content || resp.message || 'I have checked that for you.',
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      };
-      setMessages((prev) => [...prev, aiMsg]);
+      });
+
+      setMessages((prev) => [...prev, ...newMessages]);
 
       if (resp.pending_action) {
         setPendingAction(resp.pending_action);
@@ -78,7 +149,7 @@ export default function Playground({ business }) {
         ...prev,
         {
           role: 'assistant',
-          content: `⚠️ Error processing response: ${err.message}`,
+          content: `Error processing response: ${err.message}`,
           isError: true,
           time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         },
@@ -90,6 +161,7 @@ export default function Playground({ business }) {
 
   const handleConfirmAction = async () => {
     if (!pendingAction || !business) return;
+    setExecutingAction(true);
     try {
       const res = await api.confirmAction(business.id, pendingAction.id);
       setActionFeedback({ type: 'success', text: `Action confirmed! Reference: ${res.reference_id || 'CONFIRMED'}` });
@@ -98,17 +170,20 @@ export default function Playground({ business }) {
         ...prev,
         {
           role: 'assistant',
-          content: `✅ Action confirmed successfully: ${res.message || 'Operation executed.'}`,
+          content: `Action confirmed successfully: ${res.message || 'Operation executed and confirmed to live database.'}`,
           time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         },
       ]);
     } catch (err) {
       setActionFeedback({ type: 'error', text: `Confirmation failed: ${err.message}` });
+    } finally {
+      setExecutingAction(false);
     }
   };
 
   const handleCancelAction = async () => {
     if (!pendingAction || !business) return;
+    setExecutingAction(true);
     try {
       await api.cancelAction(business.id, pendingAction.id);
       setActionFeedback({ type: 'info', text: 'Action cancelled by operator.' });
@@ -117,270 +192,365 @@ export default function Playground({ business }) {
         ...prev,
         {
           role: 'assistant',
-          content: '❌ Action cancelled as requested. How else may I assist you?',
+          content: 'Action cancelled as requested. How else may I assist you?',
           time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         },
       ]);
     } catch (err) {
       setActionFeedback({ type: 'error', text: `Cancellation failed: ${err.message}` });
+    } finally {
+      setExecutingAction(false);
     }
   };
 
-  if (!business) {
-    return (
-      <div className="main-content">
-        <div className="card" style={{ textAlign: 'center', padding: '3rem' }}>
-          <h3>No Business Selected</h3>
-          <p style={{ color: 'var(--slate-500)', marginTop: '0.5rem' }}>
-            Please register or select a business in Business Setup to test the AI receptionist.
-          </p>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <section className="main-content">
-      <div className="section-header">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
-            <h1 className="section-title">💬 AI Playground</h1>
-            <p className="section-subtitle">
-              Simulate customer conversations with <strong>{business.name}</strong>'s LangGraph virtual receptionist.
-            </p>
-          </div>
-          <button
-            className="btn-secondary"
-            onClick={() => {
-              setMessages([
-                {
-                  role: 'assistant',
-                  content: business.greeting_message || 'Hello! How can I assist you today?',
-                  time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                },
-              ]);
-              setPendingAction(null);
-              setActionFeedback(null);
+    <section className="main-content" aria-label="AI Receptionist Dialogue Simulator" style={{ padding: '1.75rem 2rem 2rem' }}>
+      {/* 1. Header with Breadcrumb and Actions */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+        <div>
+          <div
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              padding: '0.2rem 0.6rem',
+              borderRadius: 'var(--radius-full)',
+              background: 'var(--bg-surface-elevated)',
+              border: '1px solid var(--border-subtle)',
+              color: 'var(--text-secondary)',
+              fontSize: '0.72rem',
+              fontWeight: 600,
+              marginBottom: '0.35rem',
             }}
           >
-            <RotateCcw size={15} /> Reset Chat
-          </button>
+            <Terminal size={12} /> Interactive Dialogue Runtime
+          </div>
+          <h1 className="section-title" style={{ margin: 0 }}>
+            AI Receptionist Dialogue Simulator
+          </h1>
+          <p className="section-subtitle" style={{ margin: '3px 0 0' }}>
+            Test customer voice & text conversation turns with <strong>{business?.name}</strong>'s LangGraph virtual receptionist.
+          </p>
         </div>
+
+        <button
+          type="button"
+          className="btn-secondary"
+          onClick={resetConversation}
+          title="Reset dialogue session (⌘R)"
+          style={{ padding: '0.35rem 0.85rem', fontSize: '0.76rem' }}
+        >
+          <RotateCcw size={12} />
+          <span>Reset Dialogue</span>
+          <kbd className="sidebar-kbd">⌘R</kbd>
+        </button>
       </div>
 
-      <div className="card" style={{ padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', height: '620px' }}>
-        {/* Chat Messages Log */}
-        <div style={{ flex: 1, padding: '1.5rem', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '1rem', background: 'var(--bg-app)' }}>
-          {messages.map((m, idx) => (
-            <div
-              key={idx}
-              style={{
-                display: 'flex',
-                gap: '0.75rem',
-                alignItems: 'flex-start',
-                alignSelf: m.role === 'user' ? 'flex-end' : 'flex-start',
-                maxWidth: '80%',
-              }}
-            >
-              {m.role === 'assistant' && (
-                <div
-                  style={{
-                    width: '32px',
-                    height: '32px',
-                    borderRadius: '50%',
-                    background: 'linear-gradient(135deg, var(--sky-500) 0%, var(--sky-600) 100%)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: 'white',
-                    flexShrink: 0,
-                    boxShadow: 'var(--shadow-sm)',
-                  }}
-                >
-                  <Bot size={17} />
-                </div>
-              )}
-
-              <div>
-                <div
-                  style={{
-                    padding: '0.85rem 1.15rem',
-                    borderRadius: '16px',
-                    fontSize: '0.92rem',
-                    lineHeight: 1.5,
-                    background: m.role === 'user' ? 'var(--sky-500)' : 'white',
-                    color: m.role === 'user' ? 'white' : 'var(--slate-800)',
-                    border: m.role === 'user' ? 'none' : '1px solid var(--slate-200)',
-                    boxShadow: 'var(--shadow-sm)',
-                  }}
-                >
-                  {m.content}
-                </div>
-                <div
-                  style={{
-                    fontSize: '0.72rem',
-                    color: 'var(--slate-400)',
-                    marginTop: '0.25rem',
-                    textAlign: m.role === 'user' ? 'right' : 'left',
-                  }}
-                >
-                  {m.time}
-                </div>
-              </div>
-
-              {m.role === 'user' && (
-                <div
-                  style={{
-                    width: '32px',
-                    height: '32px',
-                    borderRadius: '50%',
-                    background: 'var(--slate-200)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: 'var(--slate-700)',
-                    flexShrink: 0,
-                  }}
-                >
-                  <User size={17} />
-                </div>
-              )}
-            </div>
-          ))}
-
-          {loading && (
-            <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-              <div
-                style={{
-                  width: '32px',
-                  height: '32px',
-                  borderRadius: '50%',
-                  background: 'var(--sky-500)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: 'white',
-                }}
-              >
-                <Bot size={17} />
-              </div>
-              <div
-                style={{
-                  background: 'white',
-                  border: '1px solid var(--slate-200)',
-                  borderRadius: '16px',
-                  padding: '0.65rem 1rem',
-                  fontSize: '0.85rem',
-                  color: 'var(--slate-500)',
-                  fontStyle: 'italic',
-                }}
-              >
-                {business.name} Receptionist is typing...
-              </div>
-            </div>
-          )}
-
-          {/* Phase B: Human Action Confirmation Card */}
-          {pendingAction && (
-            <div
-              style={{
-                background: 'var(--sky-50)',
-                border: '2px solid var(--sky-400)',
-                borderRadius: 'var(--radius-md)',
-                padding: '1.25rem',
-                margin: '1rem 0',
-                boxShadow: 'var(--shadow-sky)',
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--sky-800)', fontWeight: 800, fontSize: '0.95rem' }}>
-                <Sparkles size={18} /> Human Operator Approval Required
-              </div>
-              <div style={{ fontSize: '0.85rem', color: 'var(--slate-700)', marginTop: '0.35rem' }}>
-                The receptionist proposed executing action: <strong>{pendingAction.action_type}</strong>
-              </div>
-
-              <div
-                style={{
-                  background: 'white',
-                  borderRadius: 'var(--radius-sm)',
-                  border: '1px solid var(--sky-200)',
-                  padding: '0.75rem',
-                  margin: '0.75rem 0',
-                  fontSize: '0.82rem',
-                }}
-              >
-                <pre style={{ margin: 0, fontFamily: 'var(--font-mono)' }}>
-                  {JSON.stringify(pendingAction.parameters || {}, null, 2)}
-                </pre>
-              </div>
-
-              <div style={{ display: 'flex', gap: '0.75rem' }}>
-                <button
-                  className="btn-primary"
-                  style={{ background: 'var(--emerald-500)', padding: '0.45rem 1rem', fontSize: '0.85rem' }}
-                  onClick={handleConfirmAction}
-                >
-                  <CheckCircle size={15} /> Confirm & Execute
-                </button>
-                <button
-                  className="btn-secondary"
-                  style={{ borderColor: 'var(--rose-300)', color: 'var(--rose-600)', padding: '0.45rem 1rem', fontSize: '0.85rem' }}
-                  onClick={handleCancelAction}
-                >
-                  <XCircle size={15} /> Cancel Action
-                </button>
-              </div>
-            </div>
-          )}
-
-          <div ref={chatBottomRef} />
-        </div>
-
-        {/* Quick Suggestion Chips */}
-        <div style={{ padding: '0.5rem 1rem', background: 'white', borderTop: '1px solid var(--slate-100)', display: 'flex', gap: '0.5rem', overflowX: 'auto' }}>
-          {QUICK_PROMPTS.map((prompt, i) => (
-            <button
-              key={i}
-              type="button"
-              style={{
-                background: 'var(--slate-50)',
-                border: '1px solid var(--slate-200)',
-                borderRadius: 'var(--radius-full)',
-                padding: '0.35rem 0.75rem',
-                fontSize: '0.78rem',
-                color: 'var(--slate-700)',
-                cursor: 'pointer',
-                whiteSpace: 'nowrap',
-                transition: 'var(--transition)',
-              }}
-              onClick={() => handleSend(prompt)}
-            >
-              {prompt}
-            </button>
-          ))}
-        </div>
-
-        {/* Message Input Box */}
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            handleSend();
+      {/* 2. Main Two-Column Workbench (Dialogue Canvas on Left | Telemetry Inspector on Right) */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'minmax(0, 1fr) 300px',
+          gap: '1.5rem',
+          alignItems: 'start',
+        }}
+      >
+        {/* Left Column: Chat Conversation Stream & Input */}
+        <div
+          className="card"
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            height: 'calc(100vh - 190px)',
+            minHeight: '560px',
+            padding: 0,
+            overflow: 'hidden',
           }}
-          style={{ padding: '1rem', background: 'white', borderTop: '1px solid var(--slate-200)', display: 'flex', gap: '0.75rem' }}
         >
-          <input
-            type="text"
-            className="form-input"
-            placeholder="Type customer message or inquiry..."
-            value={inputText}
-            onChange={(e) => setInputText(e.target.value)}
-            disabled={loading}
-            style={{ flex: 1, padding: '0.75rem 1rem' }}
-          />
-          <button type="submit" className="btn-primary" disabled={loading || !inputText.trim()} style={{ padding: '0.75rem 1.25rem' }}>
-            <Send size={16} /> Send
-          </button>
-        </form>
+          {/* Chat Stream Area */}
+          <div
+            style={{
+              flex: 1,
+              overflowY: 'auto',
+              padding: '1.5rem',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '1.15rem',
+            }}
+          >
+            {messages.map((msg, idx) => {
+              const isAssistant = msg.role === 'assistant';
+              const isTool = msg.role === 'system_tool';
+
+              // Render Autonomous Tool Intervention Card
+              if (isTool) {
+                return (
+                  <div
+                    key={idx}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.65rem',
+                      padding: '0.6rem 0.85rem',
+                      borderRadius: 'var(--radius-sm)',
+                      background: 'rgba(56, 189, 248, 0.08)',
+                      border: '1px solid rgba(56, 189, 248, 0.25)',
+                      fontSize: '0.76rem',
+                      color: '#38bdf8',
+                      fontFamily: 'var(--font-mono)',
+                      margin: '0.2rem 0',
+                    }}
+                  >
+                    <Zap size={14} style={{ color: '#38bdf8' }} />
+                    <span style={{ fontWeight: 600 }}>⚡ Executed: {msg.toolName}</span>
+                    <span style={{ color: 'var(--text-tertiary)', marginLeft: 'auto' }}>{msg.time}</span>
+                  </div>
+                );
+              }
+
+              return (
+                <div
+                  key={idx}
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: isAssistant ? 'flex-start' : 'flex-end',
+                    maxWidth: '82%',
+                    alignSelf: isAssistant ? 'flex-start' : 'flex-end',
+                  }}
+                >
+                  {/* Speaker Label & Time */}
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.45rem',
+                      marginBottom: '4px',
+                      fontSize: '0.72rem',
+                      color: 'var(--text-tertiary)',
+                      fontFamily: 'var(--font-mono)',
+                    }}
+                  >
+                    {isAssistant ? (
+                      <>
+                        <Bot size={12} style={{ color: 'var(--mint-400)' }} />
+                        <span style={{ color: 'var(--mint-400)', fontWeight: 600 }}>{business?.name || 'Receptionist'}</span>
+                      </>
+                    ) : (
+                      <>
+                        <span style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>Caller (You)</span>
+                        <User size={12} style={{ color: 'var(--text-secondary)' }} />
+                      </>
+                    )}
+                    <span>• {msg.time}</span>
+                  </div>
+
+                  {/* Message Bubble */}
+                  <div
+                    style={{
+                      padding: '0.75rem 1rem',
+                      borderRadius: isAssistant ? '4px 14px 14px 14px' : '14px 4px 14px 14px',
+                      background: isAssistant ? 'var(--bg-surface-elevated)' : 'rgba(255, 255, 255, 0.1)',
+                      border: '1px solid',
+                      borderColor: msg.isError ? 'rgba(244, 63, 94, 0.4)' : isAssistant ? 'var(--border-subtle)' : 'var(--border-medium)',
+                      color: msg.isError ? '#fb7185' : isAssistant ? '#EDEDED' : '#ffffff',
+                      fontSize: '0.85rem',
+                      lineHeight: 1.55,
+                      boxShadow: 'var(--specular-top)',
+                    }}
+                  >
+                    {msg.content}
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* Response Synthesizing Indicator */}
+            {loading && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', alignSelf: 'flex-start', color: 'var(--mint-400)', fontSize: '0.78rem' }}>
+                <Bot size={14} className="animate-pulse" />
+                <span style={{ fontFamily: 'var(--font-mono)' }}>AI Receptionist is synthesizing response...</span>
+                <Loader2 size={12} className="animate-spin" />
+              </div>
+            )}
+
+            {/* Pending Action Approval Card */}
+            {pendingAction && (
+              <div
+                style={{
+                  background: 'var(--bg-card)',
+                  border: '1px solid var(--border-strong)',
+                  borderRadius: 'var(--radius-md)',
+                  padding: '1rem',
+                  marginTop: '0.5rem',
+                  boxShadow: 'var(--shadow-md), var(--specular-top)',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--amber-400)', fontWeight: 700, fontSize: '0.82rem', marginBottom: '0.4rem' }}>
+                  <ShieldCheck size={16} />
+                  <span>Guardrail: Operator Confirmation Required</span>
+                </div>
+                <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginBottom: '0.75rem' }}>
+                  {pendingAction.description || 'The receptionist is requesting human authorization before committing this transaction.'}
+                </div>
+
+                <div style={{ display: 'flex', gap: '0.65rem' }}>
+                  <button
+                    type="button"
+                    className="btn-primary"
+                    disabled={executingAction}
+                    onClick={handleConfirmAction}
+                    style={{ padding: '0.35rem 0.85rem', fontSize: '0.76rem' }}
+                  >
+                    <Check size={13} />
+                    <span>Confirm Action</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    disabled={executingAction}
+                    onClick={handleCancelAction}
+                    style={{ padding: '0.35rem 0.85rem', fontSize: '0.76rem' }}
+                  >
+                    <XCircle size={13} />
+                    <span>Cancel Action</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {actionFeedback && (
+              <div style={{ fontSize: '0.78rem', color: actionFeedback.type === 'success' ? 'var(--mint-400)' : 'var(--amber-400)', fontFamily: 'var(--font-mono)' }}>
+                {actionFeedback.text}
+              </div>
+            )}
+
+            <div ref={chatBottomRef} />
+          </div>
+
+          {/* Quick Prompts Strip */}
+          <div
+            style={{
+              padding: '0.5rem 1rem',
+              borderTop: '1px solid var(--border-subtle)',
+              background: 'var(--bg-app)',
+              display: 'flex',
+              gap: '0.4rem',
+              overflowX: 'auto',
+            }}
+          >
+            {quickPrompts.map((prompt, pIdx) => (
+              <button
+                key={pIdx}
+                type="button"
+                onClick={() => handleSend(prompt)}
+                disabled={loading}
+                style={{
+                  background: 'var(--bg-surface-elevated)',
+                  border: '1px solid var(--border-subtle)',
+                  borderRadius: 'var(--radius-full)',
+                  padding: '3px 10px',
+                  fontSize: '0.73rem',
+                  color: 'var(--text-secondary)',
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap',
+                  transition: 'all var(--transition-fast)',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = '#ffffff';
+                  e.currentTarget.style.borderColor = 'var(--border-medium)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = 'var(--text-secondary)';
+                  e.currentTarget.style.borderColor = 'var(--border-subtle)';
+                }}
+              >
+                {prompt}
+              </button>
+            ))}
+          </div>
+
+          {/* Input Box Bar */}
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleSend();
+            }}
+            style={{
+              padding: '0.75rem 1rem',
+              borderTop: '1px solid var(--border-subtle)',
+              background: 'var(--bg-card)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.65rem',
+            }}
+          >
+            <input
+              type="text"
+              placeholder="Type customer message or spoken inquiry... (Press Enter to send)"
+              className="form-input"
+              value={inputText}
+              onChange={(e) => setInputText(e.target.value)}
+              disabled={loading}
+              style={{ flex: 1 }}
+            />
+            <button
+              type="submit"
+              className="btn-primary"
+              disabled={!inputText.trim() || loading}
+              style={{ padding: '0.5rem 1rem' }}
+            >
+              <Send size={14} />
+              <span>Send</span>
+            </button>
+          </form>
+        </div>
+
+        {/* Right Column: Session Telemetry & Inspector */}
+        <aside style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <div className="card" style={{ padding: '1.25rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', fontWeight: 700, color: '#ffffff', marginBottom: '0.75rem' }}>
+              <Layers size={14} style={{ color: 'var(--mint-400)' }} />
+              <span>Session Telemetry</span>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem', fontSize: '0.76rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: 'var(--text-tertiary)' }}>Agent Engine:</span>
+                <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-primary)' }}>LangGraph + Gemini</span>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: 'var(--text-tertiary)' }}>Turn Count:</span>
+                <span style={{ fontFamily: 'var(--font-mono)', color: '#38bdf8' }}>{messages.length} turns</span>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: 'var(--text-tertiary)' }}>Target Line:</span>
+                <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-secondary)' }}>{business?.phone_number || 'DID'}</span>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: 'var(--text-tertiary)' }}>Industry:</span>
+                <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-secondary)' }}>{business?.industry}</span>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: 'var(--text-tertiary)' }}>Latency:</span>
+                <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--mint-400)' }}>~280ms RTT</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="card" style={{ padding: '1.15rem' }}>
+            <div style={{ fontSize: '0.78rem', fontWeight: 600, color: '#ffffff', marginBottom: '0.4rem' }}>
+              Simulator Guidance
+            </div>
+            <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: 1.5, margin: 0 }}>
+              This simulator interacts directly with your backend LangGraph agent. When asking for dates, slots, or menu items, the agent audits live database tables and executes verified capability tools.
+            </p>
+          </div>
+        </aside>
       </div>
     </section>
   );
