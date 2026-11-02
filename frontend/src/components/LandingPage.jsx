@@ -10,36 +10,28 @@ import {
   ShieldCheck,
   CheckCircle2,
   AlertCircle,
-  Wrench,
   Bot,
   Calendar,
   MessageSquare,
-  HelpCircle,
   Zap,
-  Activity,
-  Layers,
-  Lock,
-  Headphones,
-  Check,
-  Mail,
+  Globe2,
   Eye,
   EyeOff,
-  UserCheck,
-  Globe2,
-  Cpu,
-  Radio,
-  Sliders,
-  Terminal,
 } from 'lucide-react';
 import { api } from '../api';
 import GoogleAuthModal, { GoogleIcon } from './GoogleAuthModal';
 import InstallAppPrompt from './InstallAppPrompt';
 import CinematicHeroBackground from './CinematicHeroBackground';
-import AnimatedReceptionistDemo from './AnimatedReceptionistDemo';
-import ScrollStorytellingSection from './ScrollStorytellingSection';
+import AmbientAuroraField from './AmbientAuroraField';
+import HeroCallPreview from './HeroCallPreview';
+import MetricsSocialProofStrip from './MetricsSocialProofStrip';
+import AgentPersonasSection from './AgentPersonasSection';
+import AgentWorkflowSection from './AgentWorkflowSection';
+import FeatureGridSection from './FeatureGridSection';
+import ConfigConsoleSection from './ConfigConsoleSection';
 import useScrollReveal from './useScrollReveal';
 
-const INDUSTRY_PREVIEWS = [
+export const INDUSTRY_PREVIEWS = [
   {
     id: 'Restaurant',
     title: 'Restaurant & Dining',
@@ -55,7 +47,7 @@ const INDUSTRY_PREVIEWS = [
       { speaker: 'receptionist', text: 'Your table is confirmed for 8:00 PM tonight, Rohit! A confirmation SMS has been dispatched. See you soon!' },
     ],
     tools: ['check_table_availability', 'create_table_booking', 'query_menu_pricing'],
-    outcome: 'Booking Confirmed • Table #12',
+    outcome: 'Booking Confirmed • Table #12 • SMS sent',
   },
   {
     id: 'Hotel',
@@ -72,7 +64,7 @@ const INDUSTRY_PREVIEWS = [
       { speaker: 'receptionist', text: 'Done! Your stay is locked in. We have sent the check-in voucher and directions to your number.' },
     ],
     tools: ['check_room_availability', 'book_hotel_stay', 'inquire_amenities'],
-    outcome: 'Reservation Confirmed • Deluxe Suite #304',
+    outcome: 'Reservation Confirmed • Deluxe Suite #304 • SMS sent',
   },
   {
     id: 'Clinic',
@@ -106,7 +98,7 @@ const INDUSTRY_PREVIEWS = [
       { speaker: 'receptionist', text: 'You are all set with Priya for Saturday at 11:00 AM! Looking forward to pampering you.' },
     ],
     tools: ['check_stylist_slots', 'schedule_service_appointment', 'service_catalog'],
-    outcome: 'Appointment Booked • Stylist Priya',
+    outcome: 'Appointment Booked • Stylist Priya • SMS sent',
   },
 ];
 
@@ -163,14 +155,22 @@ export default function LandingPage({ onEnterWorkspace, onEnterAdmin }) {
     }
   };
 
+  const handleSelectPersona = (persona) => {
+    setAuthRole('business');
+    setBusinessAuthMode('register');
+    if (persona.demoBusiness) setName(persona.demoBusiness);
+    if (persona.industryPreset) setIndustry(persona.industryPreset);
+    if (persona.name) setRegEmail(`${persona.name.toLowerCase()}.receptionist@gmail.com`);
+    setErrorMsg(null);
+    const el = document.getElementById('auth-section');
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   const handleAutoFillDemoBusiness = () => {
     setLoginEmail('haveli.restaurant@gmail.com');
     setLoginPassword('haveli123');
-    setErrorMsg(null);
-  };
-
-  const handleAutoFillDemoAdmin = () => {
-    setAdminPasscode('admin');
     setErrorMsg(null);
   };
 
@@ -267,15 +267,18 @@ export default function LandingPage({ onEnterWorkspace, onEnterAdmin }) {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg-app)', color: 'var(--text-primary)', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg-app)', color: 'var(--text-primary)', display: 'flex', flexDirection: 'column', position: 'relative' }}>
+      {/* Ambient Aurora Light Field Background */}
+      <AmbientAuroraField />
+
       {/* 1. Sticky Navigation Bar with Entrance Animation */}
-      <header className="landing-nav hero-enter-nav" role="banner">
+      <header className="landing-nav hero-enter-nav" role="banner" style={{ position: 'sticky', top: 0, zIndex: 100 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
           <div className="brand-icon" title="CallMe AI Voice Platform">
             <PhoneCall size={16} strokeWidth={2.5} />
           </div>
-          <span style={{ fontWeight: 700, fontSize: '1.05rem', letterSpacing: '-0.03em', color: '#ffffff' }}>
-            Call<span style={{ color: 'var(--text-secondary)' }}>Me</span>
+          <span style={{ fontWeight: 700, fontSize: '1.05rem', letterSpacing: '-0.03em', color: '#ffffff', fontFamily: 'var(--font-display)' }}>
+            Call<span style={{ color: 'var(--color-emerald)' }}>Me</span>
           </span>
           <span
             style={{
@@ -293,11 +296,10 @@ export default function LandingPage({ onEnterWorkspace, onEnterAdmin }) {
         </div>
 
         <nav className="landing-nav-links" aria-label="Main Navigation">
-          <a href="#overview">Product</a>
-          <a href="#industries">Industries</a>
-          <a href="#workflow">Workflow</a>
-          <a href="#capabilities">Capabilities</a>
-          <a href="#auth-section">Access Portal</a>
+          <a href="#agents">01 · Agents</a>
+          <a href="#workflow">02 · Workflow</a>
+          <a href="#features">03 · Features</a>
+          <a href="#auth-section">04 · Portal</a>
         </nav>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
@@ -322,38 +324,42 @@ export default function LandingPage({ onEnterWorkspace, onEnterAdmin }) {
         </div>
       </header>
 
-      {/* 2. Cinematic Hero Section with Animated Canvas Background & Entrance Orchestration */}
-      <section className="landing-hero" id="overview" style={{ position: 'relative', overflow: 'hidden' }}>
-        {/* Cinematic Ambient Motion & Audio Mesh Background */}
+      {/* 2. Cinematic Hero Section */}
+      <section className="landing-hero" id="overview" style={{ position: 'relative', overflow: 'hidden', padding: '4rem 1.5rem 3rem' }}>
+        {/* Fine Acoustic Canvas Background */}
         <CinematicHeroBackground />
 
         {/* Hero Content Wrapper */}
-        <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
+        <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', maxWidth: '1100px', margin: '0 auto' }}>
           {/* Subtle Status Pill */}
           <div className="landing-badge hero-enter-badge">
             <span className="pulse-dot" />
             <span>AUTONOMOUS INBOUND VOICE TELEPHONY • ZERO HUMAN INTERVENTION</span>
           </div>
 
-          {/* Product-First Headline */}
-          <h1 className="landing-title hero-enter-title">
-            Your front desk, handled.<br />
-            <span>An AI receptionist that actually sounds human.</span>
+          {/* Product Headline */}
+          <h1 className="landing-title hero-enter-title" style={{ fontFamily: 'var(--font-display)', textAlign: 'center', maxWidth: '820px' }}>
+            Hire a receptionist <br />
+            <span className="text-gradient">that never sleeps.</span>
           </h1>
 
-          <p className="landing-subtitle hero-enter-subtitle">
-            Picks up on the first ring. Answers caller questions using your verified business knowledge base, checks live room or table availability, confirms reservations, and guards your business 24/7.
+          <p className="landing-subtitle hero-enter-subtitle" style={{ textAlign: 'center', maxWidth: '640px' }}>
+            Picks up on the first ring, answers customer inquiries in natural English or Hindi, verifies live database inventory, and locks in confirmed bookings 24/7.
           </p>
 
           {/* Action CTAs */}
-          <div className="landing-cta-group hero-enter-cta">
+          <div className="landing-cta-group hero-enter-cta" style={{ marginBottom: '3rem' }}>
             <button
               type="button"
               className="landing-btn-primary"
-              onClick={() => scrollToAuth('business', 'register')}
+              onClick={() => {
+                const el = document.getElementById('agents');
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
+              }}
             >
               <Sparkles size={16} />
-              <span>Provision AI Receptionist</span>
+              <span>Browse Receptionists</span>
+              <ArrowRight size={14} />
             </button>
 
             <button
@@ -366,9 +372,9 @@ export default function LandingPage({ onEnterWorkspace, onEnterAdmin }) {
             </button>
           </div>
 
-          {/* 3. Interactive Product Hero Mockup with Real-Time Waveform & 6 Demonstration Stages */}
-          <div className="hero-enter-console" style={{ width: '100%', maxWidth: '820px' }}>
-            <AnimatedReceptionistDemo
+          {/* Interactive Hero Call Preview with 32-Bar Waveform & Radar Halo */}
+          <div className="hero-enter-console" style={{ width: '100%' }}>
+            <HeroCallPreview
               activePreview={activePreview}
               activeIndustryId={activeIndustryId}
               onSelectIndustry={(id) => setActiveIndustryId(id)}
@@ -378,86 +384,34 @@ export default function LandingPage({ onEnterWorkspace, onEnterAdmin }) {
         </div>
       </section>
 
-      {/* 3. Scroll-Triggered Storytelling Section (5-Stage Interactive Telephony Lifecycle) */}
-      <ScrollStorytellingSection />
+      {/* 3. Metrics & Social Proof Strip (99.98% uptime, <380ms pickup, etc.) */}
+      <MetricsSocialProofStrip />
 
-      {/* 4. Product Capabilities Matrix with Scroll Reveal & Stagger */}
-      <section
-        id="capabilities"
-        className="reveal-on-scroll"
-        style={{
-          maxWidth: '1100px',
-          margin: '0 auto',
-          padding: '4rem 1.5rem',
-          width: '100%',
-          boxSizing: 'border-box',
-        }}
-      >
-        <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
-          <h2 style={{ fontSize: '2rem', fontWeight: 700, letterSpacing: '-0.03em', color: '#ffffff', marginBottom: '0.6rem' }}>
-            Engineered for enterprise telecommunications
-          </h2>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.92rem', maxWidth: '580px', margin: '0 auto' }}>
-            Built specifically to solve real customer inquiries, scheduling constraints, and front-desk bottlenecks.
-          </p>
-        </div>
+      {/* 4. Pre-Trained Receptionist Personas ("Meet your next hire") */}
+      <AgentPersonasSection onSelectPersona={handleSelectPersona} />
 
-        <div className="reveal-stagger" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.25rem' }}>
-          <div className="card">
-            <div className="stat-icon" style={{ marginBottom: '1rem' }}>
-              <Radio size={18} />
-            </div>
-            <div className="card-title">Acoustic Turn Latency</div>
-            <p className="card-desc">
-              Bidirectional streaming architecture picks up speech, detects pauses, and answers in under 380ms without awkward lag.
-            </p>
-          </div>
+      {/* 5. 5-Stage Agent Orchestration Workflow with Live Execution Trace */}
+      <AgentWorkflowSection />
 
-          <div className="card">
-            <div className="stat-icon" style={{ marginBottom: '1rem' }}>
-              <Calendar size={18} />
-            </div>
-            <div className="card-title">Calendar & Inventory Truth</div>
-            <p className="card-desc">
-              Checks live room, table, or clinic inventory before confirming bookings. Prevents double bookings autonomously.
-            </p>
-          </div>
+      {/* 6. Enterprise Feature Matrix ("Everything a front desk does. Faster.") */}
+      <FeatureGridSection />
 
-          <div className="card">
-            <div className="stat-icon" style={{ marginBottom: '1rem' }}>
-              <ShieldCheck size={18} />
-            </div>
-            <div className="card-title">Deterministic Escalation</div>
-            <p className="card-desc">
-              Guarded policy triggers transfer high-stakes calls, VIP guests, or emergency medical triage instantly to human staff.
-            </p>
-          </div>
+      {/* 7. Config Console ("Configure in plain English. Ship in minutes.") */}
+      <ConfigConsoleSection />
 
-          <div className="card">
-            <div className="stat-icon" style={{ marginBottom: '1rem' }}>
-              <Globe2 size={18} />
-            </div>
-            <div className="card-title">Native Bilingual Speech</div>
-            <p className="card-desc">
-              Fluent in English and Hindi with natural regional accents, colloquial understanding, and seamless code-switching.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* 5. Clean Access Portal / Auth Card with Scroll Reveal */}
+      {/* 8. Access Portal & Authentication Section */}
       <section
         id="auth-section"
         className="reveal-on-scroll"
         style={{
           maxWidth: '520px',
-          margin: '0 auto 6rem',
+          margin: '3rem auto 5rem',
           padding: '0 1.5rem',
           width: '100%',
           boxSizing: 'border-box',
         }}
       >
-        <div className="card" style={{ padding: '2rem 1.75rem' }}>
+        <div className="card glass" style={{ padding: '2rem 1.75rem', borderRadius: 'var(--radius-xl)' }}>
           {/* Role Tabs: Business vs Operator */}
           <div
             style={{
@@ -480,8 +434,8 @@ export default function LandingPage({ onEnterWorkspace, onEnterAdmin }) {
                 padding: '0.45rem',
                 borderRadius: 'var(--radius-xs)',
                 border: 'none',
-                background: authRole === 'business' ? 'var(--bg-card)' : 'transparent',
-                color: authRole === 'business' ? '#ffffff' : 'var(--text-secondary)',
+                background: authRole === 'business' ? '#ffffff' : 'transparent',
+                color: authRole === 'business' ? '#07080a' : 'var(--text-secondary)',
                 fontSize: '0.8rem',
                 fontWeight: 600,
                 cursor: 'pointer',
@@ -501,8 +455,8 @@ export default function LandingPage({ onEnterWorkspace, onEnterAdmin }) {
                 padding: '0.45rem',
                 borderRadius: 'var(--radius-xs)',
                 border: 'none',
-                background: authRole === 'admin' ? 'var(--bg-card)' : 'transparent',
-                color: authRole === 'admin' ? '#ffffff' : 'var(--text-secondary)',
+                background: authRole === 'admin' ? '#ffffff' : 'transparent',
+                color: authRole === 'admin' ? '#07080a' : 'var(--text-secondary)',
                 fontSize: '0.8rem',
                 fontWeight: 600,
                 cursor: 'pointer',
@@ -537,7 +491,7 @@ export default function LandingPage({ onEnterWorkspace, onEnterAdmin }) {
             <>
               {/* Business Mode Switcher: Sign In vs Register */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#ffffff' }}>
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#ffffff', margin: 0 }}>
                   {businessAuthMode === 'login' ? 'Business Sign In' : 'Provision New Receptionist'}
                 </h3>
                 <button
@@ -549,7 +503,7 @@ export default function LandingPage({ onEnterWorkspace, onEnterAdmin }) {
                   style={{
                     background: 'transparent',
                     border: 'none',
-                    color: 'var(--text-secondary)',
+                    color: 'var(--color-emerald)',
                     fontSize: '0.78rem',
                     cursor: 'pointer',
                     textDecoration: 'underline',
@@ -654,14 +608,33 @@ export default function LandingPage({ onEnterWorkspace, onEnterAdmin }) {
 
                   <div className="form-group">
                     <label className="form-label">Password</label>
-                    <input
-                      type="password"
-                      value={loginPassword}
-                      onChange={(e) => setLoginPassword(e.target.value)}
-                      placeholder="••••••••"
-                      className="form-input"
-                      required
-                    />
+                    <div style={{ position: 'relative' }}>
+                      <input
+                        type={showLoginPassword ? 'text' : 'password'}
+                        value={loginPassword}
+                        onChange={(e) => setLoginPassword(e.target.value)}
+                        placeholder="••••••••"
+                        className="form-input"
+                        style={{ paddingRight: '2.5rem' }}
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowLoginPassword(!showLoginPassword)}
+                        style={{
+                          position: 'absolute',
+                          right: '0.65rem',
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          background: 'none',
+                          border: 'none',
+                          color: 'var(--text-tertiary)',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        {showLoginPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                      </button>
+                    </div>
                   </div>
 
                   <button
@@ -670,71 +643,100 @@ export default function LandingPage({ onEnterWorkspace, onEnterAdmin }) {
                     disabled={loading}
                     style={{ width: '100%', padding: '0.65rem', marginTop: '0.5rem' }}
                   >
-                    {loading ? 'Authenticating...' : 'Enter Business Workspace'}
+                    {loading ? 'Authenticating...' : 'Sign In to Workspace'}
                   </button>
                 </form>
               ) : (
                 <form onSubmit={handleBusinessRegister} style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
                   <div className="form-group">
-                    <label className="form-label">Business Name</label>
+                    <label className="form-label">Business Name *</label>
                     <input
                       type="text"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
-                      placeholder="e.g. Haveli Grand Restaurant"
+                      placeholder="e.g. Spice Garden Bistro"
                       className="form-input"
                       required
                     />
                   </div>
 
                   <div className="form-group">
-                    <label className="form-label">Industry Domain</label>
+                    <label className="form-label">Domain / Industry</label>
                     <select
                       value={industry}
                       onChange={(e) => setIndustry(e.target.value)}
-                      className="form-select"
+                      className="form-input"
                     >
                       <option value="Restaurant">Restaurant & Dining</option>
-                      <option value="Hotel">Hotel & Hospitality</option>
                       <option value="Clinic">Clinic & Healthcare</option>
+                      <option value="Hotel">Hotel & Hospitality</option>
                       <option value="Salon">Salon & Wellness</option>
-                      <option value="Other">General Service Business</option>
+                      <option value="General Services">General Professional Services</option>
                     </select>
                   </div>
 
                   <div className="form-group">
-                    <label className="form-label">Inbound Phone DID</label>
-                    <input
-                      type="text"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      className="form-input"
-                      required
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label">Email Address</label>
+                    <label className="form-label">Business Work Email *</label>
                     <input
                       type="email"
                       value={regEmail}
                       onChange={(e) => setRegEmail(e.target.value)}
-                      placeholder="owner@example.com"
+                      placeholder="owner@yourdomain.com"
                       className="form-input"
                       required
                     />
                   </div>
 
                   <div className="form-group">
-                    <label className="form-label">Create Password</label>
-                    <input
-                      type="password"
-                      value={regPassword}
-                      onChange={(e) => setRegPassword(e.target.value)}
-                      placeholder="At least 4 characters"
-                      className="form-input"
-                      required
-                    />
+                    <label className="form-label">Password *</label>
+                    <div style={{ position: 'relative' }}>
+                      <input
+                        type={showRegPassword ? 'text' : 'password'}
+                        value={regPassword}
+                        onChange={(e) => setRegPassword(e.target.value)}
+                        placeholder="At least 4 characters"
+                        className="form-input"
+                        style={{ paddingRight: '2.5rem' }}
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowRegPassword(!showRegPassword)}
+                        style={{
+                          position: 'absolute',
+                          right: '0.65rem',
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          background: 'none',
+                          border: 'none',
+                          color: 'var(--text-tertiary)',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        {showRegPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                    <div className="form-group">
+                      <label className="form-label">Opens At</label>
+                      <input
+                        type="time"
+                        value={openTime}
+                        onChange={(e) => setOpenTime(e.target.value)}
+                        className="form-input"
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Closes At</label>
+                      <input
+                        type="time"
+                        value={closeTime}
+                        onChange={(e) => setCloseTime(e.target.value)}
+                        className="form-input"
+                      />
+                    </div>
                   </div>
 
                   <button
@@ -743,20 +745,21 @@ export default function LandingPage({ onEnterWorkspace, onEnterAdmin }) {
                     disabled={loading}
                     style={{ width: '100%', padding: '0.65rem', marginTop: '0.5rem' }}
                   >
-                    {loading ? 'Deploying Receptionist...' : 'Deploy 24/7 AI Receptionist'}
+                    {loading ? 'Provisioning...' : 'Activate AI Receptionist'}
                   </button>
                 </form>
               )}
             </>
           ) : (
             <>
-              {/* Operator Portal Mode */}
-              <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#ffffff', marginBottom: '0.45rem' }}>
-                Platform Operator Console
-              </h3>
-              <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '1.25rem' }}>
-                Supervisory access for fleet telephony telemetry and tenant management.
-              </p>
+              <div style={{ marginBottom: '1.25rem' }}>
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#ffffff', margin: 0 }}>
+                  Operator Admin Access
+                </h3>
+                <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', margin: '4px 0 0' }}>
+                  Manage global telephony trunks, multi-tenant businesses, and tool telemetry.
+                </p>
+              </div>
 
               <div
                 style={{
@@ -771,11 +774,11 @@ export default function LandingPage({ onEnterWorkspace, onEnterAdmin }) {
                 }}
               >
                 <span style={{ fontSize: '0.76rem', color: 'var(--text-secondary)' }}>
-                  Evaluation Passcode:
+                  Local operator key default is <strong>admin</strong>:
                 </span>
                 <button
                   type="button"
-                  onClick={handleAutoFillDemoAdmin}
+                  onClick={() => setAdminPasscode('admin')}
                   style={{
                     padding: '0.25rem 0.6rem',
                     borderRadius: 'var(--radius-xs)',
@@ -787,7 +790,7 @@ export default function LandingPage({ onEnterWorkspace, onEnterAdmin }) {
                     cursor: 'pointer',
                   }}
                 >
-                  Autofill "admin"
+                  Autofill
                 </button>
               </div>
 
@@ -817,7 +820,48 @@ export default function LandingPage({ onEnterWorkspace, onEnterAdmin }) {
         </div>
       </section>
 
-      {/* 6. Polished Dark Footer */}
+      {/* 9. High-Converting Bottom CTA Banner */}
+      <section className="reveal-on-scroll" style={{ maxWidth: '1080px', margin: '0 auto 5rem', padding: '0 1.5rem', width: '100%', boxSizing: 'border-box' }}>
+        <div className="glass border-glow shadow-glow" style={{ borderRadius: 'var(--radius-2xl, 20px)', padding: '3.5rem 2rem', textAlign: 'center' }}>
+          <h2 style={{ fontSize: 'clamp(1.75rem, 3.5vw, 2.5rem)', fontWeight: 700, color: '#ffffff', margin: '0 0 0.75rem', fontFamily: 'var(--font-display)' }}>
+            Your receptionist can start today.
+          </h2>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', maxWidth: '460px', margin: '0 auto 2rem' }}>
+            14-day free trial. Zero contracts. Cancel anytime with a single click.
+          </p>
+          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', gap: '1rem' }}>
+            <button
+              type="button"
+              className="landing-btn-primary"
+              onClick={() => scrollToAuth('business', 'register')}
+              style={{ padding: '0.75rem 1.75rem', fontSize: '0.9rem' }}
+            >
+              <span>Start Free Trial</span>
+              <ArrowRight size={15} />
+            </button>
+            <button
+              type="button"
+              className="landing-btn-secondary"
+              onClick={() => scrollToAuth('business', 'login')}
+              style={{ padding: '0.75rem 1.75rem', fontSize: '0.9rem' }}
+            >
+              <span>Sign In to Console</span>
+            </button>
+          </div>
+          <p style={{ marginTop: '1.25rem', fontSize: '0.82rem', color: 'var(--text-tertiary)' }}>
+            Already registered?{' '}
+            <button
+              type="button"
+              onClick={() => scrollToAuth('business', 'login')}
+              style={{ background: 'none', border: 'none', color: 'var(--color-emerald)', fontWeight: 600, cursor: 'pointer', textDecoration: 'underline' }}
+            >
+              Log in to your workspace
+            </button>
+          </p>
+        </div>
+      </section>
+
+      {/* 10. Polished Dark Footer */}
       <footer
         style={{
           borderTop: '1px solid var(--border-subtle)',
@@ -839,14 +883,13 @@ export default function LandingPage({ onEnterWorkspace, onEnterAdmin }) {
           <div className="brand-icon" style={{ width: 22, height: 22 }}>
             <PhoneCall size={12} strokeWidth={2.5} />
           </div>
-          <span style={{ color: '#ffffff', fontWeight: 600 }}>CallMe Platform</span>
+          <span style={{ color: '#ffffff', fontWeight: 600, fontFamily: 'var(--font-display)' }}>CallMe Platform</span>
           <span>© 2026. All rights reserved.</span>
         </div>
 
-        <div style={{ display: 'flex', gap: '1.25rem' }}>
-          <span>English & Hindi Telephony Engine</span>
-          <span>WebRTC Low-Latency Voice</span>
-          <span>Multi-Tenant Architecture</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', fontFamily: 'var(--font-mono)', fontSize: '0.72rem' }}>
+          <span>● all systems operational</span>
+          <span style={{ color: 'var(--color-emerald)' }}>380ms Turn Latency</span>
         </div>
       </footer>
 

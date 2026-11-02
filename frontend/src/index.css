@@ -73,7 +73,26 @@
   --sky-100: rgba(56, 189, 248, 0.12);
 
   /* Typography */
-  --font-sans: 'Inter', 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  /* Lovable / Obsidian Display Typography */
+  --font-display: 'Space Grotesk', 'Plus Jakarta Sans', sans-serif;
+  --font-sans: 'DM Sans', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  /* Vibrant Lovable Gradients & Glows */
+  --color-primary: #10b981;
+  --color-emerald: #10b981;
+  --color-primary-glow: #34d399;
+  --gradient-primary: linear-gradient(120deg, #10b981, #06b6d4);
+  --shadow-glow: 0 0 50px -8px rgba(16, 185, 129, 0.4);
+  --card-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 18px 44px -20px rgba(0, 0, 0, 0.75);
+  --glass-bg: rgba(13, 15, 20, 0.85);
+
+  /* Ambient Aurora Lights */
+  --aurora-1: rgba(16, 185, 129, 0.28);
+  --aurora-2: rgba(6, 182, 212, 0.22);
+  --aurora-3: rgba(99, 102, 241, 0.18);
+  --aurora-beam: rgba(56, 189, 248, 0.35);
+  --aurora-opacity: 0.55;
   --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
   /* Radii */
@@ -1652,3 +1671,314 @@ input:checked + .slider:before {
 }
 
 
+
+/* ==========================================================================
+   Lovable & Obsidian Modern Inspiration Extensions
+   ========================================================================== */
+
+.text-gradient {
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.bg-gradient-primary {
+  background: var(--gradient-primary);
+}
+
+.shadow-glow {
+  box-shadow: var(--shadow-glow);
+}
+
+.shadow-card {
+  box-shadow: var(--card-shadow);
+}
+
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--card-shadow);
+}
+
+/* Equalizer and Scanner Animations */
+@keyframes wave {
+  0%, 100% { transform: scaleY(0.25); }
+  50% { transform: scaleY(1); }
+}
+
+.animate-wave {
+  animation: wave 1.1s ease-in-out infinite;
+  transform-origin: center;
+}
+
+@keyframes spin-slow {
+  to { transform: rotate(360deg); }
+}
+
+.animate-spin-slow {
+  animation: spin-slow 24s linear infinite;
+}
+
+@keyframes scan {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(200%); }
+}
+
+.animate-scan {
+  animation: scan 4s linear infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+@keyframes blink {
+  50% { opacity: 0; }
+}
+
+.animate-blink {
+  animation: blink 1s step-end infinite;
+}
+
+/* Border Glow and Radial Dot Textures */
+.border-glow {
+  position: relative;
+}
+
+.border-glow::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: conic-gradient(from 0deg, transparent, rgba(16, 185, 129, 0.4), rgba(56, 189, 248, 0.4), transparent 40%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+.bg-dots {
+  background-image: radial-gradient(rgba(16, 185, 129, 0.25) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+
+/* Ambient Aurora Background System */
+.aurora-field {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.aurora {
+  position: absolute;
+  border-radius: 9999px;
+  opacity: var(--aurora-opacity, 0.55);
+  will-change: transform;
+  filter: blur(48px);
+}
+
+.aurora-1 {
+  left: -15%;
+  top: -20%;
+  width: 60%;
+  height: 60%;
+  background: radial-gradient(closest-side, var(--aurora-1), transparent 72%);
+  animation: aurora-a 26s ease-in-out infinite alternate;
+}
+
+.aurora-2 {
+  right: -20%;
+  top: 5%;
+  width: 65%;
+  height: 65%;
+  background: radial-gradient(closest-side, var(--aurora-2), transparent 72%);
+  animation: aurora-b 32s ease-in-out infinite alternate;
+}
+
+.aurora-3 {
+  left: 15%;
+  bottom: -25%;
+  width: 70%;
+  height: 70%;
+  background: radial-gradient(closest-side, var(--aurora-3), transparent 74%);
+  animation: aurora-c 38s ease-in-out infinite alternate;
+}
+
+.aurora-beam {
+  position: absolute;
+  top: -40%;
+  left: -50%;
+  width: 30%;
+  height: 180%;
+  background: linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.08), transparent);
+  animation: aurora-beam 22s linear infinite;
+}
+
+@keyframes aurora-a {
+  from { transform: translate3d(0, 0, 0) scale(1); }
+  to { transform: translate3d(8%, 6%, 0) scale(1.1); }
+}
+
+@keyframes aurora-b {
+  from { transform: translate3d(0, 0, 0) scale(1.05); }
+  to { transform: translate3d(-7%, 10%, 0) scale(0.95); }
+}
+
+@keyframes aurora-c {
+  from { transform: translate3d(0, 0, 0) scale(0.98); }
+  to { transform: translate3d(10%, -8%, 0) scale(1.12); }
+}
+
+@keyframes aurora-beam {
+  from { transform: rotate(16deg) translateX(-40%); }
+  to { transform: rotate(16deg) translateX(380%); }
+}
+
+/* Agent Persona Showcase Cards */
+.agent-card {
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.3s, box-shadow 0.3s, transform 0.3s;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+}
+
+.agent-card::after {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg, transparent 25%, rgba(16, 185, 129, 0.08) 45%, transparent 65%);
+  transform: translateX(-110%);
+  transition: transform 0.7s ease;
+}
+
+.agent-card:hover {
+  transform: translateY(-6px);
+  border-color: rgba(16, 185, 129, 0.4);
+  box-shadow: var(--shadow-glow), var(--card-shadow);
+}
+
+.agent-card:hover::after {
+  transform: translateX(110%);
+}
+
+/* Interactive Agent Workflow Components */
+.workflow-track {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  padding: 10px 20px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--bg-surface-elevated);
+}
+
+.workflow-node {
+  position: relative;
+  min-width: 0;
+}
+
+.workflow-node:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  top: 36px;
+  left: calc(50% + 24px);
+  width: calc(100% - 48px);
+  height: 2px;
+  background: var(--border-subtle);
+  transition: background 0.3s ease;
+}
+
+.workflow-node.is-complete::after {
+  background: var(--color-emerald, #10b981);
+}
+
+.workflow-node-button {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 14px 6px;
+  color: var(--text-secondary);
+  transition: color 0.2s;
+}
+
+.workflow-node-icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-md);
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-tertiary);
+  transition: all 0.3s ease;
+}
+
+.workflow-node.is-active .workflow-node-icon {
+  color: var(--color-emerald, #10b981);
+  border-color: var(--color-emerald, #10b981);
+  box-shadow: var(--shadow-glow);
+  background: rgba(16, 185, 129, 0.1);
+}
+
+.workflow-node.is-complete .workflow-node-icon {
+  color: var(--color-emerald, #10b981);
+  border-color: rgba(16, 185, 129, 0.4);
+  background: rgba(16, 185, 129, 0.15);
+}
+
+.workflow-node.is-active .workflow-node-button,
+.workflow-node.is-complete .workflow-node-button {
+  color: var(--text-primary);
+}
+
+.workflow-detail {
+  min-height: 280px;
+  animation: entrance 0.45s ease both;
+}
+
+.workflow-log {
+  opacity: 0.45;
+  transition: opacity 0.4s;
+}
+
+.workflow-log.is-reached {
+  opacity: 1;
+}
+
+@media (max-width: 640px) {
+  .workflow-track {
+    padding-inline: 4px;
+  }
+  .workflow-node-button {
+    padding-inline: 2px;
+  }
+  .workflow-node:not(:last-child)::after {
+    left: calc(50% + 20px);
+    width: calc(100% - 40px);
+  }
+}
+
+/* Config Console */
+.config-console {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--card-shadow);
+}
