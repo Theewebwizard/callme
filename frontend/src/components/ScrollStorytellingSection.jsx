@@ -93,7 +93,7 @@ function StoryConsoleView({ activeStep }) {
               boxShadow: activeStep === 0 ? '0 0 10px rgba(245, 158, 11, 0.7)' : '0 0 10px rgba(16, 185, 129, 0.7)',
             }}
           />
-          <span style={{ fontSize: '0.78rem', fontFamily: 'var(--font-mono)', fontWeight: 600, color: '#ffffff' }}>
+          <span style={{ fontSize: '0.78rem', fontFamily: 'var(--font-mono)', fontWeight: 600, color: 'var(--text-primary)' }}>
             {activeStep === 0 ? 'RINGING INBOUND DID' : 'ACTIVE WEBRTC SESSION'}
           </span>
         </div>
@@ -141,7 +141,7 @@ function StoryConsoleView({ activeStep }) {
             <div style={{ fontSize: '0.72rem', color: 'var(--amber-500)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '4px' }}>
               ● Carrier Signal Detected
             </div>
-            <div style={{ fontSize: '1.35rem', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.02em', marginBottom: '4px' }}>
+            <div style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em', marginBottom: '4px' }}>
               +91 98201 44102
             </div>
             <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)', marginBottom: '1.5rem' }}>
@@ -258,11 +258,11 @@ function StoryConsoleView({ activeStep }) {
               </div>
               <div style={{ background: 'rgba(255, 255, 255, 0.04)', border: '1px solid var(--border-subtle)', padding: '0.6rem 0.8rem', borderRadius: 'var(--radius-sm)' }}>
                 <div style={{ fontSize: '0.68rem', color: 'var(--text-tertiary)', fontFamily: 'var(--font-mono)' }}>PARTY SIZE</div>
-                <div style={{ fontSize: '0.82rem', fontWeight: 600, color: '#ffffff', fontFamily: 'var(--font-mono)' }}>4 Guests</div>
+                <div style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'var(--font-mono)' }}>4 Guests</div>
               </div>
               <div style={{ background: 'rgba(255, 255, 255, 0.04)', border: '1px solid var(--border-subtle)', padding: '0.6rem 0.8rem', borderRadius: 'var(--radius-sm)' }}>
                 <div style={{ fontSize: '0.68rem', color: 'var(--text-tertiary)', fontFamily: 'var(--font-mono)' }}>REQUESTED TIME</div>
-                <div style={{ fontSize: '0.82rem', fontWeight: 600, color: '#ffffff', fontFamily: 'var(--font-mono)' }}>Tonight • 20:00</div>
+                <div style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'var(--font-mono)' }}>Tonight • 20:00</div>
               </div>
               <div style={{ background: 'rgba(255, 255, 255, 0.04)', border: '1px solid var(--border-subtle)', padding: '0.6rem 0.8rem', borderRadius: 'var(--radius-sm)' }}>
                 <div style={{ fontSize: '0.68rem', color: 'var(--text-tertiary)', fontFamily: 'var(--font-mono)' }}>PREFERENCE</div>
@@ -298,7 +298,7 @@ function StoryConsoleView({ activeStep }) {
                 }}
               >
                 <div>
-                  <div style={{ fontSize: '0.84rem', fontWeight: 700, color: '#ffffff' }}>Table #12 (Cover 4 • Garden Patio)</div>
+                  <div style={{ fontSize: '0.84rem', fontWeight: 700, color: 'var(--text-primary)' }}>Table #12 (Cover 4 • Garden Patio)</div>
                   <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>20:00–21:30 Slot Available • Matches Seating Preference</div>
                 </div>
                 <span style={{ fontSize: '0.74rem', background: 'var(--mint-500)', color: '#07080a', padding: '2px 8px', borderRadius: 'var(--radius-full)', fontWeight: 700 }}>
@@ -377,7 +377,7 @@ function StoryConsoleView({ activeStep }) {
               <div style={{ fontSize: '0.72rem', color: 'var(--mint-400)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                 Reservation Confirmed
               </div>
-              <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#ffffff', margin: '2px 0 6px' }}>
+              <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)', margin: '2px 0 6px' }}>
                 Token #BK-8821
               </div>
               <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
@@ -400,7 +400,7 @@ function StoryConsoleView({ activeStep }) {
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <MessageSquare size={16} style={{ color: 'var(--mint-400)' }} />
                 <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
-                  SMS Voucher Dispatched to <strong style={{ color: '#ffffff' }}>+91 98201 44102</strong>
+                  SMS Voucher Dispatched to <strong style={{ color: 'var(--text-primary)' }}>+91 98201 44102</strong>
                 </span>
               </div>
               <span style={{ fontSize: '0.72rem', color: 'var(--mint-400)', fontFamily: 'var(--font-mono)' }}>
@@ -487,7 +487,7 @@ export default function ScrollStorytellingSection() {
           <span>Interactive Telephony Lifecycle</span>
         </div>
 
-        <h2 style={{ fontSize: 'clamp(1.8rem, 3.5vw, 2.6rem)', fontWeight: 800, letterSpacing: '-0.03em', color: '#ffffff', marginBottom: '0.75rem' }}>
+        <h2 style={{ fontSize: 'clamp(1.8rem, 3.5vw, 2.6rem)', fontWeight: 800, letterSpacing: '-0.03em', color: 'var(--text-primary)', marginBottom: '0.75rem' }}>
           How CallMe handles a call from first ring to confirmed booking
         </h2>
         <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', maxWidth: '640px', margin: '0 auto', lineHeight: 1.6 }}>

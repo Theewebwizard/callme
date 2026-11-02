@@ -338,7 +338,7 @@ export default function BusinessSetup({ business, onBusinessSaved }) {
           {activeSection === 'profile' && (
             <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
               <div style={{ borderBottom: '1px solid var(--border-subtle)', paddingBottom: '0.75rem' }}>
-                <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#ffffff', margin: 0 }}>
+                <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
                   Business Profile & Operating Hours
                 </h3>
                 <p style={{ fontSize: '0.76rem', color: 'var(--text-tertiary)', margin: '4px 0 0' }}>
@@ -437,7 +437,7 @@ export default function BusinessSetup({ business, onBusinessSaved }) {
           {activeSection === 'voice' && (
             <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
               <div style={{ borderBottom: '1px solid var(--border-subtle)', paddingBottom: '0.75rem' }}>
-                <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#ffffff', margin: 0 }}>
+                <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
                   Spoken Voice Persona & Natural Greeting
                 </h3>
                 <p style={{ fontSize: '0.76rem', color: 'var(--text-tertiary)', margin: '4px 0 0' }}>
@@ -504,7 +504,7 @@ export default function BusinessSetup({ business, onBusinessSaved }) {
           {activeSection === 'escalation' && (
             <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
               <div style={{ borderBottom: '1px solid var(--border-subtle)', paddingBottom: '0.75rem' }}>
-                <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#ffffff', margin: 0 }}>
+                <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
                   Deterministic Escalation & Staff Handoffs
                 </h3>
                 <p style={{ fontSize: '0.76rem', color: 'var(--text-tertiary)', margin: '4px 0 0' }}>
@@ -543,7 +543,7 @@ export default function BusinessSetup({ business, onBusinessSaved }) {
           {activeSection === 'faqs' && (
             <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
               <div style={{ borderBottom: '1px solid var(--border-subtle)', paddingBottom: '0.75rem' }}>
-                <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#ffffff', margin: 0 }}>
+                <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
                   Verified Knowledge Base FAQs ({(editForm.faqs || []).length})
                 </h3>
                 <p style={{ fontSize: '0.76rem', color: 'var(--text-tertiary)', margin: '4px 0 0' }}>
@@ -563,7 +563,7 @@ export default function BusinessSetup({ business, onBusinessSaved }) {
                   gap: '0.75rem',
                 }}
               >
-                <div style={{ fontSize: '0.78rem', fontWeight: 600, color: '#ffffff' }}>Add New Knowledge Base Q&A</div>
+                <div style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-primary)' }}>Add New Knowledge Base Q&A</div>
                 <input
                   type="text"
                   placeholder="Question (e.g. What is your dress code? Do you offer valet?)"
@@ -609,7 +609,7 @@ export default function BusinessSetup({ business, onBusinessSaved }) {
                     }}
                   >
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                      <div style={{ fontSize: '0.82rem', fontWeight: 600, color: '#ffffff' }}>
+                      <div style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-primary)' }}>
                         Q: {faq.question}
                       </div>
                       <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
@@ -642,7 +642,7 @@ export default function BusinessSetup({ business, onBusinessSaved }) {
           {/* Spoken Persona Preview Card */}
           <div className="card" style={{ padding: '1.25rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem', fontWeight: 700, color: '#ffffff' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-primary)' }}>
                 <Bot size={14} style={{ color: 'var(--mint-400)' }} />
                 <span>Live Spoken Preview</span>
               </div>

@@ -36,7 +36,7 @@ export default function ConfigConsoleSection() {
             <span>Instant Deployment</span>
           </div>
 
-          <h2 style={{ fontSize: 'clamp(1.75rem, 3.5vw, 2.5rem)', fontWeight: 700, letterSpacing: '-0.03em', color: '#ffffff', margin: '0 0 1rem' }}>
+          <h2 style={{ fontSize: 'clamp(1.75rem, 3.5vw, 2.5rem)', fontWeight: 700, letterSpacing: '-0.03em', color: 'var(--text-primary)', margin: '0 0 1rem' }}>
             Configure in plain English. <span className="text-gradient">Ship in minutes.</span>
           </h2>
 

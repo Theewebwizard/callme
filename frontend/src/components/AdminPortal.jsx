@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import ThemeToggle from './ThemeToggle';
 import {
   ShieldCheck,
   Users,
@@ -102,6 +103,7 @@ export default function AdminPortal({ onExitAdmin }) {
               <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--color-emerald)', display: 'inline-block' }}></span>
               Superuser Mode Active
             </span>
+            <ThemeToggle />
             <button
               className="btn-secondary"
               style={{ padding: '0.35rem 0.85rem', fontSize: '0.8rem', borderRadius: 'var(--radius-md)' }}

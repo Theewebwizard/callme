@@ -175,7 +175,7 @@ export default function App() {
               {activeBusiness.name}
             </span>
             <span style={{ color: 'var(--border-strong)', fontSize: '0.75rem' }}>/</span>
-            <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#ffffff' }}>
+            <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-primary)' }}>
               {activeTab === 'overview' && 'Cockpit'}
               {activeTab === 'setup' && 'Voice Persona & Knowledge'}
               {activeTab === 'playground' && 'AI Dialogue Simulator'}

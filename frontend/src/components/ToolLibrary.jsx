@@ -690,7 +690,7 @@ export default function ToolLibrary({ business }) {
             }}
           >
             <div>
-              <div style={{ fontWeight: 600, color: '#ffffff', fontSize: '0.86rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.86rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <Layers size={15} style={{ color: 'var(--mint-400)' }} /> Industry Policy: <strong>{business.industry || 'General'}</strong>
               </div>
               <div style={{ color: 'var(--text-secondary)', fontSize: '0.78rem', marginTop: '2px' }}>
@@ -842,7 +842,7 @@ export default function ToolLibrary({ business }) {
                               </div>
                               <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                  <span style={{ fontWeight: 600, fontSize: '0.86rem', color: '#ffffff' }}>
+                                  <span style={{ fontWeight: 600, fontSize: '0.86rem', color: 'var(--text-primary)' }}>
                                     {t.name}
                                   </span>
                                   <span style={{ fontSize: '0.68rem', fontFamily: 'var(--font-mono)', background: 'var(--bg-surface-elevated)', border: '1px solid var(--border-subtle)', color: 'var(--text-tertiary)', padding: '1px 5px', borderRadius: '4px' }}>

@@ -123,7 +123,7 @@ export default function AgentWorkflowSection() {
           <Sparkles size={13} />
           <span>Autonomous Call Lifecycle</span>
         </div>
-        <h2 style={{ fontSize: 'clamp(1.75rem, 4vw, 2.75rem)', fontWeight: 700, letterSpacing: '-0.03em', color: '#ffffff', maxWidth: '820px', margin: '0 auto 0.85rem' }}>
+        <h2 style={{ fontSize: 'clamp(1.75rem, 4vw, 2.75rem)', fontWeight: 700, letterSpacing: '-0.03em', color: 'var(--text-primary)', maxWidth: '820px', margin: '0 auto 0.85rem' }}>
           How CallMe handles a call from <span className="text-gradient">first ring to confirmed booking</span>
         </h2>
         <p style={{ color: 'var(--text-secondary)', fontSize: '0.94rem', maxWidth: '640px', margin: '0 auto' }}>
@@ -155,7 +155,7 @@ export default function AgentWorkflowSection() {
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
             <Workflow size={18} color="var(--color-emerald)" />
-            <span style={{ fontWeight: 700, fontSize: '0.92rem', color: '#ffffff' }}>Agent Orchestration Engine</span>
+            <span style={{ fontWeight: 700, fontSize: '0.92rem', color: 'var(--text-primary)' }}>Agent Orchestration Engine</span>
             <span style={{ fontSize: '0.72rem', fontFamily: 'var(--font-mono)', color: 'var(--text-tertiary)' }}>
               / CALL HANDLER PIPELINE
             </span>
@@ -255,7 +255,7 @@ export default function AgentWorkflowSection() {
                 <span>Stage 0{active + 1} • {step.tag}</span>
               </div>
 
-              <h3 style={{ fontSize: '1.45rem', fontWeight: 700, color: '#ffffff', margin: '0.85rem 0 0.65rem' }}>
+              <h3 style={{ fontSize: '1.45rem', fontWeight: 700, color: 'var(--text-primary)', margin: '0.85rem 0 0.65rem' }}>
                 {step.title}
               </h3>
 

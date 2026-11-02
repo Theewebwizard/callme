@@ -614,7 +614,7 @@ export default function WebPhone({ business }) {
 
           {/* Business Identity & Line */}
           <div style={{ textAlign: 'center', padding: '0.5rem 0' }}>
-            <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.02em', margin: '0 0 4px 0' }}>
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em', margin: '0 0 4px 0' }}>
               {business?.name || 'Reception Line'}
             </h2>
             <div style={{ fontSize: '0.76rem', color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)' }}>
@@ -717,7 +717,7 @@ export default function WebPhone({ business }) {
                     background: isMicMuted ? 'rgba(239, 68, 68, 0.2)' : 'var(--bg-surface-elevated)',
                     border: '1px solid',
                     borderColor: isMicMuted ? '#ef4444' : 'var(--border-medium)',
-                    color: isMicMuted ? '#ef4444' : '#ffffff',
+                    color: isMicMuted ? '#ef4444' : 'var(--text-primary)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -837,7 +837,7 @@ export default function WebPhone({ business }) {
             }}
           >
             <div>
-              <div style={{ fontSize: '0.86rem', fontWeight: 700, color: '#ffffff' }}>
+              <div style={{ fontSize: '0.86rem', fontWeight: 700, color: 'var(--text-primary)' }}>
                 Live Spoken Turn Transcript
               </div>
               <div style={{ fontSize: '0.72rem', color: 'var(--text-tertiary)', fontFamily: 'var(--font-mono)' }}>

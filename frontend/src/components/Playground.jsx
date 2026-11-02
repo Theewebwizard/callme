@@ -509,7 +509,7 @@ export default function Playground({ business }) {
         {/* Right Column: Session Telemetry & Inspector */}
         <aside style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <div className="card" style={{ padding: '1.25rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', fontWeight: 700, color: '#ffffff', marginBottom: '0.75rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.75rem' }}>
               <Layers size={14} style={{ color: 'var(--mint-400)' }} />
               <span>Session Telemetry</span>
             </div>
@@ -543,7 +543,7 @@ export default function Playground({ business }) {
           </div>
 
           <div className="card" style={{ padding: '1.15rem' }}>
-            <div style={{ fontSize: '0.78rem', fontWeight: 600, color: '#ffffff', marginBottom: '0.4rem' }}>
+            <div style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '0.4rem' }}>
               Simulator Guidance
             </div>
             <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: 1.5, margin: 0 }}>

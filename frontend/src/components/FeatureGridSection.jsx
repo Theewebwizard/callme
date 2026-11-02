@@ -67,7 +67,7 @@ export default function FeatureGridSection() {
           <Sparkles size={13} />
           <span>Core Capabilities</span>
         </div>
-        <h2 style={{ fontSize: 'clamp(1.75rem, 4vw, 2.75rem)', fontWeight: 700, letterSpacing: '-0.03em', color: '#ffffff', margin: '0 auto 0.85rem' }}>
+        <h2 style={{ fontSize: 'clamp(1.75rem, 4vw, 2.75rem)', fontWeight: 700, letterSpacing: '-0.03em', color: 'var(--text-primary)', margin: '0 auto 0.85rem' }}>
           Everything a front desk does. <span className="text-gradient">Faster.</span>
         </h2>
         <p style={{ color: 'var(--text-secondary)', fontSize: '0.94rem', maxWidth: '600px', margin: '0 auto' }}>
@@ -115,7 +115,7 @@ export default function FeatureGridSection() {
               <Icon size={20} />
             </div>
 
-            <h3 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#ffffff', margin: '0 0 0.5rem' }}>
+            <h3 style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 0.5rem' }}>
               {title}
             </h3>
 

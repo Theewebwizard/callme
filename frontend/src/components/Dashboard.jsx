@@ -141,7 +141,7 @@ export default function Dashboard({ business, onNavigate, calls = [] }) {
             </span>
           </div>
 
-          <h1 style={{ fontSize: '1.65rem', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.03em', margin: 0 }}>
+          <h1 style={{ fontSize: '1.65rem', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.03em', margin: 0 }}>
             {business.name}
           </h1>
 
@@ -599,7 +599,7 @@ export default function Dashboard({ business, onNavigate, calls = [] }) {
               >
                 <PhoneCall size={22} />
               </div>
-              <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: '#ffffff', margin: '0 0 0.4rem 0' }}>
+              <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 0.4rem 0' }}>
                 No Inbound Calls Logged Yet
               </h3>
               <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', maxWidth: '440px', lineHeight: 1.55, margin: '0 0 1.25rem 0' }}>

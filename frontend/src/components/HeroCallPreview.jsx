@@ -120,7 +120,7 @@ export default function HeroCallPreview({
                 A
               </div>
               <div>
-                <p style={{ fontWeight: 700, fontSize: '0.94rem', color: '#ffffff', margin: 0 }}>
+                <p style={{ fontWeight: 700, fontSize: '0.94rem', color: 'var(--text-primary)', margin: 0 }}>
                   Aria · Autonomous Receptionist
                 </p>
                 <p style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', margin: '2px 0 0', fontFamily: 'var(--font-mono)' }}>

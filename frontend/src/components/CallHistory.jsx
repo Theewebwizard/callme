@@ -302,7 +302,7 @@ export default function CallHistory({ business, initialCalls = [], onCallsUpdate
                         fontSize: '1.15rem',
                         fontWeight: 700,
                         fontFamily: 'var(--font-mono)',
-                        color: '#ffffff',
+                        color: 'var(--text-primary)',
                       }}
                     >
                       {activeCall.caller_number}
@@ -375,7 +375,7 @@ export default function CallHistory({ business, initialCalls = [], onCallsUpdate
                       >
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                           <CheckCircle2 size={13} style={{ color: 'var(--mint-400)' }} />
-                          <span style={{ color: '#ffffff' }}>{typeof t === 'string' ? t : JSON.stringify(t)}</span>
+                          <span style={{ color: 'var(--text-primary)' }}>{typeof t === 'string' ? t : JSON.stringify(t)}</span>
                         </div>
                         <span
                           style={{

@@ -29,6 +29,7 @@ import AgentWorkflowSection from './AgentWorkflowSection';
 import FeatureGridSection from './FeatureGridSection';
 import ConfigConsoleSection from './ConfigConsoleSection';
 import useScrollReveal from './useScrollReveal';
+import ThemeToggle from './ThemeToggle';
 
 export const INDUSTRY_PREVIEWS = [
   {
@@ -276,7 +277,7 @@ export default function LandingPage({ onEnterWorkspace, onEnterAdmin }) {
           <div className="brand-icon" title="CallMe AI Voice Platform">
             <PhoneCall size={16} strokeWidth={2.5} />
           </div>
-          <span style={{ fontWeight: 700, fontSize: '1.05rem', letterSpacing: '-0.03em', color: '#ffffff', fontFamily: 'var(--font-display)' }}>
+          <span style={{ fontWeight: 700, fontSize: '1.05rem', letterSpacing: '-0.03em', color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}>
             Call<span style={{ color: 'var(--color-emerald)' }}>Me</span>
           </span>
           <span
@@ -302,6 +303,7 @@ export default function LandingPage({ onEnterWorkspace, onEnterAdmin }) {
         </nav>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+          <ThemeToggle />
           <button
             type="button"
             className="landing-btn-secondary"
@@ -488,7 +490,7 @@ export default function LandingPage({ onEnterWorkspace, onEnterAdmin }) {
             <>
               {/* Business Mode Switcher: Sign In vs Register */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#ffffff', margin: 0 }}>
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
                   {businessAuthMode === 'login' ? 'Business Sign In' : 'Provision New Receptionist'}
                 </h3>
                 <button
@@ -750,7 +752,7 @@ export default function LandingPage({ onEnterWorkspace, onEnterAdmin }) {
           ) : (
             <>
               <div style={{ marginBottom: '1.25rem' }}>
-                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#ffffff', margin: 0 }}>
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
                   Operator Admin Access
                 </h3>
                 <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', margin: '4px 0 0' }}>
@@ -820,7 +822,7 @@ export default function LandingPage({ onEnterWorkspace, onEnterAdmin }) {
       {/* 9. High-Converting Bottom CTA Banner */}
       <section className="reveal-on-scroll" style={{ maxWidth: '1080px', margin: '0 auto 5rem', padding: '0 1.5rem', width: '100%', boxSizing: 'border-box' }}>
         <div className="glass border-glow shadow-glow" style={{ borderRadius: 'var(--radius-2xl, 20px)', padding: '3.5rem 2rem', textAlign: 'center' }}>
-          <h2 style={{ fontSize: 'clamp(1.75rem, 3.5vw, 2.5rem)', fontWeight: 700, color: '#ffffff', margin: '0 0 0.75rem', fontFamily: 'var(--font-display)' }}>
+          <h2 style={{ fontSize: 'clamp(1.75rem, 3.5vw, 2.5rem)', fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 0.75rem', fontFamily: 'var(--font-display)' }}>
             Your receptionist can start today.
           </h2>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', maxWidth: '460px', margin: '0 auto 2rem' }}>
@@ -880,7 +882,7 @@ export default function LandingPage({ onEnterWorkspace, onEnterAdmin }) {
           <div className="brand-icon" style={{ width: 22, height: 22 }}>
             <PhoneCall size={12} strokeWidth={2.5} />
           </div>
-          <span style={{ color: '#ffffff', fontWeight: 600, fontFamily: 'var(--font-display)' }}>CallMe Platform</span>
+          <span style={{ color: 'var(--text-primary)', fontWeight: 600, fontFamily: 'var(--font-display)' }}>CallMe Platform</span>
           <span>© 2026. All rights reserved.</span>
         </div>
 

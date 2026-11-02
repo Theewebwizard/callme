@@ -20,6 +20,7 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 import InstallAppPrompt from './InstallAppPrompt';
+import ThemeToggle from './ThemeToggle';
 
 export const NAV_GROUPS = [
   {
@@ -211,6 +212,11 @@ export default function Taskbar({
             </div>
           )}
 
+          {/* Theme Toggle */}
+          <div style={{ marginBottom: '0.75rem', display: 'flex', justifyContent: 'center' }}>
+            <ThemeToggle />
+          </div>
+
           {/* Exit Workspace */}
           <button
             type="button"
@@ -239,7 +245,7 @@ export default function Taskbar({
           <div className="brand-icon" style={{ width: 22, height: 22 }}>
             <PhoneCall size={12} strokeWidth={2.5} />
           </div>
-          <span style={{ fontSize: '0.88rem', fontWeight: 700, color: '#ffffff' }}>
+          <span style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text-primary)' }}>
             {business?.name || 'CallMe Console'}
           </span>
         </div>
@@ -270,7 +276,7 @@ export default function Taskbar({
                 <div className="brand-icon" style={{ width: 24, height: 24 }}>
                   <PhoneCall size={14} />
                 </div>
-                <span style={{ fontWeight: 700, color: '#ffffff', fontSize: '0.95rem' }}>CallMe Console</span>
+                <span style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.95rem' }}>CallMe Console</span>
               </div>
               <button
                 type="button"
@@ -283,7 +289,7 @@ export default function Taskbar({
 
             {business && (
               <div className="sidebar-tenant-card" style={{ marginBottom: '1.25rem' }}>
-                <div style={{ fontWeight: 600, color: '#ffffff', fontSize: '0.85rem' }}>{business.name}</div>
+                <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.85rem' }}>{business.name}</div>
                 <div style={{ fontSize: '0.74rem', color: 'var(--text-tertiary)' }}>{business.industry} • {business.phone_number}</div>
               </div>
             )}
@@ -317,6 +323,9 @@ export default function Taskbar({
             </div>
 
             <div style={{ marginTop: '2rem', borderTop: '1px solid var(--border-subtle)', paddingTop: '1rem' }}>
+              <div style={{ marginBottom: '0.75rem', display: 'flex', justifyContent: 'center' }}>
+                <ThemeToggle />
+              </div>
               <button
                 type="button"
                 className="sidebar-exit-btn"

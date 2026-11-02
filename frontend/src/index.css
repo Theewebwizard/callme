@@ -1,7 +1,133 @@
 /* ==========================================================================
-   CallMe — Raycast-Inspired Obsidian Design System
-   High-density, dark-first operational platform for AI voice receptionists
+   CallMe — Dual-Theme Design System (Inspired by Lovable)
+   Light & Dark custom properties driven by CSS custom tokens
    ========================================================================== */
+
+/* ---------- DEFAULT / DARK THEME ---------- */
+:root, html.dark {
+  color-scheme: dark;
+
+  /* Canvas & Surfaces (Exact Lovable oklch tokens) */
+  --bg-app: oklch(0.14 0.02 230);
+  --bg-canvas: oklch(0.14 0.02 230);
+  --bg-card: oklch(0.18 0.025 230);
+  --bg-surface: oklch(0.18 0.025 230);
+  --bg-surface-elevated: oklch(0.23 0.03 230);
+  --bg-surface-hover: oklch(0.26 0.035 230);
+  --bg-surface-active: oklch(0.30 0.04 230);
+  --bg-subtle: oklch(1 0 0 / 4%);
+  --bg-overlay: oklch(0.14 0.02 230 / 80%);
+
+  /* Borders & Dividers */
+  --border-subtle: oklch(1 0 0 / 9%);
+  --border-medium: oklch(1 0 0 / 14%);
+  --border-strong: oklch(1 0 0 / 22%);
+  --border-active: oklch(1 0 0 / 32%);
+
+  /* Typography Colors */
+  --text-primary: oklch(0.96 0.01 200);
+  --text-secondary: oklch(0.68 0.03 220);
+  --text-tertiary: oklch(0.55 0.03 220);
+  --text-muted: oklch(0.68 0.03 220);
+  --text-inverse: #07080a;
+
+  /* Legacy Slate Tokens mapped to dark values */
+  --slate-900: #07080a;
+  --slate-800: #0d0f14;
+  --slate-700: #13161f;
+  --slate-600: #8e929e;
+  --slate-500: #a0a4b0;
+  --slate-400: #c2c6d1;
+  --slate-300: #e2e4ea;
+  --slate-200: rgba(255, 255, 255, 0.1);
+  --slate-100: rgba(255, 255, 255, 0.05);
+  --slate-50: rgba(255, 255, 255, 0.025);
+
+  /* Primary Accent & Glow */
+  --color-primary: oklch(0.82 0.16 170);
+  --color-primary-glow: oklch(0.75 0.15 210);
+  --color-emerald: oklch(0.82 0.16 170);
+  --mint-400: oklch(0.82 0.16 170);
+  --mint-500: oklch(0.82 0.16 170);
+  --mint-600: oklch(0.72 0.16 170);
+  --mint-100: rgba(16, 185, 129, 0.15);
+  --mint-50: rgba(16, 185, 129, 0.08);
+
+  --gradient-primary: linear-gradient(120deg, oklch(0.82 0.16 170), oklch(0.75 0.15 210));
+  --shadow-glow: 0 0 60px -10px color-mix(in oklab, oklch(0.82 0.16 170) 55%, transparent);
+  --card-shadow: 0 1px 2px oklch(0 0 0 / 30%), 0 18px 44px -20px oklch(0 0 0 / 75%);
+  --glass-bg: color-mix(in oklab, oklch(0.18 0.025 230) 84%, transparent);
+
+  /* Ambient Aurora Lights (Dark) */
+  --aurora-1: oklch(0.45 0.13 175);
+  --aurora-2: oklch(0.4 0.12 215);
+  --aurora-3: oklch(0.34 0.1 250);
+  --aurora-beam: oklch(0.8 0.15 175);
+  --aurora-opacity: 0.55;
+}
+
+/* ---------- LIGHT THEME (Exact Lovable Light Tokens) ---------- */
+html.light {
+  color-scheme: light;
+
+  /* Canvas & Surfaces (Light) */
+  --bg-app: oklch(0.97 0.015 235);
+  --bg-canvas: oklch(0.97 0.015 235);
+  --bg-card: #ffffff;
+  --bg-surface: #ffffff;
+  --bg-surface-elevated: oklch(0.955 0.028 238);
+  --bg-surface-hover: oklch(0.935 0.035 237);
+  --bg-surface-active: oklch(0.91 0.04 237);
+  --bg-subtle: oklch(0 0 0 / 3%);
+  --bg-overlay: oklch(0.97 0.015 235 / 85%);
+
+  /* Borders & Dividers */
+  --border-subtle: oklch(0.55 0.08 240 / 18%);
+  --border-medium: oklch(0.55 0.08 240 / 28%);
+  --border-strong: oklch(0.55 0.08 240 / 42%);
+  --border-active: oklch(0.54 0.14 243 / 50%);
+
+  /* Typography Colors */
+  --text-primary: oklch(0.22 0.04 245);
+  --text-secondary: oklch(0.46 0.055 244);
+  --text-tertiary: oklch(0.58 0.04 244);
+  --text-muted: oklch(0.50 0.04 244);
+  --text-inverse: #ffffff;
+
+  /* Legacy Slate Tokens mapped to light values */
+  --slate-900: #0f172a;
+  --slate-800: #1e293b;
+  --slate-700: #334155;
+  --slate-600: #475569;
+  --slate-500: #64748b;
+  --slate-400: #94a3b8;
+  --slate-300: #cbd5e1;
+  --slate-200: #e2e8f0;
+  --slate-100: #f1f5f9;
+  --slate-50: #f8fafc;
+
+  /* Primary Accent & Glow (Light) */
+  --color-primary: oklch(0.52 0.15 160);
+  --color-primary-glow: oklch(0.6 0.14 236);
+  --color-emerald: oklch(0.52 0.15 160);
+  --mint-400: oklch(0.52 0.15 160);
+  --mint-500: oklch(0.52 0.15 160);
+  --mint-600: oklch(0.45 0.15 160);
+  --mint-100: rgba(5, 150, 105, 0.12);
+  --mint-50: rgba(5, 150, 105, 0.06);
+
+  --gradient-primary: linear-gradient(120deg, oklch(0.52 0.15 160), oklch(0.54 0.14 243));
+  --shadow-glow: 0 0 50px -12px color-mix(in oklab, oklch(0.52 0.15 160) 32%, transparent);
+  --card-shadow: 0 1px 2px oklch(0.5 0.1 240 / 8%), 0 14px 34px -14px oklch(0.45 0.14 240 / 18%);
+  --glass-bg: color-mix(in oklab, #ffffff 90%, transparent);
+
+  /* Ambient Aurora Lights (Light) */
+  --aurora-1: oklch(0.78 0.13 232);
+  --aurora-2: oklch(0.82 0.1 214);
+  --aurora-3: oklch(0.8 0.12 250);
+  --aurora-beam: oklch(0.6 0.14 240);
+  --aurora-opacity: 0.5;
+}
 
 :root {
   /* Canvas & Surfaces (Lovable Inspiration) */
@@ -1980,4 +2106,303 @@ input:checked + .slider:before {
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
   box-shadow: var(--card-shadow);
+}
+
+/* ==========================================================================
+   Complete Light Theme Overrides & Adaptations
+   ========================================================================== */
+html.light {
+  /* Scrollbars */
+  ::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.16);
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.28);
+  }
+
+  /* Headings & Text */
+  h1, h2, h3, h4, h5, h6,
+  .landing-title,
+  .section-title,
+  .brand-text {
+    color: var(--text-primary);
+  }
+
+  /* Keyboard keys */
+  kbd, .kbd-badge, .sidebar-kbd {
+    background: var(--bg-surface-elevated);
+    border-color: var(--border-medium);
+    color: var(--text-secondary);
+    box-shadow: 0 1px 0 rgba(0, 0, 0, 0.08);
+  }
+
+  /* Workspace Layout & Sidebar */
+  .workspace-layout {
+    background: var(--bg-app);
+  }
+
+  .workspace-sidebar {
+    background: #ffffff !important;
+    border-right-color: var(--border-subtle);
+  }
+
+  .workspace-topbar {
+    background: color-mix(in oklab, #ffffff 82%, transparent) !important;
+    border-bottom-color: var(--border-subtle);
+  }
+
+  .workspace-mobile-header,
+  .mobile-drawer-content {
+    background: #ffffff !important;
+    border-color: var(--border-subtle);
+  }
+
+  .sidebar-tenant-card {
+    background: var(--bg-surface-elevated) !important;
+    border-color: var(--border-subtle);
+  }
+
+  .sidebar-tenant-name {
+    color: var(--text-primary) !important;
+  }
+
+  .sidebar-nav-item {
+    color: var(--text-secondary);
+  }
+
+  .sidebar-nav-item:hover {
+    background: var(--bg-surface-elevated);
+    color: var(--text-primary) !important;
+  }
+
+  .sidebar-nav-item.active {
+    background: var(--bg-surface-elevated);
+    border-color: var(--border-medium);
+    color: var(--color-emerald) !important;
+  }
+
+  .sidebar-user-pill {
+    background: var(--bg-surface-elevated) !important;
+    border-color: var(--border-subtle);
+  }
+
+  .sidebar-user-name {
+    color: var(--text-primary) !important;
+  }
+
+  .sidebar-avatar {
+    background: var(--gradient-primary);
+    color: #ffffff !important;
+  }
+
+  .sidebar-call-btn {
+    background: rgba(16, 185, 129, 0.1) !important;
+    border: 1px solid rgba(16, 185, 129, 0.25) !important;
+    color: var(--color-emerald) !important;
+  }
+
+  .sidebar-call-btn:hover {
+    background: rgba(16, 185, 129, 0.18) !important;
+    border-color: rgba(16, 185, 129, 0.4) !important;
+    color: var(--color-emerald) !important;
+  }
+
+  .sidebar-exit-btn:hover {
+    background: var(--bg-surface-elevated);
+    color: var(--text-primary) !important;
+  }
+
+  /* Landing Page Nav & Components */
+  .landing-nav {
+    background: color-mix(in oklab, #ffffff 84%, transparent) !important;
+    border-bottom-color: var(--border-subtle);
+  }
+
+  .landing-nav-links a {
+    color: var(--text-secondary);
+  }
+
+  .landing-nav-links a:hover {
+    color: var(--text-primary) !important;
+  }
+
+  .landing-btn-primary,
+  .btn-primary {
+    background: oklch(0.22 0.04 245) !important;
+    color: #ffffff !important;
+    border-color: oklch(0.22 0.04 245) !important;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);
+  }
+
+  .landing-btn-primary:hover,
+  .btn-primary:hover {
+    background: oklch(0.14 0.02 230) !important;
+    border-color: oklch(0.14 0.02 230) !important;
+    color: #ffffff !important;
+  }
+
+  .landing-btn-secondary,
+  .btn-secondary {
+    background: #ffffff !important;
+    border-color: var(--border-medium) !important;
+    color: var(--text-primary) !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  }
+
+  .landing-btn-secondary:hover,
+  .btn-secondary:hover {
+    background: var(--bg-surface-elevated) !important;
+    border-color: var(--border-strong) !important;
+    color: var(--text-primary) !important;
+  }
+
+  .landing-badge {
+    background: var(--bg-surface-elevated) !important;
+    border-color: var(--border-medium) !important;
+    color: var(--text-secondary) !important;
+  }
+
+  /* Cards, Panels & Modals */
+  .card,
+  .stat-card,
+  .glass,
+  .glass-card,
+  .feature-card,
+  .agent-card,
+  .auth-card,
+  .call-simulation-container,
+  .modal-content,
+  .dialog-content {
+    background: #ffffff !important;
+    border-color: var(--border-subtle) !important;
+    box-shadow: var(--card-shadow) !important;
+  }
+
+  .agent-card::after {
+    background: linear-gradient(135deg, transparent, rgba(5, 150, 105, 0.08), transparent);
+  }
+
+  .call-simulation-header {
+    background: var(--bg-surface-elevated) !important;
+    border-bottom-color: var(--border-subtle) !important;
+  }
+
+  /* Inputs & Forms */
+  .form-input,
+  .form-select,
+  .form-textarea,
+  input[type="text"],
+  input[type="password"],
+  input[type="email"],
+  input[type="search"],
+  input[type="number"],
+  select,
+  textarea {
+    background: #ffffff !important;
+    border-color: var(--border-medium) !important;
+    color: var(--text-primary) !important;
+  }
+
+  .form-input:focus,
+  .form-select:focus,
+  .form-textarea:focus,
+  input:focus,
+  select:focus,
+  textarea:focus {
+    border-color: var(--color-emerald) !important;
+    box-shadow: 0 0 0 2px rgba(5, 150, 105, 0.2) !important;
+    background: #ffffff !important;
+  }
+
+  .form-label {
+    color: var(--text-secondary);
+  }
+
+  /* Industry & Tab Pills */
+  .industry-tab-btn {
+    border-color: var(--border-subtle);
+    color: var(--text-secondary);
+  }
+
+  .industry-tab-btn:hover {
+    background: var(--bg-surface-hover);
+    color: var(--text-primary);
+  }
+
+  .industry-tab-btn.active {
+    background: #ffffff !important;
+    border-color: var(--border-strong) !important;
+    color: var(--text-primary) !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
+  }
+
+  .tab-pill,
+  .nav-pill {
+    color: var(--text-secondary);
+  }
+
+  .tab-pill:hover,
+  .nav-pill:hover {
+    color: var(--text-primary);
+  }
+
+  .tab-pill.active,
+  .nav-pill.active {
+    background: var(--bg-surface-elevated) !important;
+    border-color: var(--border-strong) !important;
+    color: var(--text-primary) !important;
+  }
+
+  /* Tables */
+  table {
+    border-color: var(--border-subtle);
+  }
+
+  thead th,
+  th {
+    background: var(--bg-surface-elevated) !important;
+    color: var(--text-secondary) !important;
+    border-color: var(--border-subtle) !important;
+  }
+
+  td,
+  .table-row {
+    border-color: var(--border-subtle) !important;
+    color: var(--text-primary) !important;
+  }
+
+  .table-row:hover,
+  tr:hover td {
+    background: var(--bg-surface-hover) !important;
+  }
+
+  /* Taskbar in AdminPortal */
+  .taskbar {
+    background: #ffffff !important;
+    border-color: var(--border-subtle) !important;
+  }
+
+  /* Config Console & Code blocks */
+  .config-console {
+    background: #ffffff !important;
+    border-color: var(--border-subtle) !important;
+  }
+
+  .terminal-window,
+  .code-block {
+    background: oklch(0.18 0.025 230) !important;
+    border-color: var(--border-subtle) !important;
+    color: oklch(0.96 0.01 200) !important;
+  }
+
+  /* Badges & Outcomes */
+  .outcome-pill,
+  .badge {
+    border-color: var(--border-subtle);
+  }
+
+  .brand-icon {
+    background: var(--gradient-primary) !important;
+    color: #ffffff !important;
+  }
 }

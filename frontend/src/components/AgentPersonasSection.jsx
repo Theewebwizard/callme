@@ -74,7 +74,7 @@ export default function AgentPersonasSection({ onSelectPersona }) {
           <Bot size={13} />
           <span>Pre-Trained Receptionists</span>
         </div>
-        <h2 style={{ fontSize: 'clamp(1.75rem, 4vw, 2.75rem)', fontWeight: 700, letterSpacing: '-0.03em', color: '#ffffff', margin: '0 auto 0.85rem' }}>
+        <h2 style={{ fontSize: 'clamp(1.75rem, 4vw, 2.75rem)', fontWeight: 700, letterSpacing: '-0.03em', color: 'var(--text-primary)', margin: '0 auto 0.85rem' }}>
           Meet your next hire
         </h2>
         <p style={{ color: 'var(--text-secondary)', fontSize: '0.94rem', maxWidth: '600px', margin: '0 auto' }}>
@@ -129,7 +129,7 @@ export default function AgentPersonasSection({ onSelectPersona }) {
                 </span>
               </div>
 
-              <h3 style={{ fontSize: '1.35rem', fontWeight: 700, color: '#ffffff', margin: '0 0 4px' }}>
+              <h3 style={{ fontSize: '1.35rem', fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 4px' }}>
                 {agent.name}
               </h3>
               <p style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-emerald)', margin: '0 0 4px' }}>
@@ -153,7 +153,7 @@ export default function AgentPersonasSection({ onSelectPersona }) {
             {/* Pricing & CTA */}
             <div style={{ paddingTop: '1.25rem', borderTop: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
-                <span style={{ fontSize: '1.75rem', fontWeight: 800, color: '#ffffff', fontFamily: 'var(--font-display)' }}>
+                <span style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}>
                   {agent.rate}
                 </span>
                 <span style={{ fontSize: '0.76rem', color: 'var(--text-tertiary)', marginLeft: '3px' }}>
