@@ -21,7 +21,6 @@ import {
 import { api } from '../api';
 import GoogleAuthModal, { GoogleIcon } from './GoogleAuthModal';
 import InstallAppPrompt from './InstallAppPrompt';
-import CinematicHeroBackground from './CinematicHeroBackground';
 import AmbientAuroraField from './AmbientAuroraField';
 import HeroCallPreview from './HeroCallPreview';
 import MetricsSocialProofStrip from './MetricsSocialProofStrip';
@@ -324,10 +323,8 @@ export default function LandingPage({ onEnterWorkspace, onEnterAdmin }) {
         </div>
       </header>
 
-      {/* 2. Cinematic Hero Section */}
-      <section className="landing-hero" id="overview" style={{ position: 'relative', overflow: 'hidden', padding: '4rem 1.5rem 3rem' }}>
-        {/* Fine Acoustic Canvas Background */}
-        <CinematicHeroBackground />
+      {/* 2. Hero Section with Aurora Glow & Rotating Radar Halo */}
+      <section className="landing-hero" id="overview" style={{ position: 'relative', overflow: 'visible', padding: '4.5rem 1.5rem 3rem', background: 'transparent' }}>
 
         {/* Hero Content Wrapper */}
         <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', maxWidth: '1100px', margin: '0 auto' }}>
