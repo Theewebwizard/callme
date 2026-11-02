@@ -442,8 +442,9 @@ export default function LandingPage({ onEnterWorkspace, onEnterAdmin }) {
                 padding: '0.45rem',
                 borderRadius: 'var(--radius-xs)',
                 border: 'none',
-                background: authRole === 'business' ? '#ffffff' : 'transparent',
-                color: authRole === 'business' ? '#07080a' : 'var(--text-secondary)',
+                background: authRole === 'business' ? 'var(--bg-card)' : 'transparent',
+                color: authRole === 'business' ? 'var(--text-primary)' : 'var(--text-secondary)',
+                boxShadow: authRole === 'business' ? '0 1px 3px rgba(0, 0, 0, 0.08)' : 'none',
                 fontSize: '0.8rem',
                 fontWeight: 600,
                 cursor: 'pointer',
@@ -463,8 +464,9 @@ export default function LandingPage({ onEnterWorkspace, onEnterAdmin }) {
                 padding: '0.45rem',
                 borderRadius: 'var(--radius-xs)',
                 border: 'none',
-                background: authRole === 'admin' ? '#ffffff' : 'transparent',
-                color: authRole === 'admin' ? '#07080a' : 'var(--text-secondary)',
+                background: authRole === 'admin' ? 'var(--bg-card)' : 'transparent',
+                color: authRole === 'admin' ? 'var(--text-primary)' : 'var(--text-secondary)',
+                boxShadow: authRole === 'admin' ? '0 1px 3px rgba(0, 0, 0, 0.08)' : 'none',
                 fontSize: '0.8rem',
                 fontWeight: 600,
                 cursor: 'pointer',
@@ -511,7 +513,7 @@ export default function LandingPage({ onEnterWorkspace, onEnterAdmin }) {
                   style={{
                     background: 'transparent',
                     border: 'none',
-                    color: 'var(--color-emerald)',
+                    color: 'var(--color-primary)',
                     fontSize: '0.78rem',
                     cursor: 'pointer',
                     textDecoration: 'underline',
@@ -542,14 +544,15 @@ export default function LandingPage({ onEnterWorkspace, onEnterAdmin }) {
                     type="button"
                     onClick={handleAutoFillDemoBusiness}
                     style={{
-                      padding: '0.25rem 0.6rem',
+                      padding: '0.28rem 0.65rem',
                       borderRadius: 'var(--radius-xs)',
                       background: 'var(--bg-card)',
                       border: '1px solid var(--border-medium)',
-                      color: '#ffffff',
+                      color: 'var(--color-primary)',
                       fontSize: '0.74rem',
-                      fontWeight: 600,
+                      fontWeight: 700,
                       cursor: 'pointer',
+                      boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
                     }}
                   >
                     1-Click Autofill
@@ -563,23 +566,24 @@ export default function LandingPage({ onEnterWorkspace, onEnterAdmin }) {
                 onClick={() => handleOpenGoogle(businessAuthMode === 'login' ? 'signin' : 'signup')}
                 style={{
                   width: '100%',
-                  padding: '0.6rem',
+                  padding: '0.65rem',
                   borderRadius: 'var(--radius-sm)',
-                  background: 'var(--bg-surface-elevated)',
+                  background: 'var(--bg-card)',
                   border: '1px solid var(--border-medium)',
-                  color: '#ffffff',
+                  color: 'var(--text-primary)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  gap: '0.6rem',
-                  fontSize: '0.82rem',
+                  gap: '0.65rem',
+                  fontSize: '0.85rem',
                   fontWeight: 600,
                   cursor: 'pointer',
                   marginBottom: '1rem',
+                  boxShadow: '0 1px 2px rgba(0, 0, 0, 0.04)',
                   transition: 'all var(--transition-fast)',
                 }}
               >
-                <GoogleIcon size={16} />
+                <GoogleIcon size={18} />
                 <span>Continue with Google</span>
               </button>
 
@@ -788,14 +792,15 @@ export default function LandingPage({ onEnterWorkspace, onEnterAdmin }) {
                   type="button"
                   onClick={() => setAdminPasscode('admin')}
                   style={{
-                    padding: '0.25rem 0.6rem',
+                    padding: '0.28rem 0.65rem',
                     borderRadius: 'var(--radius-xs)',
                     background: 'var(--bg-card)',
                     border: '1px solid var(--border-medium)',
-                    color: '#ffffff',
+                    color: 'var(--color-primary)',
                     fontSize: '0.74rem',
-                    fontWeight: 600,
+                    fontWeight: 700,
                     cursor: 'pointer',
+                    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
                   }}
                 >
                   Autofill
