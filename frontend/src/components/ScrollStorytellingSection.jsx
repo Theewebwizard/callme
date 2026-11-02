@@ -76,7 +76,7 @@ function StoryConsoleView({ activeStep }) {
       <div
         style={{
           padding: '0.85rem 1.25rem',
-          borderBottom: '1px solid var(--border-subtle)',
+          borderBottom: '1px solid var(--border-medium)',
           background: 'var(--bg-surface-elevated)',
           display: 'flex',
           justifyContent: 'space-between',
@@ -104,7 +104,7 @@ function StoryConsoleView({ activeStep }) {
               fontSize: '0.7rem',
               fontFamily: 'var(--font-mono)',
               background: 'rgba(255, 255, 255, 0.06)',
-              border: '1px solid var(--border-subtle)',
+              border: '1px solid var(--border-medium)',
               padding: '2px 8px',
               borderRadius: 'var(--radius-full)',
               color: 'var(--text-secondary)',
@@ -151,7 +151,7 @@ function StoryConsoleView({ activeStep }) {
             <div
               style={{
                 background: 'var(--bg-surface-elevated)',
-                border: '1px solid var(--border-subtle)',
+                border: '1px solid var(--border-medium)',
                 padding: '0.75rem 1rem',
                 borderRadius: 'var(--radius-md)',
                 display: 'inline-flex',
@@ -240,7 +240,7 @@ function StoryConsoleView({ activeStep }) {
             <div
               style={{
                 background: 'var(--bg-surface-elevated)',
-                border: '1px solid var(--border-subtle)',
+                border: '1px solid var(--border-medium)',
                 padding: '0.75rem 1rem',
                 borderRadius: 'var(--radius-sm)',
                 fontSize: '0.84rem',
@@ -252,19 +252,19 @@ function StoryConsoleView({ activeStep }) {
 
             {/* Extracted JSON schema pills */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginTop: '0.5rem' }}>
-              <div style={{ background: 'rgba(255, 255, 255, 0.04)', border: '1px solid var(--border-subtle)', padding: '0.6rem 0.8rem', borderRadius: 'var(--radius-sm)' }}>
+              <div style={{ background: 'rgba(255, 255, 255, 0.04)', border: '1px solid var(--border-medium)', padding: '0.6rem 0.8rem', borderRadius: 'var(--radius-sm)' }}>
                 <div style={{ fontSize: '0.68rem', color: 'var(--text-tertiary)', fontFamily: 'var(--font-mono)' }}>INTENT</div>
                 <div style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--mint-400)', fontFamily: 'var(--font-mono)' }}>book_table</div>
               </div>
-              <div style={{ background: 'rgba(255, 255, 255, 0.04)', border: '1px solid var(--border-subtle)', padding: '0.6rem 0.8rem', borderRadius: 'var(--radius-sm)' }}>
+              <div style={{ background: 'rgba(255, 255, 255, 0.04)', border: '1px solid var(--border-medium)', padding: '0.6rem 0.8rem', borderRadius: 'var(--radius-sm)' }}>
                 <div style={{ fontSize: '0.68rem', color: 'var(--text-tertiary)', fontFamily: 'var(--font-mono)' }}>PARTY SIZE</div>
                 <div style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'var(--font-mono)' }}>4 Guests</div>
               </div>
-              <div style={{ background: 'rgba(255, 255, 255, 0.04)', border: '1px solid var(--border-subtle)', padding: '0.6rem 0.8rem', borderRadius: 'var(--radius-sm)' }}>
+              <div style={{ background: 'rgba(255, 255, 255, 0.04)', border: '1px solid var(--border-medium)', padding: '0.6rem 0.8rem', borderRadius: 'var(--radius-sm)' }}>
                 <div style={{ fontSize: '0.68rem', color: 'var(--text-tertiary)', fontFamily: 'var(--font-mono)' }}>REQUESTED TIME</div>
                 <div style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'var(--font-mono)' }}>Tonight • 20:00</div>
               </div>
-              <div style={{ background: 'rgba(255, 255, 255, 0.04)', border: '1px solid var(--border-subtle)', padding: '0.6rem 0.8rem', borderRadius: 'var(--radius-sm)' }}>
+              <div style={{ background: 'rgba(255, 255, 255, 0.04)', border: '1px solid var(--border-medium)', padding: '0.6rem 0.8rem', borderRadius: 'var(--radius-sm)' }}>
                 <div style={{ fontSize: '0.68rem', color: 'var(--text-tertiary)', fontFamily: 'var(--font-mono)' }}>PREFERENCE</div>
                 <div style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--sky-400)', fontFamily: 'var(--font-mono)' }}>Patio Garden</div>
               </div>
@@ -309,7 +309,7 @@ function StoryConsoleView({ activeStep }) {
               <div
                 style={{
                   background: 'var(--bg-surface-elevated)',
-                  border: '1px solid var(--border-subtle)',
+                  border: '1px solid var(--border-medium)',
                   padding: '0.65rem 1rem',
                   borderRadius: 'var(--radius-sm)',
                   display: 'flex',
@@ -389,7 +389,7 @@ function StoryConsoleView({ activeStep }) {
             <div
               style={{
                 background: 'var(--bg-surface-elevated)',
-                border: '1px solid var(--border-subtle)',
+                border: '1px solid var(--border-medium)',
                 padding: '0.75rem 1rem',
                 borderRadius: 'var(--radius-sm)',
                 display: 'flex',
@@ -528,7 +528,7 @@ export default function ScrollStorytellingSection() {
                       background: isActive ? 'rgba(16, 185, 129, 0.12)' : 'rgba(255, 255, 255, 0.04)',
                       padding: '2px 8px',
                       borderRadius: 'var(--radius-full)',
-                      border: `1px solid ${isActive ? 'rgba(16, 185, 129, 0.3)' : 'var(--border-subtle)'}`,
+                      border: `1px solid ${isActive ? 'rgba(16, 185, 129, 0.3)' : 'var(--border-medium)'}`,
                     }}
                   >
                     STEP {s.step}

@@ -50,19 +50,20 @@ export default function AgentPersonasSection({ onSelectPersona }) {
               flexDirection: 'column',
               justifyContent: 'space-between',
               background: 'var(--bg-card)',
-              border: '1px solid var(--border-subtle)',
+              border: '1px solid var(--border-medium)',
               boxShadow: 'var(--card-shadow)',
               transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
             }}
           >
             <div>
-              {/* Monogram Squircle Avatar matching Image 1 */}
+              {/* Monogram Squircle Avatar with crisp border matching Image 1 */}
               <div
                 style={{
                   width: '52px',
                   height: '52px',
                   borderRadius: '14px',
                   background: 'var(--gradient-primary)',
+                  border: '1px solid color-mix(in oklab, var(--color-primary) 35%, transparent)',
                   display: 'grid',
                   placeItems: 'center',
                   fontFamily: 'var(--font-display)',
@@ -70,6 +71,7 @@ export default function AgentPersonasSection({ onSelectPersona }) {
                   fontWeight: 700,
                   color: '#ffffff',
                   marginBottom: '1.25rem',
+                  boxShadow: '0 4px 14px color-mix(in oklab, var(--color-primary) 25%, transparent)',
                 }}
               >
                 {a.name[0]}
@@ -97,7 +99,7 @@ export default function AgentPersonasSection({ onSelectPersona }) {
             </div>
 
             {/* Bottom Row matching Image 1 */}
-            <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', borderTop: '1px solid var(--border-subtle)', paddingTop: '1.25rem' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', borderTop: '1px solid var(--border-medium)', paddingTop: '1.25rem' }}>
               <p style={{ margin: 0 }}>
                 <span style={{ fontFamily: 'var(--font-display)', fontSize: '1.85rem', fontWeight: 700, color: 'var(--text-primary)' }}>
                   {a.rate}
@@ -109,7 +111,7 @@ export default function AgentPersonasSection({ onSelectPersona }) {
                 onClick={() => onSelectPersona && onSelectPersona(a)}
                 className="hire-btn"
                 style={{
-                  padding: '0.45rem 1.15rem',
+                  padding: '0.5rem 1.25rem',
                   borderRadius: '10px',
                   background: 'var(--bg-card)',
                   border: '1px solid var(--border-medium)',
@@ -119,6 +121,14 @@ export default function AgentPersonasSection({ onSelectPersona }) {
                   cursor: 'pointer',
                   transition: 'all 0.2s ease',
                   boxShadow: '0 1px 2px rgba(0, 0, 0, 0.04)',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = 'var(--color-primary)';
+                  e.currentTarget.style.background = 'var(--bg-surface-elevated)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = 'var(--border-medium)';
+                  e.currentTarget.style.background = 'var(--bg-card)';
                 }}
               >
                 Hire {a.name}

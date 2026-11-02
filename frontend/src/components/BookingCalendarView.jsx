@@ -316,7 +316,7 @@ export default function BookingCalendarView({
                 alignItems: 'center',
                 gap: '6px',
                 background: 'var(--bg-surface-elevated)',
-                border: '1px solid var(--border-subtle)',
+                border: '1px solid var(--border-medium)',
                 padding: '4px 10px',
                 borderRadius: 'var(--radius-sm)',
                 fontSize: '0.76rem',
@@ -373,7 +373,7 @@ export default function BookingCalendarView({
             flexWrap: 'wrap',
             gap: '0.75rem',
             paddingTop: '0.85rem',
-            borderTop: '1px solid var(--border-subtle)',
+            borderTop: '1px solid var(--border-medium)',
           }}
         >
           {/* Date Navigator */}
@@ -452,7 +452,7 @@ export default function BookingCalendarView({
                 background: 'var(--bg-surface-elevated)',
                 borderRadius: 'var(--radius-sm)',
                 padding: '2px',
-                border: '1px solid var(--border-subtle)',
+                border: '1px solid var(--border-medium)',
               }}
             >
               <button
@@ -562,7 +562,7 @@ export default function BookingCalendarView({
               }}
             >
               <thead>
-                <tr style={{ background: 'var(--bg-surface-elevated)', borderBottom: '1px solid var(--border-subtle)' }}>
+                <tr style={{ background: 'var(--bg-surface-elevated)', borderBottom: '1px solid var(--border-medium)' }}>
                   <th
                     style={{
                       width: '230px',
@@ -572,7 +572,7 @@ export default function BookingCalendarView({
                       color: 'var(--text-tertiary)',
                       textTransform: 'uppercase',
                       letterSpacing: '0.04em',
-                      borderRight: '1px solid var(--border-subtle)',
+                      borderRight: '1px solid var(--border-medium)',
                     }}
                   >
                     RESOURCE (ROOM / TABLE)
@@ -586,7 +586,7 @@ export default function BookingCalendarView({
                         textAlign: 'center',
                         color: td.isToday ? 'var(--color-emerald)' : 'var(--text-secondary)',
                         background: td.isToday ? 'rgba(16, 185, 129, 0.05)' : 'transparent',
-                        borderRight: '1px solid var(--border-subtle)',
+                        borderRight: '1px solid var(--border-medium)',
                         minWidth: '105px',
                       }}
                     >
@@ -627,7 +627,7 @@ export default function BookingCalendarView({
                   <tr
                     key={res.id}
                     style={{
-                      borderBottom: '1px solid var(--border-subtle)',
+                      borderBottom: '1px solid var(--border-medium)',
                       background: idx % 2 === 0 ? 'transparent' : 'rgba(255, 255, 255, 0.015)',
                     }}
                   >
@@ -635,7 +635,7 @@ export default function BookingCalendarView({
                     <td
                       style={{
                         padding: '0.85rem 1rem',
-                        borderRight: '1px solid var(--border-subtle)',
+                        borderRight: '1px solid var(--border-medium)',
                         verticalAlign: 'top',
                       }}
                     >
@@ -674,7 +674,7 @@ export default function BookingCalendarView({
                                 ? 'rgba(56, 189, 248, 0.25)'
                                 : res.resource_type === 'table'
                                 ? 'rgba(16, 185, 129, 0.25)'
-                                : 'var(--border-subtle)'
+                                : 'var(--border-medium)'
                             }`,
                           }}
                         >
@@ -701,7 +701,7 @@ export default function BookingCalendarView({
                           key={td.date}
                           style={{
                             padding: '0.45rem',
-                            borderRight: '1px solid var(--border-subtle)',
+                            borderRight: '1px solid var(--border-medium)',
                             verticalAlign: 'top',
                             background: td.isToday ? 'rgba(16, 185, 129, 0.02)' : 'transparent',
                             position: 'relative',
@@ -803,7 +803,7 @@ export default function BookingCalendarView({
               }}
             >
               <thead>
-                <tr style={{ background: 'var(--bg-surface-elevated)', borderBottom: '1px solid var(--border-subtle)' }}>
+                <tr style={{ background: 'var(--bg-surface-elevated)', borderBottom: '1px solid var(--border-medium)' }}>
                   <th
                     style={{
                       width: '200px',
@@ -813,7 +813,7 @@ export default function BookingCalendarView({
                       color: 'var(--text-tertiary)',
                       textTransform: 'uppercase',
                       letterSpacing: '0.04em',
-                      borderRight: '1px solid var(--border-subtle)',
+                      borderRight: '1px solid var(--border-medium)',
                     }}
                   >
                     RESOURCE
@@ -826,7 +826,7 @@ export default function BookingCalendarView({
                         fontSize: '0.74rem',
                         textAlign: 'center',
                         color: 'var(--text-secondary)',
-                        borderRight: '1px solid var(--border-subtle)',
+                        borderRight: '1px solid var(--border-medium)',
                         minWidth: '65px',
                         fontWeight: 600,
                         fontFamily: 'var(--font-mono)',
@@ -842,14 +842,14 @@ export default function BookingCalendarView({
                   <tr
                     key={res.id}
                     style={{
-                      borderBottom: '1px solid var(--border-subtle)',
+                      borderBottom: '1px solid var(--border-medium)',
                       background: idx % 2 === 0 ? 'transparent' : 'rgba(255, 255, 255, 0.015)',
                     }}
                   >
                     <td
                       style={{
                         padding: '0.75rem 1rem',
-                        borderRight: '1px solid var(--border-subtle)',
+                        borderRight: '1px solid var(--border-medium)',
                         verticalAlign: 'top',
                       }}
                     >
@@ -870,7 +870,7 @@ export default function BookingCalendarView({
                           key={hour}
                           style={{
                             padding: '0.35rem',
-                            borderRight: '1px solid var(--border-subtle)',
+                            borderRight: '1px solid var(--border-medium)',
                             verticalAlign: 'top',
                             minHeight: '48px',
                           }}
@@ -974,7 +974,7 @@ export default function BookingCalendarView({
                     <td>
                       <span style={{
                         background: 'rgba(255, 255, 255, 0.04)',
-                        border: '1px solid var(--border-subtle)',
+                        border: '1px solid var(--border-medium)',
                         padding: '2px 7px',
                         borderRadius: '4px',
                         fontSize: '0.75rem',
@@ -1076,7 +1076,7 @@ export default function BookingCalendarView({
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
-                borderBottom: '1px solid var(--border-subtle)',
+                borderBottom: '1px solid var(--border-medium)',
                 padding: '1.25rem 1.4rem',
               }}
             >
@@ -1139,7 +1139,7 @@ export default function BookingCalendarView({
               </div>
 
               {selectedBooking.special_requests && (
-                <div style={{ marginTop: '0.5rem', padding: '0.75rem', background: 'var(--bg-surface-elevated)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)' }}>
+                <div style={{ marginTop: '0.5rem', padding: '0.75rem', background: 'var(--bg-surface-elevated)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-medium)' }}>
                   <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '2px' }}>
                     SPECIAL REQUESTS / NOTES:
                   </div>
@@ -1149,7 +1149,7 @@ export default function BookingCalendarView({
                 </div>
               )}
 
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '0.5rem', paddingTop: '0.75rem', borderTop: '1px solid var(--border-subtle)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '0.5rem', paddingTop: '0.75rem', borderTop: '1px solid var(--border-medium)' }}>
                 <span
                   style={{
                     fontSize: '0.72rem',
@@ -1217,7 +1217,7 @@ export default function BookingCalendarView({
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
-                borderBottom: '1px solid var(--border-subtle)',
+                borderBottom: '1px solid var(--border-medium)',
                 padding: '1.25rem 1.4rem',
               }}
             >

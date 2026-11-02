@@ -235,7 +235,7 @@ export default function BusinessSetup({ business, onBusinessSaved }) {
             padding: '0.25rem 0.65rem',
             borderRadius: 'var(--radius-full)',
             background: 'var(--bg-surface-elevated)',
-            border: '1px solid var(--border-subtle)',
+            border: '1px solid var(--border-medium)',
             color: 'var(--text-secondary)',
             fontSize: '0.74rem',
             fontWeight: 600,
@@ -290,7 +290,7 @@ export default function BusinessSetup({ business, onBusinessSaved }) {
               alignItems: 'center',
               gap: '0.4rem',
               background: 'var(--bg-card)',
-              border: '1px solid var(--border-subtle)',
+              border: '1px solid var(--border-medium)',
               borderRadius: 'var(--radius-sm)',
               padding: '4px',
               overflowX: 'auto',
@@ -337,7 +337,7 @@ export default function BusinessSetup({ business, onBusinessSaved }) {
           {/* Tab 1: Profile & Operating Hours */}
           {activeSection === 'profile' && (
             <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-              <div style={{ borderBottom: '1px solid var(--border-subtle)', paddingBottom: '0.75rem' }}>
+              <div style={{ borderBottom: '1px solid var(--border-medium)', paddingBottom: '0.75rem' }}>
                 <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
                   Business Profile & Operating Hours
                 </h3>
@@ -436,7 +436,7 @@ export default function BusinessSetup({ business, onBusinessSaved }) {
           {/* Tab 2: Voice Persona & Spoken Greeting */}
           {activeSection === 'voice' && (
             <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-              <div style={{ borderBottom: '1px solid var(--border-subtle)', paddingBottom: '0.75rem' }}>
+              <div style={{ borderBottom: '1px solid var(--border-medium)', paddingBottom: '0.75rem' }}>
                 <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
                   Spoken Voice Persona & Natural Greeting
                 </h3>
@@ -484,7 +484,7 @@ export default function BusinessSetup({ business, onBusinessSaved }) {
                           borderRadius: 'var(--radius-sm)',
                           background: isSelected ? 'rgba(16, 185, 129, 0.15)' : 'var(--bg-surface-elevated)',
                           border: '1px solid',
-                          borderColor: isSelected ? 'rgba(16, 185, 129, 0.4)' : 'var(--border-subtle)',
+                          borderColor: isSelected ? 'rgba(16, 185, 129, 0.4)' : 'var(--border-medium)',
                           color: isSelected ? 'var(--mint-400)' : 'var(--text-secondary)',
                           fontSize: '0.78rem',
                           cursor: 'pointer',
@@ -503,7 +503,7 @@ export default function BusinessSetup({ business, onBusinessSaved }) {
           {/* Tab 3: Escalation & Human Staff Transfer */}
           {activeSection === 'escalation' && (
             <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-              <div style={{ borderBottom: '1px solid var(--border-subtle)', paddingBottom: '0.75rem' }}>
+              <div style={{ borderBottom: '1px solid var(--border-medium)', paddingBottom: '0.75rem' }}>
                 <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
                   Deterministic Escalation & Staff Handoffs
                 </h3>
@@ -542,7 +542,7 @@ export default function BusinessSetup({ business, onBusinessSaved }) {
           {/* Tab 4: Knowledge Base FAQs */}
           {activeSection === 'faqs' && (
             <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-              <div style={{ borderBottom: '1px solid var(--border-subtle)', paddingBottom: '0.75rem' }}>
+              <div style={{ borderBottom: '1px solid var(--border-medium)', paddingBottom: '0.75rem' }}>
                 <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
                   Verified Knowledge Base FAQs ({(editForm.faqs || []).length})
                 </h3>
@@ -599,7 +599,7 @@ export default function BusinessSetup({ business, onBusinessSaved }) {
                     key={index}
                     style={{
                       background: 'var(--bg-surface-elevated)',
-                      border: '1px solid var(--border-subtle)',
+                      border: '1px solid var(--border-medium)',
                       borderRadius: 'var(--radius-sm)',
                       padding: '0.85rem 1rem',
                       display: 'flex',
@@ -652,7 +652,7 @@ export default function BusinessSetup({ business, onBusinessSaved }) {
                 title="Play simulated acoustic voice synthesis"
                 style={{
                   background: simulatingSpeech ? 'rgba(16, 185, 129, 0.2)' : 'var(--bg-surface-elevated)',
-                  border: '1px solid var(--border-subtle)',
+                  border: '1px solid var(--border-medium)',
                   borderRadius: 'var(--radius-full)',
                   padding: '2px 8px',
                   display: 'inline-flex',
@@ -673,7 +673,7 @@ export default function BusinessSetup({ business, onBusinessSaved }) {
             <div
               style={{
                 background: 'var(--bg-surface-elevated)',
-                border: '1px solid var(--border-subtle)',
+                border: '1px solid var(--border-medium)',
                 borderRadius: 'var(--radius-sm)',
                 padding: '0.85rem',
                 fontSize: '0.8rem',

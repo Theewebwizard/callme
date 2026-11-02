@@ -231,7 +231,7 @@ export default function ResourceInventoryCard({
           </div>
 
           {resources.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-tertiary)', background: 'var(--bg-surface-elevated)', borderRadius: 'var(--radius-md, 8px)', border: '1px solid var(--border-subtle)' }}>
+            <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-tertiary)', background: 'var(--bg-surface-elevated)', borderRadius: 'var(--radius-md, 8px)', border: '1px solid var(--border-medium)' }}>
               No {rc.title.toLowerCase()} registered yet. Register a {rc.noun.toLowerCase()} to enable built-in booking conflict prevention.
             </div>
           ) : (
@@ -245,7 +245,7 @@ export default function ResourceInventoryCard({
                     alignItems: 'center',
                     padding: '0.75rem 1rem',
                     background: 'var(--bg-surface-elevated)',
-                    border: '1px solid var(--border-subtle)',
+                    border: '1px solid var(--border-medium)',
                     borderRadius: 'var(--radius-md, 8px)',
                   }}
                 >

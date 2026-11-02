@@ -21,9 +21,9 @@ export default function ConfigConsoleSection() {
               gap: '0.45rem',
               padding: '0.28rem 0.8rem',
               borderRadius: 'var(--radius-full)',
-              background: 'rgba(16, 185, 129, 0.1)',
-              border: '1px solid rgba(16, 185, 129, 0.25)',
-              color: 'var(--color-emerald)',
+              background: 'color-mix(in oklab, var(--color-primary) 12%, transparent)',
+              border: '1px solid color-mix(in oklab, var(--color-primary) 30%, transparent)',
+              color: 'var(--color-primary)',
               fontSize: '0.74rem',
               fontFamily: 'var(--font-mono)',
               fontWeight: 600,
@@ -46,22 +46,22 @@ export default function ConfigConsoleSection() {
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', fontSize: '0.85rem', color: 'var(--text-primary)' }}>
-              <CheckCircle2 size={16} color="var(--color-emerald)" />
+              <CheckCircle2 size={16} color="var(--color-primary)" />
               <span>Zero-code declarative policy setup</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', fontSize: '0.85rem', color: 'var(--text-primary)' }}>
-              <CheckCircle2 size={16} color="var(--color-emerald)" />
+              <CheckCircle2 size={16} color="var(--color-primary)" />
               <span>Direct Twilio / SIP DID trunk integration</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', fontSize: '0.85rem', color: 'var(--text-primary)' }}>
-              <CheckCircle2 size={16} color="var(--color-emerald)" />
+              <CheckCircle2 size={16} color="var(--color-primary)" />
               <span>Built-in multi-tenant inventory & pricing databases</span>
             </div>
           </div>
         </div>
 
         {/* Right: macOS Terminal Box */}
-        <div className="config-console glass" style={{ overflow: 'hidden' }}>
+        <div className="config-console glass" style={{ overflow: 'hidden', border: '1px solid var(--border-medium)', borderRadius: '1.25rem', boxShadow: 'var(--card-shadow)' }}>
           {/* Window Header */}
           <div
             style={{
@@ -69,7 +69,7 @@ export default function ConfigConsoleSection() {
               alignItems: 'center',
               gap: '6px',
               padding: '0.75rem 1rem',
-              borderBottom: '1px solid var(--border-subtle)',
+              borderBottom: '1px solid var(--border-medium)',
               background: 'var(--bg-surface-elevated)',
             }}
           >
@@ -93,17 +93,17 @@ export default function ConfigConsoleSection() {
               overflowX: 'auto',
             }}
           >
-            <span>receptionist: </span><span style={{ color: 'var(--color-emerald)' }}>"Aria"</span>{'\n'}
-            <span>tenant_domain: </span><span style={{ color: 'var(--color-emerald)' }}>"Spice Garden Bistro"</span>{'\n'}
-            <span>voice_persona: </span><span style={{ color: 'var(--color-emerald)' }}>"warm-hi-en"</span>{'\n'}
-            <span>operating_hours: </span><span style={{ color: 'var(--color-emerald)' }}>"24/7 autonomous"</span>{'\n'}
+            <span>receptionist: </span><span style={{ color: 'var(--color-primary)', fontWeight: 600 }}>"Aria"</span>{'\n'}
+            <span>tenant_domain: </span><span style={{ color: 'var(--color-primary)', fontWeight: 600 }}>"Spice Garden Bistro"</span>{'\n'}
+            <span>voice_persona: </span><span style={{ color: 'var(--color-primary)', fontWeight: 600 }}>"warm-hi-en"</span>{'\n'}
+            <span>operating_hours: </span><span style={{ color: 'var(--color-primary)', fontWeight: 600 }}>"24/7 autonomous"</span>{'\n'}
             <span>authoritative_tools: </span>{'\n'}
-            <span>  - </span><span style={{ color: '#38bdf8' }}>table_inventory_engine</span>{'\n'}
-            <span>  - </span><span style={{ color: '#38bdf8' }}>semantic_menu_pricing</span>{'\n'}
-            <span>  - </span><span style={{ color: '#38bdf8' }}>sms_voucher_dispatch</span>{'\n'}
-            <span style={{ color: 'var(--color-emerald)' }}>{'> callme deploy --live --verify'}</span>{'\n'}
-            <span style={{ color: '#ffffff' }}>✓ DID Line Bound · Receptionist Online · 380ms Latency</span>
-            <span className="animate-blink" style={{ color: 'var(--color-emerald)', fontWeight: 800 }}>▍</span>
+            <span>  - </span><span style={{ color: '#0ea5e9' }}>table_inventory_engine</span>{'\n'}
+            <span>  - </span><span style={{ color: '#0ea5e9' }}>semantic_menu_pricing</span>{'\n'}
+            <span>  - </span><span style={{ color: '#0ea5e9' }}>sms_voucher_dispatch</span>{'\n'}
+            <span style={{ color: 'var(--color-primary)', fontWeight: 700 }}>{'> callme deploy --live --verify'}</span>{'\n'}
+            <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>✓ DID Line Bound · Receptionist Online · 380ms Latency</span>
+            <span className="animate-blink" style={{ color: 'var(--color-primary)', fontWeight: 800 }}>▍</span>
           </pre>
         </div>
       </div>

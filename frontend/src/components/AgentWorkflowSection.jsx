@@ -136,6 +136,7 @@ export default function AgentWorkflowSection() {
         className="glass"
         style={{
           borderRadius: 'var(--radius-xl)',
+          border: '1px solid var(--border-medium)',
           overflow: 'hidden',
           boxShadow: 'var(--shadow-glow), var(--card-shadow)',
         }}
@@ -149,7 +150,7 @@ export default function AgentWorkflowSection() {
             justifyContent: 'space-between',
             gap: '1rem',
             padding: '1rem 1.5rem',
-            borderBottom: '1px solid var(--border-subtle)',
+            borderBottom: '1px solid var(--border-medium)',
             background: 'var(--bg-surface-elevated)',
           }}
         >
@@ -184,7 +185,7 @@ export default function AgentWorkflowSection() {
                 height: '32px',
                 borderRadius: 'var(--radius-sm)',
                 background: 'var(--bg-surface)',
-                border: '1px solid var(--border-subtle)',
+                border: '1px solid var(--border-medium)',
                 color: 'var(--text-primary)',
                 cursor: 'pointer',
                 transition: 'all 0.2s',
@@ -233,7 +234,7 @@ export default function AgentWorkflowSection() {
           style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-            borderTop: '1px solid var(--border-subtle)',
+            borderTop: '1px solid var(--border-medium)',
           }}
         >
           {/* Left: Active Stage Details */}
@@ -288,7 +289,7 @@ export default function AgentWorkflowSection() {
             style={{
               padding: '2rem 2rem',
               background: 'var(--bg-surface-elevated)',
-              borderLeft: '1px solid var(--border-subtle)',
+              borderLeft: '1px solid var(--border-medium)',
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'space-between',
@@ -330,7 +331,7 @@ export default function AgentWorkflowSection() {
                           width: '20px',
                           height: '20px',
                           borderRadius: '50%',
-                          border: `1px solid ${index <= active ? 'color-mix(in oklab, var(--color-primary) 45%, transparent)' : 'var(--border-subtle)'}`,
+                          border: `1px solid ${index <= active ? 'color-mix(in oklab, var(--color-primary) 45%, transparent)' : 'var(--border-medium)'}`,
                           display: 'grid',
                           placeItems: 'center',
                           marginTop: '2px',
@@ -370,7 +371,7 @@ export default function AgentWorkflowSection() {
               style={{
                 marginTop: '2rem',
                 paddingTop: '1rem',
-                borderTop: '1px solid var(--border-subtle)',
+                borderTop: '1px solid var(--border-medium)',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '0.65rem',

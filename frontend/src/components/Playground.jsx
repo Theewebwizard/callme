@@ -216,7 +216,7 @@ export default function Playground({ business }) {
               padding: '0.2rem 0.6rem',
               borderRadius: 'var(--radius-full)',
               background: 'var(--bg-surface-elevated)',
-              border: '1px solid var(--border-subtle)',
+              border: '1px solid var(--border-medium)',
               color: 'var(--text-secondary)',
               fontSize: '0.72rem',
               fontWeight: 600,
@@ -352,7 +352,7 @@ export default function Playground({ business }) {
                       borderRadius: isAssistant ? '4px 14px 14px 14px' : '14px 4px 14px 14px',
                       background: isAssistant ? 'var(--bg-surface-elevated)' : 'rgba(255, 255, 255, 0.1)',
                       border: '1px solid',
-                      borderColor: msg.isError ? 'rgba(244, 63, 94, 0.4)' : isAssistant ? 'var(--border-subtle)' : 'var(--border-medium)',
+                      borderColor: msg.isError ? 'rgba(244, 63, 94, 0.4)' : isAssistant ? 'var(--border-medium)' : 'var(--border-medium)',
                       color: msg.isError ? '#fb7185' : isAssistant ? '#EDEDED' : '#ffffff',
                       fontSize: '0.85rem',
                       lineHeight: 1.55,
@@ -432,7 +432,7 @@ export default function Playground({ business }) {
           <div
             style={{
               padding: '0.5rem 1rem',
-              borderTop: '1px solid var(--border-subtle)',
+              borderTop: '1px solid var(--border-medium)',
               background: 'var(--bg-app)',
               display: 'flex',
               gap: '0.4rem',
@@ -447,7 +447,7 @@ export default function Playground({ business }) {
                 disabled={loading}
                 style={{
                   background: 'var(--bg-surface-elevated)',
-                  border: '1px solid var(--border-subtle)',
+                  border: '1px solid var(--border-medium)',
                   borderRadius: 'var(--radius-full)',
                   padding: '3px 10px',
                   fontSize: '0.73rem',
@@ -457,12 +457,12 @@ export default function Playground({ business }) {
                   transition: 'all var(--transition-fast)',
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.color = '#ffffff';
+                  e.currentTarget.style.color = 'var(--text-primary)';
                   e.currentTarget.style.borderColor = 'var(--border-medium)';
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.color = 'var(--text-secondary)';
-                  e.currentTarget.style.borderColor = 'var(--border-subtle)';
+                  e.currentTarget.style.borderColor = 'var(--border-medium)';
                 }}
               >
                 {prompt}
@@ -478,7 +478,7 @@ export default function Playground({ business }) {
             }}
             style={{
               padding: '0.75rem 1rem',
-              borderTop: '1px solid var(--border-subtle)',
+              borderTop: '1px solid var(--border-medium)',
               background: 'var(--bg-card)',
               display: 'flex',
               alignItems: 'center',

@@ -446,7 +446,7 @@ export default function ToolLibrary({ business }) {
             style={{
               background: 'rgba(255, 255, 255, 0.06)',
               color: 'var(--text-secondary)',
-              border: '1px solid var(--border-subtle)',
+              border: '1px solid var(--border-medium)',
               padding: '2px 8px',
               borderRadius: 'var(--radius-full)',
               fontSize: '0.7rem',
@@ -466,7 +466,7 @@ export default function ToolLibrary({ business }) {
             style={{
               background: 'rgba(255, 255, 255, 0.04)',
               color: 'var(--text-tertiary)',
-              border: '1px solid var(--border-subtle)',
+              border: '1px solid var(--border-medium)',
               padding: '2px 8px',
               borderRadius: 'var(--radius-full)',
               fontSize: '0.7rem',
@@ -523,7 +523,7 @@ export default function ToolLibrary({ business }) {
                 padding: '0.25rem 0.65rem',
                 borderRadius: 'var(--radius-full)',
                 background: 'var(--bg-surface-elevated)',
-                border: '1px solid var(--border-subtle)',
+                border: '1px solid var(--border-medium)',
                 color: 'var(--text-secondary)',
                 fontSize: '0.74rem',
                 fontWeight: 600,
@@ -610,7 +610,7 @@ export default function ToolLibrary({ business }) {
           className={`btn-secondary ${activeTab === 'capabilities' ? 'active' : ''}`}
           style={{
             background: activeTab === 'capabilities' ? '#ffffff' : 'var(--bg-card)',
-            borderColor: activeTab === 'capabilities' ? '#ffffff' : 'var(--border-subtle)',
+            borderColor: activeTab === 'capabilities' ? '#ffffff' : 'var(--border-medium)',
             color: activeTab === 'capabilities' ? '#07080a' : 'var(--text-secondary)',
             fontWeight: 600,
             padding: '0.45rem 0.95rem',
@@ -626,7 +626,7 @@ export default function ToolLibrary({ business }) {
             className={`btn-secondary ${activeTab === 'menu' ? 'active' : ''}`}
             style={{
               background: activeTab === 'menu' ? '#ffffff' : 'var(--bg-card)',
-              borderColor: activeTab === 'menu' ? '#ffffff' : 'var(--border-subtle)',
+              borderColor: activeTab === 'menu' ? '#ffffff' : 'var(--border-medium)',
               color: activeTab === 'menu' ? '#07080a' : 'var(--text-secondary)',
               fontWeight: 600,
               padding: '0.45rem 0.95rem',
@@ -642,7 +642,7 @@ export default function ToolLibrary({ business }) {
           className={`btn-secondary ${activeTab === 'resources' ? 'active' : ''}`}
           style={{
             background: activeTab === 'resources' ? '#ffffff' : 'var(--bg-card)',
-            borderColor: activeTab === 'resources' ? '#ffffff' : 'var(--border-subtle)',
+            borderColor: activeTab === 'resources' ? '#ffffff' : 'var(--border-medium)',
             color: activeTab === 'resources' ? '#07080a' : 'var(--text-secondary)',
             fontWeight: 600,
             padding: '0.45rem 0.95rem',
@@ -657,7 +657,7 @@ export default function ToolLibrary({ business }) {
           className={`btn-secondary ${activeTab === 'demands' ? 'active' : ''}`}
           style={{
             background: activeTab === 'demands' ? '#ffffff' : 'var(--bg-card)',
-            borderColor: activeTab === 'demands' ? '#ffffff' : 'var(--border-subtle)',
+            borderColor: activeTab === 'demands' ? '#ffffff' : 'var(--border-medium)',
             color: activeTab === 'demands' ? '#07080a' : 'var(--text-secondary)',
             fontWeight: 600,
             padding: '0.45rem 0.95rem',
@@ -677,7 +677,7 @@ export default function ToolLibrary({ business }) {
           <div
             style={{
               background: 'var(--bg-card)',
-              border: '1px solid var(--border-subtle)',
+              border: '1px solid var(--border-medium)',
               borderRadius: 'var(--radius-md)',
               padding: '0.85rem 1.25rem',
               marginBottom: '1.25rem',
@@ -732,7 +732,7 @@ export default function ToolLibrary({ business }) {
           </div>
 
           {/* Feature Discovery Status Filter Bar */}
-          <div style={{ display: 'flex', gap: '0.45rem', marginBottom: '1.25rem', flexWrap: 'wrap', alignItems: 'center', background: 'var(--bg-surface-elevated)', padding: '0.6rem 0.85rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>
+          <div style={{ display: 'flex', gap: '0.45rem', marginBottom: '1.25rem', flexWrap: 'wrap', alignItems: 'center', background: 'var(--bg-surface-elevated)', padding: '0.6rem 0.85rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-medium)' }}>
             <span style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-tertiary)', marginRight: '6px' }}>Status Filter:</span>
             {[
               { id: 'all', label: 'All Capabilities', count: countAll },
@@ -845,7 +845,7 @@ export default function ToolLibrary({ business }) {
                                   <span style={{ fontWeight: 600, fontSize: '0.86rem', color: 'var(--text-primary)' }}>
                                     {t.name}
                                   </span>
-                                  <span style={{ fontSize: '0.68rem', fontFamily: 'var(--font-mono)', background: 'var(--bg-surface-elevated)', border: '1px solid var(--border-subtle)', color: 'var(--text-tertiary)', padding: '1px 5px', borderRadius: '4px' }}>
+                                  <span style={{ fontSize: '0.68rem', fontFamily: 'var(--font-mono)', background: 'var(--bg-surface-elevated)', border: '1px solid var(--border-medium)', color: 'var(--text-tertiary)', padding: '1px 5px', borderRadius: '4px' }}>
                                     {authSource}
                                   </span>
                                 </div>
@@ -931,7 +931,7 @@ export default function ToolLibrary({ business }) {
          TAB: RESTAURANT MENU & SEMANTIC PRICING STORE
          ========================================================================= */}
       {activeTab === 'menu' && domainConfig.hasMenu && (
-        <div className="card" style={{ padding: '1.5rem', background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}>
+        <div className="card" style={{ padding: '1.5rem', background: 'var(--bg-card)', border: '1px solid var(--border-medium)' }}>
           <div style={{ marginBottom: '1.25rem' }}>
             <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <Utensils size={20} color="var(--color-emerald)" /> Restaurant Menu & Semantic Pricing Store
@@ -1091,7 +1091,7 @@ export default function ToolLibrary({ business }) {
             style={{
               background: 'var(--bg-card)',
               borderRadius: 'var(--radius-lg)',
-              border: '1px solid var(--border-subtle)',
+              border: '1px solid var(--border-medium)',
               maxWidth: (wizardTool?.id === 'query_menu_pricing' && wizardStep === 2) ? '920px' : '680px',
               width: '100%',
               maxHeight: '90vh',
@@ -1102,7 +1102,7 @@ export default function ToolLibrary({ business }) {
             }}
           >
             {/* Modal Header */}
-            <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid var(--border-medium)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
                 <div style={{ fontSize: '0.74rem', fontWeight: 700, color: 'var(--color-emerald)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                   Capability Guided Setup
@@ -1121,7 +1121,7 @@ export default function ToolLibrary({ business }) {
             </div>
 
             {/* Step Indicators */}
-            <div style={{ padding: '0.85rem 1.5rem', background: 'var(--bg-surface-elevated)', borderBottom: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'space-between' }}>
+            <div style={{ padding: '0.85rem 1.5rem', background: 'var(--bg-surface-elevated)', borderBottom: '1px solid var(--border-medium)', display: 'flex', justifyContent: 'space-between' }}>
               {[
                 { num: 1, label: 'Integration Choice' },
                 { num: 2, label: 'Configuration' },
@@ -1129,7 +1129,7 @@ export default function ToolLibrary({ business }) {
                 { num: 4, label: 'Operational' },
               ].map((s) => (
                 <div key={s.num} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.76rem', fontWeight: wizardStep >= s.num ? 600 : 500, color: wizardStep >= s.num ? 'var(--color-emerald)' : 'var(--text-tertiary)' }}>
-                  <span style={{ width: '20px', height: '20px', borderRadius: '50%', background: wizardStep >= s.num ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255, 255, 255, 0.04)', color: wizardStep >= s.num ? 'var(--color-emerald)' : 'var(--text-tertiary)', border: `1px solid ${wizardStep >= s.num ? 'rgba(16, 185, 129, 0.35)' : 'var(--border-subtle)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontFamily: 'var(--font-mono)' }}>
+                  <span style={{ width: '20px', height: '20px', borderRadius: '50%', background: wizardStep >= s.num ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255, 255, 255, 0.04)', color: wizardStep >= s.num ? 'var(--color-emerald)' : 'var(--text-tertiary)', border: `1px solid ${wizardStep >= s.num ? 'rgba(16, 185, 129, 0.35)' : 'var(--border-medium)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontFamily: 'var(--font-mono)' }}>
                     {s.num}
                   </span>
                   <span>{s.label}</span>
@@ -1157,7 +1157,7 @@ export default function ToolLibrary({ business }) {
                         style={{
                           padding: '1rem',
                           borderRadius: 'var(--radius-md)',
-                          border: `1px solid ${selectedOptionId === opt.option_id ? 'var(--color-emerald)' : 'var(--border-subtle)'}`,
+                          border: `1px solid ${selectedOptionId === opt.option_id ? 'var(--color-emerald)' : 'var(--border-medium)'}`,
                           background: selectedOptionId === opt.option_id ? 'rgba(16, 185, 129, 0.08)' : 'var(--bg-surface-elevated)',
                           cursor: 'pointer',
                           transition: 'var(--transition)',
@@ -1171,7 +1171,7 @@ export default function ToolLibrary({ business }) {
                             fontSize: '0.72rem',
                             background: (opt.is_built_in ?? opt.is_builtin) ? 'rgba(16, 185, 129, 0.1)' : 'rgba(255, 255, 255, 0.05)',
                             color: (opt.is_built_in ?? opt.is_builtin) ? 'var(--color-emerald)' : 'var(--text-secondary)',
-                            border: `1px solid ${(opt.is_built_in ?? opt.is_builtin) ? 'rgba(16, 185, 129, 0.25)' : 'var(--border-subtle)'}`,
+                            border: `1px solid ${(opt.is_built_in ?? opt.is_builtin) ? 'rgba(16, 185, 129, 0.25)' : 'var(--border-medium)'}`,
                             padding: '2px 8px',
                             borderRadius: 'var(--radius-full)',
                             fontWeight: 600,

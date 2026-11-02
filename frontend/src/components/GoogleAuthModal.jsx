@@ -193,7 +193,7 @@ export default function GoogleAuthModal({
               <div
                 style={{
                   background: 'linear-gradient(135deg, rgba(238, 242, 255, 0.8), rgba(245, 243, 255, 0.8))',
-                  border: '1px solid rgba(167, 139, 250, 0.35)',
+                  border: '1px solid var(--border-medium)',
                   padding: '1rem',
                   borderRadius: 'var(--radius-md)',
                   marginBottom: '1.25rem',
@@ -382,7 +382,7 @@ export default function GoogleAuthModal({
           )}
 
           {/* Google Legal Disclaimer Note */}
-          <div style={{ marginTop: '1.25rem', paddingTop: '0.85rem', borderTop: '1px solid var(--slate-100)', fontSize: '0.74rem', color: '#5f6368', lineHeight: 1.4 }}>
+          <div style={{ marginTop: '1.25rem', paddingTop: '0.85rem', borderTop: '1px solid var(--border-medium)', fontSize: '0.74rem', color: '#5f6368', lineHeight: 1.4 }}>
             To continue, Google will securely share your email address and profile identity with <strong>CallMe AI Receptionist</strong> in accordance with strict tenant privacy standards.
           </div>
         </div>

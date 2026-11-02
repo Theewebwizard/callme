@@ -273,7 +273,7 @@ export default function AdminPortal({ onExitAdmin }) {
           <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
             <div style={{
               padding: '1.25rem 1.5rem',
-              borderBottom: '1px solid var(--border-subtle)',
+              borderBottom: '1px solid var(--border-medium)',
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
@@ -318,7 +318,7 @@ export default function AdminPortal({ onExitAdmin }) {
                           <span style={{
                             background: 'rgba(255, 255, 255, 0.05)',
                             color: 'var(--text-secondary)',
-                            border: '1px solid var(--border-subtle)',
+                            border: '1px solid var(--border-medium)',
                             padding: '3px 8px',
                             borderRadius: 'var(--radius-sm)',
                             fontSize: '0.75rem',
@@ -369,7 +369,7 @@ export default function AdminPortal({ onExitAdmin }) {
                           <span style={{
                             background: 'var(--bg-surface-elevated)',
                             color: 'var(--text-secondary)',
-                            border: '1px solid var(--border-subtle)',
+                            border: '1px solid var(--border-medium)',
                             padding: '3px 8px',
                             borderRadius: 'var(--radius-sm)',
                             fontSize: '0.75rem',
@@ -423,7 +423,7 @@ export default function AdminPortal({ onExitAdmin }) {
                     <span style={{
                       background: 'rgba(255, 255, 255, 0.05)',
                       color: 'var(--text-secondary)',
-                      border: '1px solid var(--border-subtle)',
+                      border: '1px solid var(--border-medium)',
                       padding: '3px 8px',
                       borderRadius: 'var(--radius-sm)',
                       fontSize: '0.74rem',
@@ -439,7 +439,7 @@ export default function AdminPortal({ onExitAdmin }) {
 
                   <div style={{
                     background: 'var(--bg-surface-elevated)',
-                    border: '1px solid var(--border-subtle)',
+                    border: '1px solid var(--border-medium)',
                     padding: '0.75rem',
                     borderRadius: 'var(--radius-md)',
                     marginBottom: '1rem',
@@ -457,7 +457,7 @@ export default function AdminPortal({ onExitAdmin }) {
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
-                    borderTop: '1px solid var(--border-subtle)',
+                    borderTop: '1px solid var(--border-medium)',
                     paddingTop: '0.75rem',
                     fontSize: '0.78rem',
                     color: 'var(--text-tertiary)',
@@ -502,7 +502,7 @@ export default function AdminPortal({ onExitAdmin }) {
                         height: '38px',
                         borderRadius: 'var(--radius-md)',
                         background: 'rgba(255, 255, 255, 0.04)',
-                        border: '1px solid var(--border-subtle)',
+                        border: '1px solid var(--border-medium)',
                         color: 'var(--text-primary)',
                         display: 'flex',
                         alignItems: 'center',
@@ -536,7 +536,7 @@ export default function AdminPortal({ onExitAdmin }) {
                               <span key={idx} style={{
                                 background: 'rgba(255, 255, 255, 0.04)',
                                 color: 'var(--text-secondary)',
-                                border: '1px solid var(--border-subtle)',
+                                border: '1px solid var(--border-medium)',
                                 padding: '1px 7px',
                                 borderRadius: 'var(--radius-full)',
                                 fontSize: '0.7rem',
@@ -558,7 +558,7 @@ export default function AdminPortal({ onExitAdmin }) {
                   {/* Agent Usage Breakdown */}
                   <div style={{
                     background: 'var(--bg-surface-elevated)',
-                    border: '1px solid var(--border-subtle)',
+                    border: '1px solid var(--border-medium)',
                     borderRadius: 'var(--radius-md)',
                     padding: '0.85rem 1rem',
                   }}>
@@ -580,7 +580,7 @@ export default function AdminPortal({ onExitAdmin }) {
                             fontWeight: 600,
                             background: u.is_enabled ? 'rgba(16, 185, 129, 0.1)' : 'rgba(255, 255, 255, 0.03)',
                             color: u.is_enabled ? 'var(--color-emerald)' : 'var(--text-tertiary)',
-                            border: u.is_enabled ? '1px solid rgba(16, 185, 129, 0.25)' : '1px solid var(--border-subtle)',
+                            border: u.is_enabled ? '1px solid rgba(16, 185, 129, 0.25)' : '1px solid var(--border-medium)',
                           }}
                         >
                           {u.is_enabled ? <CheckCircle2 size={12} /> : <AlertCircle size={12} />}
@@ -603,7 +603,7 @@ export default function AdminPortal({ onExitAdmin }) {
           <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
             <div style={{
               padding: '1.25rem 1.5rem',
-              borderBottom: '1px solid var(--border-subtle)',
+              borderBottom: '1px solid var(--border-medium)',
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
@@ -659,7 +659,7 @@ export default function AdminPortal({ onExitAdmin }) {
                             background: 'var(--bg-surface-elevated)',
                             padding: '2px 6px',
                             borderRadius: '4px',
-                            border: '1px solid var(--border-subtle)',
+                            border: '1px solid var(--border-medium)',
                           }}>
                             {d.integration_target}
                           </code>
@@ -692,7 +692,7 @@ export default function AdminPortal({ onExitAdmin }) {
                             border: d.status === 'Ready'
                               ? '1px solid rgba(16, 185, 129, 0.25)'
                               : d.status === 'In Development'
-                              ? '1px solid var(--border-subtle)'
+                              ? '1px solid var(--border-medium)'
                               : '1px solid rgba(245, 158, 11, 0.25)',
                           }}>
                             {d.status}
@@ -704,7 +704,7 @@ export default function AdminPortal({ onExitAdmin }) {
                               fontSize: '0.75rem',
                               padding: '4px 8px',
                               borderRadius: 'var(--radius-sm)',
-                              border: '1px solid var(--border-subtle)',
+                              border: '1px solid var(--border-medium)',
                               background: 'var(--bg-card)',
                               color: 'var(--text-primary)',
                             }}
@@ -752,7 +752,7 @@ export default function AdminPortal({ onExitAdmin }) {
               }}
               onClick={(e) => e.stopPropagation()}
             >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '0.85rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', borderBottom: '1px solid var(--border-medium)', paddingBottom: '0.85rem' }}>
                 <div>
                   <div className="card-title" style={{ fontSize: '1.1rem', marginBottom: '2px' }}>
                     Agent Telemetry: {selectedAgentDetail.name}
@@ -785,7 +785,7 @@ export default function AdminPortal({ onExitAdmin }) {
                 </div>
                 <div style={{
                   background: 'var(--bg-surface-elevated)',
-                  border: '1px solid var(--border-subtle)',
+                  border: '1px solid var(--border-medium)',
                   padding: '0.75rem',
                   borderRadius: 'var(--radius-sm)',
                   fontSize: '0.82rem',
@@ -803,7 +803,7 @@ export default function AdminPortal({ onExitAdmin }) {
                 </div>
                 <div style={{
                   background: 'var(--bg-surface-elevated)',
-                  border: '1px solid var(--border-subtle)',
+                  border: '1px solid var(--border-medium)',
                   padding: '0.75rem',
                   borderRadius: 'var(--radius-sm)',
                   fontSize: '0.82rem',
@@ -829,7 +829,7 @@ export default function AdminPortal({ onExitAdmin }) {
                         fontWeight: 600,
                         background: isEnabled ? 'rgba(16, 185, 129, 0.1)' : 'rgba(255, 255, 255, 0.03)',
                         color: isEnabled ? 'var(--color-emerald)' : 'var(--text-tertiary)',
-                        border: isEnabled ? '1px solid rgba(16, 185, 129, 0.25)' : '1px solid var(--border-subtle)',
+                        border: isEnabled ? '1px solid rgba(16, 185, 129, 0.25)' : '1px solid var(--border-medium)',
                       }}
                     >
                       {tId}: {isEnabled ? 'Active' : 'Off'}

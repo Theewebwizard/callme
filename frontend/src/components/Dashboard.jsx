@@ -153,7 +153,7 @@ export default function Dashboard({ business, onNavigate, calls = [] }) {
               title="Click to copy inbound phone DID"
               style={{
                 background: 'var(--bg-surface-elevated)',
-                border: '1px solid var(--border-subtle)',
+                border: '1px solid var(--border-medium)',
                 borderRadius: 'var(--radius-sm)',
                 padding: '3px 8px',
                 display: 'inline-flex',
@@ -287,7 +287,7 @@ export default function Dashboard({ business, onNavigate, calls = [] }) {
                 title="Simulate speech synthesis playback"
                 style={{
                   background: isPlayingGreeting ? 'rgba(16, 185, 129, 0.2)' : 'var(--bg-surface-elevated)',
-                  border: '1px solid var(--border-subtle)',
+                  border: '1px solid var(--border-medium)',
                   borderRadius: 'var(--radius-sm)',
                   padding: '3px 8px',
                   display: 'inline-flex',
@@ -310,7 +310,7 @@ export default function Dashboard({ business, onNavigate, calls = [] }) {
             <blockquote
               style={{
                 background: 'var(--bg-surface-elevated)',
-                border: '1px solid var(--border-subtle)',
+                border: '1px solid var(--border-medium)',
                 borderLeft: '3px solid #ffffff',
                 padding: '0.85rem 1rem',
                 borderRadius: 'var(--radius-sm)',
@@ -357,7 +357,7 @@ export default function Dashboard({ business, onNavigate, calls = [] }) {
             <div
               style={{
                 background: 'var(--bg-surface-elevated)',
-                border: '1px solid var(--border-subtle)',
+                border: '1px solid var(--border-medium)',
                 padding: '0.85rem 1rem',
                 borderRadius: 'var(--radius-sm)',
                 fontSize: '0.8rem',
@@ -407,7 +407,7 @@ export default function Dashboard({ business, onNavigate, calls = [] }) {
                       key={tId}
                       style={{
                         background: 'var(--bg-surface-elevated)',
-                        border: '1px solid var(--border-subtle)',
+                        border: '1px solid var(--border-medium)',
                         color: 'var(--text-primary)',
                         padding: '0.25rem 0.65rem',
                         borderRadius: 'var(--radius-full)',
@@ -469,7 +469,7 @@ export default function Dashboard({ business, onNavigate, calls = [] }) {
                     onChange={(e) => setSearchFilter(e.target.value)}
                     style={{
                       background: 'var(--bg-surface-elevated)',
-                      border: '1px solid var(--border-subtle)',
+                      border: '1px solid var(--border-medium)',
                       borderRadius: 'var(--radius-sm)',
                       padding: '0.28rem 0.6rem 0.28rem 1.6rem',
                       color: 'var(--text-primary)',
@@ -525,7 +525,7 @@ export default function Dashboard({ business, onNavigate, calls = [] }) {
                             fontSize: '0.78rem',
                             color: '#ffffff',
                             fontFamily: 'var(--font-mono)',
-                            border: '1px solid var(--border-subtle)',
+                            border: '1px solid var(--border-medium)',
                           }}
                         >
                           {c.caller_number}
@@ -580,7 +580,7 @@ export default function Dashboard({ business, onNavigate, calls = [] }) {
                 justifyContent: 'center',
                 background: 'rgba(255, 255, 255, 0.015)',
                 borderRadius: 'var(--radius-md)',
-                border: '1px dashed var(--border-subtle)',
+                border: '1px dashed var(--border-medium)',
               }}
             >
               <div

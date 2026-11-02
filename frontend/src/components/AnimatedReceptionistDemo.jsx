@@ -99,7 +99,7 @@ function SimulatedWaveform({ stage, isPaused }) {
           height: '42px',
           padding: '4px 8px',
           background: 'rgba(255, 255, 255, 0.02)',
-          border: '1px solid var(--border-subtle)',
+          border: '1px solid var(--border-medium)',
           borderRadius: 'var(--radius-sm)',
         }}
       >
@@ -226,7 +226,7 @@ export default function AnimatedReceptionistDemo({ activePreview, activeIndustry
               color: 'var(--text-secondary)',
               fontFamily: 'var(--font-mono)',
               background: 'var(--bg-surface-elevated)',
-              border: '1px solid var(--border-subtle)',
+              border: '1px solid var(--border-medium)',
               padding: '2px 7px',
               borderRadius: '4px',
             }}
@@ -243,7 +243,7 @@ export default function AnimatedReceptionistDemo({ activePreview, activeIndustry
           alignItems: 'center',
           justifyContent: 'space-between',
           padding: '0.65rem 1.25rem',
-          borderBottom: '1px solid var(--border-subtle)',
+          borderBottom: '1px solid var(--border-medium)',
           background: 'var(--bg-surface-elevated)',
           flexWrap: 'wrap',
           gap: '0.6rem',
@@ -292,7 +292,7 @@ export default function AnimatedReceptionistDemo({ activePreview, activeIndustry
             onClick={() => setIsPaused(!isPaused)}
             style={{
               background: 'var(--bg-card)',
-              border: '1px solid var(--border-subtle)',
+              border: '1px solid var(--border-medium)',
               color: 'var(--text-secondary)',
               padding: '2px 8px',
               borderRadius: 'var(--radius-xs)',
@@ -313,7 +313,7 @@ export default function AnimatedReceptionistDemo({ activePreview, activeIndustry
             onClick={handleRestart}
             style={{
               background: 'var(--bg-card)',
-              border: '1px solid var(--border-subtle)',
+              border: '1px solid var(--border-medium)',
               color: 'var(--text-secondary)',
               padding: '2px 8px',
               borderRadius: 'var(--radius-xs)',
@@ -336,7 +336,7 @@ export default function AnimatedReceptionistDemo({ activePreview, activeIndustry
         style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(6, 1fr)',
-          borderBottom: '1px solid var(--border-subtle)',
+          borderBottom: '1px solid var(--border-medium)',
           background: 'rgba(7, 8, 10, 0.6)',
         }}
       >
@@ -414,7 +414,7 @@ export default function AnimatedReceptionistDemo({ activePreview, activeIndustry
             <div
               style={{
                 background: 'var(--bg-surface-elevated)',
-                border: '1px solid var(--border-subtle)',
+                border: '1px solid var(--border-medium)',
                 padding: '6px 14px',
                 borderRadius: 'var(--radius-full)',
                 fontSize: '0.72rem',
@@ -471,7 +471,7 @@ export default function AnimatedReceptionistDemo({ activePreview, activeIndustry
                 style={{
                   background: 'var(--bg-surface-elevated)',
                   color: 'var(--text-primary)',
-                  border: stage === 'caller_inquiry' ? '1px solid var(--sky-500)' : '1px solid var(--border-subtle)',
+                  border: stage === 'caller_inquiry' ? '1px solid var(--sky-500)' : '1px solid var(--border-medium)',
                   padding: '0.65rem 0.95rem',
                   borderRadius: 'var(--radius-sm)',
                   fontSize: '0.84rem',
@@ -601,7 +601,7 @@ export default function AnimatedReceptionistDemo({ activePreview, activeIndustry
         )}
 
         {/* 5. Real-Time Simulated Waveform Visualizer */}
-        <div style={{ marginTop: '1.25rem', paddingTop: '1rem', borderTop: '1px solid var(--border-subtle)' }}>
+        <div style={{ marginTop: '1.25rem', paddingTop: '1rem', borderTop: '1px solid var(--border-medium)' }}>
           <SimulatedWaveform stage={stage} isPaused={isPaused} />
         </div>
       </div>

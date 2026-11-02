@@ -46,11 +46,11 @@ export default function ThemeToggle({ className = '', style = {} }) {
       style={{
         display: 'inline-flex',
         alignItems: 'center',
-        gap: '2px',
-        padding: '2px',
+        gap: '3px',
+        padding: '3px',
         borderRadius: 'var(--radius-full)',
         background: 'var(--bg-surface-elevated)',
-        border: '1px solid var(--border-subtle)',
+        border: '1px solid var(--border-medium)',
         ...style,
       }}
       role="group"
@@ -66,15 +66,16 @@ export default function ThemeToggle({ className = '', style = {} }) {
           display: 'inline-flex',
           alignItems: 'center',
           gap: '4px',
-          padding: '3px 9px',
+          padding: '4px 10px',
           borderRadius: 'var(--radius-full)',
-          border: 'none',
+          border: theme === 'light' ? '1px solid var(--color-primary)' : '1px solid transparent',
           fontSize: '0.72rem',
           fontWeight: 600,
           fontFamily: 'var(--font-mono)',
           cursor: 'pointer',
           background: theme === 'light' ? 'var(--gradient-primary)' : 'transparent',
           color: theme === 'light' ? '#ffffff' : 'var(--text-secondary)',
+          boxShadow: theme === 'light' ? '0 1px 4px rgba(2, 132, 199, 0.25)' : 'none',
           transition: 'all 0.2s ease',
         }}
       >
@@ -92,15 +93,16 @@ export default function ThemeToggle({ className = '', style = {} }) {
           display: 'inline-flex',
           alignItems: 'center',
           gap: '4px',
-          padding: '3px 9px',
+          padding: '4px 10px',
           borderRadius: 'var(--radius-full)',
-          border: 'none',
+          border: theme === 'dark' ? '1px solid var(--border-medium)' : '1px solid transparent',
           fontSize: '0.72rem',
           fontWeight: 600,
           fontFamily: 'var(--font-mono)',
           cursor: 'pointer',
           background: theme === 'dark' ? 'var(--gradient-primary)' : 'transparent',
           color: theme === 'dark' ? '#07080a' : 'var(--text-secondary)',
+          boxShadow: theme === 'dark' ? '0 1px 4px rgba(0, 0, 0, 0.3)' : 'none',
           transition: 'all 0.2s ease',
         }}
       >

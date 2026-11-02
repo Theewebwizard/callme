@@ -51,7 +51,7 @@ export default function HeroCallPreview({
             padding: '1.75rem',
             overflow: 'hidden',
             background: 'var(--bg-card)',
-            border: '1px solid var(--border-subtle)',
+            border: '1px solid var(--border-medium)',
             boxShadow: 'var(--card-shadow)',
           }}
         >
@@ -122,14 +122,16 @@ export default function HeroCallPreview({
                 onClick={handleReplay}
                 title="Restart simulated audio"
                 style={{
-                  background: 'transparent',
-                  border: 'none',
-                  color: 'var(--text-tertiary)',
+                  background: 'var(--bg-surface-elevated)',
+                  border: '1px solid var(--border-medium)',
+                  borderRadius: '6px',
+                  color: 'var(--text-secondary)',
                   cursor: 'pointer',
-                  padding: '4px',
+                  padding: '4px 6px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
+                  transition: 'all 0.2s ease',
                 }}
               >
                 <RotateCcw size={14} />
@@ -172,7 +174,7 @@ export default function HeroCallPreview({
                 alignSelf: 'flex-start',
                 maxWidth: '85%',
                 background: 'var(--bg-surface-elevated)',
-                border: '1px solid var(--border-subtle)',
+                border: '1px solid var(--border-medium)',
                 color: 'var(--text-primary)',
                 padding: '0.65rem 1.05rem',
                 borderRadius: '14px',
@@ -208,7 +210,7 @@ export default function HeroCallPreview({
                 padding: '0.35rem 0.75rem',
                 borderRadius: '10px',
                 background: 'var(--bg-card)',
-                border: '1px solid var(--border-subtle)',
+                border: '1px solid var(--border-medium)',
                 fontSize: '0.75rem',
                 color: 'var(--text-secondary)',
                 alignSelf: 'flex-start',
@@ -227,7 +229,7 @@ export default function HeroCallPreview({
             style={{
               marginTop: '1.4rem',
               paddingTop: '1rem',
-              borderTop: '1px solid var(--border-subtle)',
+              borderTop: '1px solid var(--border-medium)',
               display: 'grid',
               gridTemplateColumns: 'repeat(3, 1fr)',
               gap: '0.5rem',
@@ -278,7 +280,7 @@ export default function HeroCallPreview({
                   style={{
                     background: isActive ? 'var(--color-primary)' : 'var(--bg-card)',
                     color: isActive ? '#ffffff' : 'var(--text-secondary)',
-                    border: `1px solid ${isActive ? 'var(--color-primary)' : 'var(--border-subtle)'}`,
+                    border: `1px solid ${isActive ? 'var(--color-primary)' : 'var(--border-medium)'}`,
                     padding: '0.25rem 0.65rem',
                     borderRadius: 'var(--radius-full)',
                     fontSize: '0.72rem',

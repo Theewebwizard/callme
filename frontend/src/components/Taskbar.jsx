@@ -105,7 +105,7 @@ export default function Taskbar({
                 fontFamily: 'var(--font-mono)',
                 color: 'var(--text-tertiary)',
                 background: 'rgba(255, 255, 255, 0.05)',
-                border: '1px solid var(--border-subtle)',
+                border: '1px solid var(--border-medium)',
                 padding: '1px 5px',
                 borderRadius: '4px',
                 marginLeft: 'auto',
@@ -322,7 +322,7 @@ export default function Taskbar({
               ))}
             </div>
 
-            <div style={{ marginTop: '2rem', borderTop: '1px solid var(--border-subtle)', paddingTop: '1rem' }}>
+            <div style={{ marginTop: '2rem', borderTop: '1px solid var(--border-medium)', paddingTop: '1rem' }}>
               <div style={{ marginBottom: '0.75rem', display: 'flex', justifyContent: 'center' }}>
                 <ThemeToggle />
               </div>

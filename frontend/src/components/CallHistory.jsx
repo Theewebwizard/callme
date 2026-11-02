@@ -142,7 +142,7 @@ export default function CallHistory({ business, initialCalls = [], onCallsUpdate
             padding: '0.25rem 0.65rem',
             borderRadius: 'var(--radius-full)',
             background: 'var(--bg-surface-elevated)',
-            border: '1px solid var(--border-subtle)',
+            border: '1px solid var(--border-medium)',
             color: 'var(--text-secondary)',
             fontSize: '0.74rem',
             fontWeight: 600,
@@ -195,7 +195,7 @@ export default function CallHistory({ business, initialCalls = [], onCallsUpdate
                     padding: '0.25rem 0.55rem',
                     borderRadius: 'var(--radius-full)',
                     border: '1px solid',
-                    borderColor: selectedOutcome === oc ? 'var(--border-strong)' : 'var(--border-subtle)',
+                    borderColor: selectedOutcome === oc ? 'var(--border-strong)' : 'var(--border-medium)',
                     background: selectedOutcome === oc ? 'var(--bg-surface-elevated)' : 'transparent',
                     color: selectedOutcome === oc ? '#ffffff' : 'var(--text-secondary)',
                     fontSize: '0.72rem',
@@ -256,7 +256,7 @@ export default function CallHistory({ business, initialCalls = [], onCallsUpdate
                               fontSize: '0.68rem',
                               fontFamily: 'var(--font-mono)',
                               background: 'var(--bg-surface-elevated)',
-                              border: '1px solid var(--border-subtle)',
+                              border: '1px solid var(--border-medium)',
                               padding: '1px 5px',
                               borderRadius: '4px',
                               color: 'var(--text-secondary)',
@@ -289,7 +289,7 @@ export default function CallHistory({ business, initialCalls = [], onCallsUpdate
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  borderBottom: '1px solid var(--border-subtle)',
+                  borderBottom: '1px solid var(--border-medium)',
                   paddingBottom: '1rem',
                   flexWrap: 'wrap',
                   gap: '0.75rem',
@@ -338,7 +338,7 @@ export default function CallHistory({ business, initialCalls = [], onCallsUpdate
                 <div
                   style={{
                     background: 'var(--bg-surface-elevated)',
-                    border: '1px solid var(--border-subtle)',
+                    border: '1px solid var(--border-medium)',
                     padding: '0.85rem 1rem',
                     borderRadius: 'var(--radius-sm)',
                     fontSize: '0.84rem',
@@ -363,7 +363,7 @@ export default function CallHistory({ business, initialCalls = [], onCallsUpdate
                         key={idx}
                         style={{
                           background: 'var(--bg-surface-elevated)',
-                          border: '1px solid var(--border-subtle)',
+                          border: '1px solid var(--border-medium)',
                           padding: '0.65rem 0.85rem',
                           borderRadius: 'var(--radius-sm)',
                           display: 'flex',
@@ -404,7 +404,7 @@ export default function CallHistory({ business, initialCalls = [], onCallsUpdate
                 <div
                   style={{
                     background: 'var(--bg-surface-elevated)',
-                    border: '1px solid var(--border-subtle)',
+                    border: '1px solid var(--border-medium)',
                     borderRadius: 'var(--radius-sm)',
                     padding: '1rem',
                     flex: 1,
@@ -450,7 +450,7 @@ export default function CallHistory({ business, initialCalls = [], onCallsUpdate
                               borderRadius: 'var(--radius-sm)',
                               fontSize: '0.82rem',
                               lineHeight: 1.5,
-                              border: isUser ? 'none' : '1px solid var(--border-subtle)',
+                              border: isUser ? 'none' : '1px solid var(--border-medium)',
                               fontWeight: isUser ? 500 : 400,
                             }}
                           >

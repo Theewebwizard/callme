@@ -517,7 +517,7 @@ export default function WebPhone({ business }) {
               padding: '0.2rem 0.6rem',
               borderRadius: 'var(--radius-full)',
               background: 'var(--bg-surface-elevated)',
-              border: '1px solid var(--border-subtle)',
+              border: '1px solid var(--border-medium)',
               color: 'var(--text-secondary)',
               fontSize: '0.72rem',
               fontWeight: 600,
@@ -586,7 +586,7 @@ export default function WebPhone({ business }) {
                 background: callActive ? 'rgba(16, 185, 129, 0.12)' : 'var(--bg-surface-elevated)',
                 color: callActive ? 'var(--mint-400)' : 'var(--text-tertiary)',
                 border: '1px solid',
-                borderColor: callActive ? 'rgba(16, 185, 129, 0.3)' : 'var(--border-subtle)',
+                borderColor: callActive ? 'rgba(16, 185, 129, 0.3)' : 'var(--border-medium)',
               }}
             >
               <span
@@ -626,7 +626,7 @@ export default function WebPhone({ business }) {
           <div
             style={{
               background: 'var(--bg-app)',
-              border: '1px solid var(--border-subtle)',
+              border: '1px solid var(--border-medium)',
               borderRadius: 'var(--radius-md)',
               padding: '1rem',
               display: 'flex',
@@ -755,7 +755,7 @@ export default function WebPhone({ business }) {
           {/* Language & Voice Settings */}
           <div
             style={{
-              borderTop: '1px solid var(--border-subtle)',
+              borderTop: '1px solid var(--border-medium)',
               paddingTop: '0.85rem',
               display: 'flex',
               flexDirection: 'column',
@@ -781,7 +781,7 @@ export default function WebPhone({ business }) {
                       background: speechLang === l.id ? 'var(--mint-500)' : 'var(--bg-surface-elevated)',
                       color: speechLang === l.id ? '#07080a' : 'var(--text-secondary)',
                       border: '1px solid',
-                      borderColor: speechLang === l.id ? 'var(--mint-500)' : 'var(--border-subtle)',
+                      borderColor: speechLang === l.id ? 'var(--mint-500)' : 'var(--border-medium)',
                       borderRadius: 'var(--radius-sm)',
                       padding: '2px 8px',
                       fontSize: '0.72rem',
@@ -830,7 +830,7 @@ export default function WebPhone({ business }) {
           <div
             style={{
               padding: '1rem 1.25rem',
-              borderBottom: '1px solid var(--border-subtle)',
+              borderBottom: '1px solid var(--border-medium)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
@@ -929,7 +929,7 @@ export default function WebPhone({ business }) {
                         borderRadius: isAssistant ? '4px 14px 14px 14px' : '14px 4px 14px 14px',
                         background: isAssistant ? 'var(--bg-surface-elevated)' : 'rgba(255, 255, 255, 0.1)',
                         border: '1px solid',
-                        borderColor: isAssistant ? 'var(--border-subtle)' : 'var(--border-medium)',
+                        borderColor: isAssistant ? 'var(--border-medium)' : 'var(--border-medium)',
                         color: '#EDEDED',
                         fontSize: '0.84rem',
                         lineHeight: 1.5,
@@ -1012,7 +1012,7 @@ export default function WebPhone({ business }) {
               onSubmit={handleTextSubmit}
               style={{
                 padding: '0.75rem 1rem',
-                borderTop: '1px solid var(--border-subtle)',
+                borderTop: '1px solid var(--border-medium)',
                 background: 'var(--bg-card)',
                 display: 'flex',
                 gap: '0.65rem',

@@ -16,7 +16,7 @@ export default function MetricsSocialProofStrip() {
           borderRadius: 'var(--radius-xl)',
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-          divideX: '1px solid var(--border-subtle)',
+          border: '1px solid var(--border-medium)',
           boxShadow: 'var(--card-shadow)',
           overflow: 'hidden',
         }}
@@ -27,7 +27,7 @@ export default function MetricsSocialProofStrip() {
             style={{
               padding: '1.75rem 1.5rem',
               textAlign: 'center',
-              borderRight: index < METRICS.length - 1 ? '1px solid var(--border-subtle)' : 'none',
+              borderRight: index < METRICS.length - 1 ? '1px solid var(--border-medium)' : 'none',
               borderBottom: 'none',
             }}
           >

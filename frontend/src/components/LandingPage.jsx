@@ -301,7 +301,7 @@ export default function LandingPage({ onEnterWorkspace, onEnterAdmin }) {
               fontSize: '0.72rem',
               fontFamily: 'var(--font-mono)',
               background: 'var(--bg-surface-elevated)',
-              border: '1px solid var(--border-subtle)',
+              border: '1px solid var(--border-medium)',
               padding: '2px 7px',
               borderRadius: 'var(--radius-full)',
               color: 'var(--text-secondary)',
@@ -419,13 +419,13 @@ export default function LandingPage({ onEnterWorkspace, onEnterAdmin }) {
           boxSizing: 'border-box',
         }}
       >
-        <div className="card glass" style={{ padding: '2rem 1.75rem', borderRadius: 'var(--radius-xl)' }}>
+        <div className="card glass" style={{ padding: '2rem 1.75rem', borderRadius: 'var(--radius-xl)', border: '1px solid var(--border-medium)', boxShadow: 'var(--card-shadow)' }}>
           {/* Role Tabs: Business vs Operator */}
           <div
             style={{
               display: 'flex',
               background: 'var(--bg-surface-elevated)',
-              border: '1px solid var(--border-subtle)',
+              border: '1px solid var(--border-medium)',
               borderRadius: 'var(--radius-sm)',
               padding: '3px',
               marginBottom: '1.5rem',
@@ -443,6 +443,7 @@ export default function LandingPage({ onEnterWorkspace, onEnterAdmin }) {
                 borderRadius: 'var(--radius-xs)',
                 border: 'none',
                 background: authRole === 'business' ? 'var(--bg-card)' : 'transparent',
+                border: authRole === 'business' ? '1px solid var(--border-medium)' : '1px solid transparent',
                 color: authRole === 'business' ? 'var(--text-primary)' : 'var(--text-secondary)',
                 boxShadow: authRole === 'business' ? '0 1px 3px rgba(0, 0, 0, 0.08)' : 'none',
                 fontSize: '0.8rem',
@@ -465,6 +466,7 @@ export default function LandingPage({ onEnterWorkspace, onEnterAdmin }) {
                 borderRadius: 'var(--radius-xs)',
                 border: 'none',
                 background: authRole === 'admin' ? 'var(--bg-card)' : 'transparent',
+                border: authRole === 'admin' ? '1px solid var(--border-medium)' : '1px solid transparent',
                 color: authRole === 'admin' ? 'var(--text-primary)' : 'var(--text-secondary)',
                 boxShadow: authRole === 'admin' ? '0 1px 3px rgba(0, 0, 0, 0.08)' : 'none',
                 fontSize: '0.8rem',
@@ -528,7 +530,7 @@ export default function LandingPage({ onEnterWorkspace, onEnterAdmin }) {
                 <div
                   style={{
                     background: 'var(--bg-surface-elevated)',
-                    border: '1px solid var(--border-subtle)',
+                    border: '1px solid var(--border-medium)',
                     padding: '0.65rem 0.85rem',
                     borderRadius: 'var(--radius-sm)',
                     marginBottom: '1.25rem',
@@ -599,9 +601,9 @@ export default function LandingPage({ onEnterWorkspace, onEnterAdmin }) {
                   letterSpacing: '0.04em',
                 }}
               >
-                <span style={{ flex: 1, height: '1px', background: 'var(--border-subtle)' }} />
+                <span style={{ flex: 1, height: '1px', background: 'var(--border-medium)' }} />
                 <span>or email</span>
-                <span style={{ flex: 1, height: '1px', background: 'var(--border-subtle)' }} />
+                <span style={{ flex: 1, height: '1px', background: 'var(--border-medium)' }} />
               </div>
 
               {businessAuthMode === 'login' ? (
@@ -776,7 +778,7 @@ export default function LandingPage({ onEnterWorkspace, onEnterAdmin }) {
               <div
                 style={{
                   background: 'var(--bg-surface-elevated)',
-                  border: '1px solid var(--border-subtle)',
+                  border: '1px solid var(--border-medium)',
                   padding: '0.65rem 0.85rem',
                   borderRadius: 'var(--radius-sm)',
                   marginBottom: '1.25rem',
@@ -835,7 +837,7 @@ export default function LandingPage({ onEnterWorkspace, onEnterAdmin }) {
 
       {/* 9. High-Converting Bottom CTA Banner */}
       <section className="reveal-on-scroll" style={{ maxWidth: '1152px', margin: '0 auto', padding: '0 1.5rem 6rem', width: '100%', boxSizing: 'border-box' }}>
-        <div className="glass border-glow shadow-glow" style={{ borderRadius: '1.5rem', padding: '3.5rem 2rem', textAlign: 'center' }}>
+        <div className="glass border-glow shadow-glow" style={{ borderRadius: '1.5rem', padding: '3.5rem 2rem', textAlign: 'center', border: '1px solid var(--border-medium)' }}>
           <h2 style={{ fontSize: 'clamp(2rem, 4vw, 2.5rem)', fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 0.75rem', letterSpacing: '-0.025em' }}>
             Your receptionist can start today.
           </h2>
@@ -893,7 +895,7 @@ export default function LandingPage({ onEnterWorkspace, onEnterAdmin }) {
       {/* 10. Polished Dark Footer */}
       <footer
         style={{
-          borderTop: '1px solid var(--border-subtle)',
+          borderTop: '1px solid var(--border-medium)',
           padding: '2.5rem 2rem',
           maxWidth: '1100px',
           margin: '0 auto',
