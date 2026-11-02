@@ -1,106 +1,74 @@
 import React, { useState } from 'react';
-import { CalendarCheck, ShieldCheck, Zap, Radio, PhoneIncoming, RotateCcw } from 'lucide-react';
+import { CalendarCheck, RotateCcw } from 'lucide-react';
 
 export default function HeroCallPreview({
   activePreview,
   activeIndustryId,
   onSelectIndustry,
   industries = [],
+  onReplay,
 }) {
-  const [demoCycle, setDemoCycle] = useState(0);
+  const [internalCycle, setInternalCycle] = useState(0);
 
   const handleReplay = () => {
-    setDemoCycle((c) => c + 1);
+    setInternalCycle((c) => c + 1);
+    if (onReplay) onReplay();
   };
 
   return (
-    <div style={{ position: 'relative', width: '100%', maxWidth: '720px', margin: '0 auto' }}>
-      {/* 1. Industry Switcher Tabs */}
+    <div className="hero-call-preview-wrapper" style={{ position: 'relative', width: '100%', maxWidth: '520px', margin: '0 auto' }}>
+      {/* 1. Rotating Dashed Radar Circle Halo behind the card */}
       <div
+        className="pointer-events-none"
         style={{
-          display: 'flex',
-          justifyContent: 'center',
-          gap: '0.45rem',
-          marginBottom: '1.25rem',
-          flexWrap: 'wrap',
+          position: 'absolute',
+          inset: '-36px',
+          zIndex: 0,
+          display: 'grid',
+          placeItems: 'center',
         }}
+        aria-hidden="true"
       >
-        {industries.map((ind) => {
-          const isActive = ind.id === activeIndustryId;
-          return (
-            <button
-              key={ind.id}
-              type="button"
-              onClick={() => onSelectIndustry && onSelectIndustry(ind.id)}
-              style={{
-                background: isActive ? '#ffffff' : 'var(--bg-surface-elevated)',
-                color: isActive ? '#07080a' : 'var(--text-secondary)',
-                border: `1px solid ${isActive ? '#ffffff' : 'var(--border-subtle)'}`,
-                padding: '0.35rem 0.85rem',
-                borderRadius: 'var(--radius-full)',
-                fontSize: '0.78rem',
-                fontWeight: 600,
-                cursor: 'pointer',
-                transition: 'all 0.2s ease',
-              }}
-            >
-              {ind.title.split(' ')[0]}
-            </button>
-          );
-        })}
+        <div
+          className="animate-spin-slow"
+          style={{
+            width: '460px',
+            height: '460px',
+            borderRadius: '50%',
+            border: '1px dashed color-mix(in oklab, var(--color-primary) 30%, transparent)',
+          }}
+        />
       </div>
 
-      {/* 2. Floating Call Container with Rotating Radar Circle Halo */}
-      <div className="animate-float" style={{ position: 'relative' }}>
-        {/* Radar dashed circle */}
+      {/* 2. Floating Call Card */}
+      <div className="animate-float" style={{ position: 'relative', zIndex: 1 }}>
         <div
-          className="pointer-events-none"
-          style={{
-            position: 'absolute',
-            inset: '-30px',
-            zIndex: 0,
-            display: 'grid',
-            placeItems: 'center',
-          }}
-        >
-          <div
-            className="animate-spin-slow"
-            style={{
-              width: '420px',
-              height: '420px',
-              borderRadius: '50%',
-              border: '1px dashed rgba(16, 185, 129, 0.25)',
-            }}
-          />
-        </div>
-
-        {/* The Glass Call Preview Card */}
-        <div
-          key={`${activeIndustryId}-${demoCycle}`}
-          className="glass border-glow shadow-glow"
+          key={`${activeIndustryId}-${internalCycle}`}
+          className="call-preview glass border-glow shadow-glow"
           style={{
             position: 'relative',
-            zIndex: 1,
-            borderRadius: 'var(--radius-2xl, 20px)',
+            borderRadius: '22px',
             padding: '1.75rem',
             overflow: 'hidden',
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border-subtle)',
+            boxShadow: 'var(--card-shadow)',
           }}
         >
-          {/* Scanning vertical light ray */}
+          {/* Scanning light ray */}
           <div
-            className="animate-scan"
+            className="animate-scan pointer-events-none"
             style={{
               position: 'absolute',
               insetInline: 0,
               top: 0,
-              height: '35%',
-              background: 'linear-gradient(to bottom, transparent, rgba(16, 185, 129, 0.12), transparent)',
-              pointerEvents: 'none',
+              height: '34%',
+              background: 'linear-gradient(to bottom, transparent, color-mix(in oklab, var(--color-primary) 12%, transparent), transparent)',
             }}
           />
 
           {/* Call Header */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
               <div
                 style={{
@@ -110,21 +78,21 @@ export default function HeroCallPreview({
                   background: 'var(--gradient-primary)',
                   display: 'grid',
                   placeItems: 'center',
-                  fontWeight: 800,
-                  fontSize: '1.15rem',
+                  fontWeight: 700,
+                  fontSize: '1.25rem',
                   fontFamily: 'var(--font-display)',
-                  color: '#07080a',
-                  boxShadow: 'var(--shadow-glow)',
+                  color: '#ffffff',
+                  boxShadow: '0 4px 14px color-mix(in oklab, var(--color-primary) 35%, transparent)',
                 }}
               >
                 A
               </div>
               <div>
-                <p style={{ fontWeight: 700, fontSize: '0.94rem', color: 'var(--text-primary)', margin: 0 }}>
-                  Aria · Autonomous Receptionist
+                <p style={{ fontWeight: 700, fontSize: '0.98rem', color: 'var(--text-primary)', margin: 0 }}>
+                  Aria · On a live call
                 </p>
-                <p style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', margin: '2px 0 0', fontFamily: 'var(--font-mono)' }}>
-                  {activePreview?.businessName || 'Spice Garden Bistro'} • {activePreview?.phone || '+91 80 4123 5678'}
+                <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', margin: '2px 0 0', fontFamily: 'var(--font-mono)' }}>
+                  {activePreview?.businessName || 'Bright Smile Dental'} · 00:42
                 </p>
               </div>
             </div>
@@ -135,17 +103,18 @@ export default function HeroCallPreview({
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: '5px',
-                  background: 'rgba(16, 185, 129, 0.15)',
-                  border: '1px solid rgba(16, 185, 129, 0.3)',
-                  color: 'var(--color-emerald)',
-                  padding: '2px 8px',
+                  background: 'color-mix(in oklab, var(--color-primary) 14%, transparent)',
+                  border: '1px solid color-mix(in oklab, var(--color-primary) 28%, transparent)',
+                  color: 'var(--color-primary)',
+                  padding: '3px 9px',
                   borderRadius: 'var(--radius-full)',
                   fontSize: '0.72rem',
                   fontWeight: 700,
                   fontFamily: 'var(--font-mono)',
+                  letterSpacing: '0.04em',
                 }}
               >
-                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--color-emerald)' }} />
+                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--color-primary)' }} />
                 LIVE
               </span>
               <button
@@ -158,6 +127,9 @@ export default function HeroCallPreview({
                   color: 'var(--text-tertiary)',
                   cursor: 'pointer',
                   padding: '4px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
                 }}
               >
                 <RotateCcw size={14} />
@@ -172,8 +144,8 @@ export default function HeroCallPreview({
               alignItems: 'center',
               justifyContent: 'center',
               gap: '4px',
-              height: '48px',
-              margin: '1.25rem 0 1.5rem',
+              height: '46px',
+              margin: '1.35rem 0 1.5rem',
             }}
           >
             {Array.from({ length: 32 }).map((_, i) => (
@@ -193,7 +165,7 @@ export default function HeroCallPreview({
           </div>
 
           {/* Dialogue Message Bubbles */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', fontSize: '0.85rem' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', fontSize: '0.88rem' }}>
             {/* Caller inquiry */}
             <div
               style={{
@@ -201,13 +173,13 @@ export default function HeroCallPreview({
                 maxWidth: '85%',
                 background: 'var(--bg-surface-elevated)',
                 border: '1px solid var(--border-subtle)',
-                color: 'var(--text-secondary)',
-                padding: '0.65rem 1rem',
-                borderRadius: 'var(--radius-lg)',
+                color: 'var(--text-primary)',
+                padding: '0.65rem 1.05rem',
+                borderRadius: '14px',
                 lineHeight: 1.45,
               }}
             >
-              {activePreview?.dialogue?.[0]?.text || 'Namaste! Do you have a table for 4 tonight around 8 PM outside?'}
+              {activePreview?.dialogue?.[0]?.text || 'Hi, can I book a cleaning for Friday?'}
             </div>
 
             {/* AI Voice Receptionist Response */}
@@ -215,17 +187,16 @@ export default function HeroCallPreview({
               style={{
                 alignSelf: 'flex-end',
                 maxWidth: '85%',
-                background: 'rgba(16, 185, 129, 0.12)',
-                border: '1px solid rgba(16, 185, 129, 0.3)',
-                color: '#ffffff',
-                padding: '0.65rem 1rem',
-                borderRadius: 'var(--radius-lg)',
+                background: 'color-mix(in oklab, var(--color-primary) 13%, transparent)',
+                border: '1px solid color-mix(in oklab, var(--color-primary) 24%, transparent)',
+                color: 'var(--text-primary)',
+                padding: '0.65rem 1.05rem',
+                borderRadius: '14px',
                 lineHeight: 1.45,
               }}
             >
-              {activePreview?.dialogue?.[3]?.text ||
-                activePreview?.dialogue?.[1]?.text ||
-                'Namaste! We have a lovely table on our garden patio open at 8:00 PM. Shall I confirm this reservation under your name?'}
+              {activePreview?.dialogue?.[1]?.text ||
+                'Of course! I have 10:30 AM or 3:00 PM open on Friday. Which works best?'}
             </div>
 
             {/* Confirmed Booking Event Pill */}
@@ -233,19 +204,20 @@ export default function HeroCallPreview({
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '0.5rem',
-                padding: '0.45rem 0.85rem',
-                borderRadius: 'var(--radius-md)',
-                background: 'var(--bg-surface-elevated)',
+                gap: '6px',
+                padding: '0.35rem 0.75rem',
+                borderRadius: '10px',
+                background: 'var(--bg-card)',
                 border: '1px solid var(--border-subtle)',
                 fontSize: '0.75rem',
                 color: 'var(--text-secondary)',
                 alignSelf: 'flex-start',
+                marginTop: '2px',
               }}
             >
-              <CalendarCheck size={14} color="var(--color-emerald)" />
+              <CalendarCheck size={14} color="var(--color-primary)" />
               <span>
-                {activePreview?.outcome || 'Booking Confirmed • Table #12 • SMS sent'}
+                {activePreview?.outcome || 'Appointment booked · Fri 10:30 AM · SMS sent'}
               </span>
             </div>
           </div>
@@ -253,7 +225,7 @@ export default function HeroCallPreview({
           {/* Live Telemetry Metadata Bar */}
           <div
             style={{
-              marginTop: '1.5rem',
+              marginTop: '1.4rem',
               paddingTop: '1rem',
               borderTop: '1px solid var(--border-subtle)',
               display: 'grid',
@@ -261,29 +233,67 @@ export default function HeroCallPreview({
               gap: '0.5rem',
               fontSize: '0.72rem',
               fontFamily: 'var(--font-mono)',
-              color: 'var(--text-tertiary)',
+              color: 'var(--text-secondary)',
             }}
           >
             <div>
-              LATENCY
-              <p style={{ margin: '2px 0 0', color: 'var(--color-emerald)', fontSize: '0.85rem', fontWeight: 700 }}>
+              <div style={{ letterSpacing: '0.06em', fontSize: '10px' }}>LATENCY</div>
+              <p style={{ margin: '3px 0 0', color: 'var(--color-primary)', fontSize: '0.92rem', fontWeight: 700 }}>
                 180ms
               </p>
             </div>
             <div>
-              INTENT
-              <p style={{ margin: '2px 0 0', color: 'var(--color-emerald)', fontSize: '0.85rem', fontWeight: 700 }}>
+              <div style={{ letterSpacing: '0.06em', fontSize: '10px' }}>INTENT</div>
+              <p style={{ margin: '3px 0 0', color: 'var(--color-primary)', fontSize: '0.92rem', fontWeight: 700 }}>
                 booking
               </p>
             </div>
             <div>
-              SENTIMENT
-              <p style={{ margin: '2px 0 0', color: 'var(--color-emerald)', fontSize: '0.85rem', fontWeight: 700 }}>
-                +0.94
+              <div style={{ letterSpacing: '0.06em', fontSize: '10px' }}>SENTIMENT</div>
+              <p style={{ margin: '3px 0 0', color: 'var(--color-primary)', fontSize: '0.92rem', fontWeight: 700 }}>
+                +0.92
               </p>
             </div>
           </div>
         </div>
+
+        {/* Industry Switcher Pills */}
+        {industries.length > 0 && (
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'center',
+              gap: '0.45rem',
+              marginTop: '1rem',
+              flexWrap: 'wrap',
+            }}
+          >
+            {industries.map((ind) => {
+              const isActive = ind.id === activeIndustryId;
+              return (
+                <button
+                  key={ind.id}
+                  type="button"
+                  onClick={() => onSelectIndustry && onSelectIndustry(ind.id)}
+                  style={{
+                    background: isActive ? 'var(--color-primary)' : 'var(--bg-card)',
+                    color: isActive ? '#ffffff' : 'var(--text-secondary)',
+                    border: `1px solid ${isActive ? 'var(--color-primary)' : 'var(--border-subtle)'}`,
+                    padding: '0.25rem 0.65rem',
+                    borderRadius: 'var(--radius-full)',
+                    fontSize: '0.72rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    boxShadow: isActive ? '0 2px 8px color-mix(in oklab, var(--color-primary) 30%, transparent)' : 'none',
+                  }}
+                >
+                  {ind.title.split(' ')[0]}
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );

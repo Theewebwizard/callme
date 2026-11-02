@@ -33,6 +33,21 @@ import ThemeToggle from './ThemeToggle';
 
 export const INDUSTRY_PREVIEWS = [
   {
+    id: 'Dental',
+    title: 'Dental & Clinic',
+    businessName: 'Bright Smile Dental',
+    phone: '+1 (555) 392-8100',
+    dialogue: [
+      { speaker: 'caller', text: 'Hi, can I book a cleaning for Friday?' },
+      { speaker: 'receptionist', text: 'Of course! I have 10:30 AM or 3:00 PM open on Friday. Which works best?' },
+      { speaker: 'tool', text: '⚡ check_hygienist_slots(service: "Cleaning", date: "Friday") → 10:30 AM, 3:00 PM Available' },
+      { speaker: 'caller', text: '10:30 AM sounds perfect, thank you!' },
+      { speaker: 'receptionist', text: 'You are all set for Friday at 10:30 AM with Dr. Taylor! A confirmation SMS has been dispatched.' },
+    ],
+    tools: ['check_hygienist_slots', 'book_dental_appointment', 'send_sms_confirmation'],
+    outcome: 'Appointment booked · Fri 10:30 AM · SMS sent',
+  },
+  {
     id: 'Restaurant',
     title: 'Restaurant & Dining',
     businessName: 'Spice Garden Bistro',
@@ -110,7 +125,8 @@ export default function LandingPage({ onEnterWorkspace, onEnterAdmin }) {
   const [errorMsg, setErrorMsg] = useState(null);
 
   // Active industry tab for hero simulation
-  const [activeIndustryId, setActiveIndustryId] = useState('Restaurant');
+  const [activeIndustryId, setActiveIndustryId] = useState('Dental');
+  const [callCycle, setCallCycle] = useState(0);
   const activePreview = INDUSTRY_PREVIEWS.find((p) => p.id === activeIndustryId) || INDUSTRY_PREVIEWS[0];
 
   // Initialize IntersectionObserver scroll reveals
@@ -325,59 +341,52 @@ export default function LandingPage({ onEnterWorkspace, onEnterAdmin }) {
         </div>
       </header>
 
-      {/* 2. Hero Section with Aurora Glow & Rotating Radar Halo */}
-      <section className="landing-hero" id="overview" style={{ position: 'relative', overflow: 'visible', padding: '4.5rem 1.5rem 3rem', background: 'transparent' }}>
+      {/* 2. Hero Section: 2-Column Responsive Layout matching reference screenshot */}
+      <section className="landing-hero" id="overview">
+        <div className="landing-hero-grid">
+          {/* Left Column: Headline, Copy & Action CTAs */}
+          <div className="hero-content hero-entrance">
+            <h1 className="hero-title">
+              Hire a<br />
+              receptionist <span className="text-gradient">that<br />never sleeps.</span>
+            </h1>
 
-        {/* Hero Content Wrapper */}
-        <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', maxWidth: '1100px', margin: '0 auto' }}>
-          {/* Subtle Status Pill */}
-          <div className="landing-badge hero-enter-badge">
-            <span className="pulse-dot" />
-            <span>AUTONOMOUS INBOUND VOICE TELEPHONY • ZERO HUMAN INTERVENTION</span>
+            <p className="hero-subtitle">
+              Pick an AI receptionist, train it on your business in minutes, and let it answer calls, book appointments and greet every customer — 24/7.
+            </p>
+
+            <div className="hero-actions">
+              <button
+                type="button"
+                className="hero-btn-primary motion-cta"
+                onClick={() => {
+                  const el = document.getElementById('agents');
+                  if (el) el.scrollIntoView({ behavior: 'smooth' });
+                }}
+              >
+                <span>Browse receptionists</span>
+                <ArrowRight size={17} />
+              </button>
+
+              <button
+                type="button"
+                className="hero-btn-secondary"
+                onClick={() => setCallCycle((c) => c + 1)}
+              >
+                <span>Replay call preview</span>
+              </button>
+            </div>
           </div>
 
-          {/* Product Headline */}
-          <h1 className="landing-title hero-enter-title" style={{ fontFamily: 'var(--font-display)', textAlign: 'center', maxWidth: '820px' }}>
-            Hire a receptionist <br />
-            <span className="text-gradient">that never sleeps.</span>
-          </h1>
-
-          <p className="landing-subtitle hero-enter-subtitle" style={{ textAlign: 'center', maxWidth: '640px' }}>
-            Picks up on the first ring, answers customer inquiries in natural English or Hindi, verifies live database inventory, and locks in confirmed bookings 24/7.
-          </p>
-
-          {/* Action CTAs */}
-          <div className="landing-cta-group hero-enter-cta" style={{ marginBottom: '3rem' }}>
-            <button
-              type="button"
-              className="landing-btn-primary"
-              onClick={() => {
-                const el = document.getElementById('agents');
-                if (el) el.scrollIntoView({ behavior: 'smooth' });
-              }}
-            >
-              <Sparkles size={16} />
-              <span>Browse Receptionists</span>
-              <ArrowRight size={14} />
-            </button>
-
-            <button
-              type="button"
-              className="landing-btn-secondary"
-              onClick={() => scrollToAuth('business', 'login')}
-            >
-              <KeyRound size={15} />
-              <span>Sign In to Console</span>
-            </button>
-          </div>
-
-          {/* Interactive Hero Call Preview with 32-Bar Waveform & Radar Halo */}
-          <div className="hero-enter-console" style={{ width: '100%' }}>
+          {/* Right Column: Floating Call Card Preview with Dashed Radar Halo */}
+          <div className="hero-card-col hero-entrance">
             <HeroCallPreview
+              key={callCycle}
               activePreview={activePreview}
               activeIndustryId={activeIndustryId}
               onSelectIndustry={(id) => setActiveIndustryId(id)}
               industries={INDUSTRY_PREVIEWS}
+              onReplay={() => setCallCycle((c) => c + 1)}
             />
           </div>
         </div>
