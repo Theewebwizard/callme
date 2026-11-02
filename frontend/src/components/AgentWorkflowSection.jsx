@@ -109,9 +109,9 @@ export default function AgentWorkflowSection() {
             gap: '0.45rem',
             padding: '0.28rem 0.8rem',
             borderRadius: 'var(--radius-full)',
-            background: 'rgba(16, 185, 129, 0.1)',
-            border: '1px solid rgba(16, 185, 129, 0.25)',
-            color: 'var(--color-emerald)',
+            background: 'color-mix(in oklab, var(--color-primary) 12%, transparent)',
+            border: '1px solid color-mix(in oklab, var(--color-primary) 30%, transparent)',
+            color: 'var(--color-primary)',
             fontSize: '0.74rem',
             fontFamily: 'var(--font-mono)',
             fontWeight: 600,
@@ -154,7 +154,7 @@ export default function AgentWorkflowSection() {
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-            <Workflow size={18} color="var(--color-emerald)" />
+            <Workflow size={18} color="var(--color-primary)" />
             <span style={{ fontWeight: 700, fontSize: '0.92rem', color: 'var(--text-primary)' }}>Agent Orchestration Engine</span>
             <span style={{ fontSize: '0.72rem', fontFamily: 'var(--font-mono)', color: 'var(--text-tertiary)' }}>
               / CALL HANDLER PIPELINE
@@ -166,7 +166,7 @@ export default function AgentWorkflowSection() {
               style={{
                 fontSize: '0.72rem',
                 fontFamily: 'var(--font-mono)',
-                color: running ? 'var(--color-emerald)' : active === 4 ? 'var(--sky-500)' : 'var(--text-secondary)',
+                color: running ? 'var(--color-primary)' : active === 4 ? 'var(--sky-500)' : 'var(--text-secondary)',
                 fontWeight: 600,
               }}
             >
@@ -246,7 +246,7 @@ export default function AgentWorkflowSection() {
                   gap: '0.5rem',
                   fontSize: '0.75rem',
                   fontFamily: 'var(--font-mono)',
-                  color: 'var(--color-emerald)',
+                  color: 'var(--color-primary)',
                   fontWeight: 600,
                   textTransform: 'uppercase',
                 }}
@@ -275,7 +275,7 @@ export default function AgentWorkflowSection() {
                       color: 'var(--text-primary)',
                     }}
                   >
-                    <CircleCheck size={16} color="var(--color-emerald)" style={{ marginTop: '2px', flexShrink: 0 }} />
+                    <CircleCheck size={16} color="var(--color-primary)" style={{ marginTop: '2px', flexShrink: 0 }} />
                     <span>{point}</span>
                   </li>
                 ))}
@@ -287,7 +287,7 @@ export default function AgentWorkflowSection() {
           <aside
             style={{
               padding: '2rem 2rem',
-              background: 'rgba(255, 255, 255, 0.015)',
+              background: 'var(--bg-surface-elevated)',
               borderLeft: '1px solid var(--border-subtle)',
               display: 'flex',
               flexDirection: 'column',
@@ -303,12 +303,12 @@ export default function AgentWorkflowSection() {
                   style={{
                     fontSize: '0.72rem',
                     fontFamily: 'var(--font-mono)',
-                    color: 'var(--color-emerald)',
+                    color: 'var(--color-primary)',
                     fontWeight: 700,
-                    background: 'rgba(16, 185, 129, 0.1)',
+                    background: 'color-mix(in oklab, var(--color-primary) 12%, transparent)',
                     padding: '2px 8px',
                     borderRadius: 'var(--radius-full)',
-                    border: '1px solid rgba(16, 185, 129, 0.25)',
+                    border: '1px solid color-mix(in oklab, var(--color-primary) 30%, transparent)',
                   }}
                 >
                   {active + 1} / {WORKFLOW_STEPS.length}
@@ -330,13 +330,13 @@ export default function AgentWorkflowSection() {
                           width: '20px',
                           height: '20px',
                           borderRadius: '50%',
-                          border: `1px solid ${index <= active ? 'rgba(16, 185, 129, 0.4)' : 'var(--border-subtle)'}`,
+                          border: `1px solid ${index <= active ? 'color-mix(in oklab, var(--color-primary) 45%, transparent)' : 'var(--border-subtle)'}`,
                           display: 'grid',
                           placeItems: 'center',
                           marginTop: '2px',
                           flexShrink: 0,
-                          color: 'var(--color-emerald)',
-                          background: index <= active ? 'rgba(16, 185, 129, 0.1)' : 'transparent',
+                          color: 'var(--color-primary)',
+                          background: index <= active ? 'color-mix(in oklab, var(--color-primary) 12%, transparent)' : 'transparent',
                         }}
                       >
                         {isCompleted ? (
@@ -347,13 +347,13 @@ export default function AgentWorkflowSection() {
                               width: '6px',
                               height: '6px',
                               borderRadius: '50%',
-                              background: isCurrent ? 'var(--color-emerald)' : 'var(--text-tertiary)',
+                              background: isCurrent ? 'var(--color-primary)' : 'var(--text-tertiary)',
                             }}
                           />
                         )}
                       </span>
                       <div>
-                        <p style={{ fontSize: '0.8rem', fontWeight: 600, color: index <= active ? '#ffffff' : 'var(--text-secondary)', margin: 0 }}>
+                        <p style={{ fontSize: '0.8rem', fontWeight: 600, color: index <= active ? 'var(--text-primary)' : 'var(--text-secondary)', margin: 0 }}>
                           {item.tag}
                         </p>
                         <p style={{ fontSize: '0.68rem', fontFamily: 'var(--font-mono)', color: 'var(--text-tertiary)', margin: '2px 0 0' }}>
@@ -378,7 +378,7 @@ export default function AgentWorkflowSection() {
                 color: 'var(--text-secondary)',
               }}
             >
-              <BrainCircuit size={16} color="var(--color-emerald)" />
+              <BrainCircuit size={16} color="var(--color-primary)" />
               <span>Aria · Autonomous Receptionist Agent</span>
             </div>
           </aside>

@@ -834,41 +834,57 @@ export default function LandingPage({ onEnterWorkspace, onEnterAdmin }) {
       </section>
 
       {/* 9. High-Converting Bottom CTA Banner */}
-      <section className="reveal-on-scroll" style={{ maxWidth: '1080px', margin: '0 auto 5rem', padding: '0 1.5rem', width: '100%', boxSizing: 'border-box' }}>
-        <div className="glass border-glow shadow-glow" style={{ borderRadius: 'var(--radius-2xl, 20px)', padding: '3.5rem 2rem', textAlign: 'center' }}>
-          <h2 style={{ fontSize: 'clamp(1.75rem, 3.5vw, 2.5rem)', fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 0.75rem', fontFamily: 'var(--font-display)' }}>
+      <section className="reveal-on-scroll" style={{ maxWidth: '1152px', margin: '0 auto', padding: '0 1.5rem 6rem', width: '100%', boxSizing: 'border-box' }}>
+        <div className="glass border-glow shadow-glow" style={{ borderRadius: '1.5rem', padding: '3.5rem 2rem', textAlign: 'center' }}>
+          <h2 style={{ fontSize: 'clamp(2rem, 4vw, 2.5rem)', fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 0.75rem', letterSpacing: '-0.025em' }}>
             Your receptionist can start today.
           </h2>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', maxWidth: '460px', margin: '0 auto 2rem' }}>
-            14-day free trial. Zero contracts. Cancel anytime with a single click.
+          <p style={{ color: 'var(--text-secondary)', fontSize: '1rem', maxWidth: '440px', margin: '0 auto 2rem' }}>
+            14-day free trial. No contracts. Cancel anytime.
           </p>
           <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', gap: '1rem' }}>
             <button
               type="button"
               className="landing-btn-primary"
               onClick={() => scrollToAuth('business', 'register')}
-              style={{ padding: '0.75rem 1.75rem', fontSize: '0.9rem' }}
+              style={{ padding: '0.75rem 2rem', fontSize: '0.95rem', fontWeight: 600, borderRadius: '8px' }}
             >
-              <span>Start Free Trial</span>
-              <ArrowRight size={15} />
+              Start free trial
             </button>
             <button
               type="button"
-              className="landing-btn-secondary"
               onClick={() => scrollToAuth('business', 'login')}
-              style={{ padding: '0.75rem 1.75rem', fontSize: '0.9rem' }}
+              style={{
+                padding: '0.75rem 2rem',
+                fontSize: '0.95rem',
+                fontWeight: 600,
+                borderRadius: '8px',
+                border: '1px solid var(--border-medium)',
+                background: 'transparent',
+                color: 'var(--text-primary)',
+                cursor: 'pointer',
+                transition: 'border-color 0.2s, background 0.2s',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = 'var(--color-primary)';
+                e.currentTarget.style.background = 'var(--bg-subtle)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = 'var(--border-medium)';
+                e.currentTarget.style.background = 'transparent';
+              }}
             >
-              <span>Sign In to Console</span>
+              Log in
             </button>
           </div>
-          <p style={{ marginTop: '1.25rem', fontSize: '0.82rem', color: 'var(--text-tertiary)' }}>
-            Already registered?{' '}
+          <p style={{ marginTop: '1.25rem', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+            Already a customer?{' '}
             <button
               type="button"
               onClick={() => scrollToAuth('business', 'login')}
-              style={{ background: 'none', border: 'none', color: 'var(--color-emerald)', fontWeight: 600, cursor: 'pointer', textDecoration: 'underline' }}
+              style={{ background: 'none', border: 'none', color: 'var(--color-primary)', fontWeight: 600, cursor: 'pointer', textDecoration: 'underline', padding: 0 }}
             >
-              Log in to your workspace
+              Log in to your dashboard
             </button>
           </p>
         </div>
