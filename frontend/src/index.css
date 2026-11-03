@@ -3162,18 +3162,15 @@ html.light .webphone-toggle-switch.checked {
    ========================================================================== */
 @keyframes waveIdleBreath {
   0% {
-    height: 6px;
-    opacity: 0.55;
-    transform: scaleY(0.7);
+    opacity: 0.6;
+    transform: scaleY(0.65);
   }
   50% {
-    height: 24px;
     opacity: 1;
-    transform: scaleY(1.1);
+    transform: scaleY(1.25);
   }
   100% {
-    height: 8px;
-    opacity: 0.6;
+    opacity: 0.7;
     transform: scaleY(0.8);
   }
 }
@@ -3225,4 +3222,72 @@ html.light .webphone-acoustic-card {
   background: #f0f7ff !important;
   border: 1.5px solid #bae6fd !important;
   box-shadow: inset 0 1px 4px rgba(2, 132, 199, 0.05) !important;
+}
+
+
+/* Waveform Bars in Light & Dark Themes */
+.waveform-bar {
+  width: 3.5px;
+  border-radius: 4px;
+  transform-origin: center bottom;
+}
+
+/* Dark Theme Colors */
+.waveform-bar.waveform-bar-idle {
+  background: #0ea5e9;
+  opacity: 0.7;
+}
+
+.waveform-bar:nth-child(even).waveform-bar-idle {
+  background: #38bdf8;
+  opacity: 0.85;
+}
+
+.waveform-bar.waveform-bar-speaking {
+  background: #10b981;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
+}
+
+.waveform-bar.waveform-bar-listening {
+  background: #0ea5e9;
+  box-shadow: 0 0 8px rgba(14, 165, 233, 0.6);
+}
+
+.waveform-bar.waveform-bar-loading {
+  background: #f59e0b;
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.6);
+}
+
+.webphone-acoustic-label {
+  color: var(--text-tertiary);
+}
+
+/* Light Theme Colors (Clearly Visible Sky Blue + Emerald Waveform) */
+html.light .waveform-bar.waveform-bar-idle {
+  background: #0ea5e9 !important;
+  opacity: 0.8 !important;
+}
+
+html.light .waveform-bar:nth-child(even).waveform-bar-idle {
+  background: #38bdf8 !important;
+  opacity: 0.95 !important;
+}
+
+html.light .waveform-bar.waveform-bar-speaking {
+  background: #059669 !important;
+  box-shadow: 0 0 6px rgba(5, 150, 105, 0.4) !important;
+}
+
+html.light .waveform-bar.waveform-bar-listening {
+  background: #0284c7 !important;
+  box-shadow: 0 0 6px rgba(2, 132, 199, 0.4) !important;
+}
+
+html.light .waveform-bar.waveform-bar-loading {
+  background: #d97706 !important;
+}
+
+html.light .webphone-acoustic-label {
+  color: #0369a1 !important;
+  font-weight: 600 !important;
 }

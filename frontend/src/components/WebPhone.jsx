@@ -71,7 +71,7 @@ function DynamicAudioWaveform({ state }) {
   const isConnecting = state === 'connecting';
   const isTurnLoading = state === 'loading';
 
-  const barCount = 26;
+  const barCount = 24;
   const bars = Array.from({ length: barCount }, (_, i) => i);
 
   return (
@@ -84,42 +84,46 @@ function DynamicAudioWaveform({ state }) {
         gap: '4px',
         height: '46px',
         width: '100%',
-        padding: '0.4rem 0',
+        padding: '0.2rem 0',
       }}
     >
       {bars.map((i) => {
-        let height = Math.round(8 + Math.sin((i / barCount) * Math.PI) * 14);
-        let color = i % 2 === 0 ? 'var(--sky-500, #0ea5e9)' : 'var(--sky-400, #38bdf8)';
-        let anim = `waveIdleBreath 2s ease-in-out infinite alternate`;
-        let delay = `${((i % 13) * 0.1).toFixed(2)}s`;
+        // Natural frequency curve for idle acoustic equalizer
+        const centerDist = Math.abs(i - (barCount - 1) / 2) / ((barCount - 1) / 2);
+        let baseHeight = Math.max(6, Math.round(26 * Math.cos(centerDist * (Math.PI / 2.3))));
+        if (i % 3 === 0) baseHeight = Math.max(8, baseHeight + 4);
+        if (i % 4 === 0) baseHeight = Math.max(5, baseHeight - 3);
+
+        let height = baseHeight;
+        let colorClass = 'waveform-bar-idle';
+        let anim = 'waveIdleBreath 2.2s ease-in-out infinite alternate';
+        let delay = `${((i % 12) * 0.12).toFixed(2)}s`;
 
         if (isSpeaking) {
-          height = Math.round(10 + Math.sin(i * 0.6) * 16 + 8);
-          color = '#10b981';
-          anim = `waveSpeakingDance 0.65s ease-in-out infinite alternate`;
+          height = Math.round(12 + Math.sin(i * 0.65) * 16 + 8);
+          colorClass = 'waveform-bar-speaking';
+          anim = 'waveSpeakingDance 0.65s ease-in-out infinite alternate';
           delay = `${(i * 0.04).toFixed(2)}s`;
         } else if (isListening) {
-          height = Math.round(8 + Math.sin(i * 0.8) * 14 + 6);
-          color = '#0ea5e9';
-          anim = `waveListeningRipple 0.5s ease-in-out infinite alternate`;
+          height = Math.round(10 + Math.sin(i * 0.85) * 14 + 6);
+          colorClass = 'waveform-bar-listening';
+          anim = 'waveListeningRipple 0.5s ease-in-out infinite alternate';
           delay = `${(i * 0.035).toFixed(2)}s`;
         } else if (isConnecting || isTurnLoading) {
-          height = Math.round(6 + (i % 5) * 5);
-          color = '#f59e0b';
-          anim = `waveLoadingBounce 0.8s ease-in-out infinite alternate`;
+          height = Math.round(8 + (i % 5) * 4);
+          colorClass = 'waveform-bar-loading';
+          anim = 'waveLoadingBounce 0.8s ease-in-out infinite alternate';
           delay = `${(i * 0.06).toFixed(2)}s`;
         }
 
         return (
           <div
             key={i}
-            className="waveform-bar"
+            className={`waveform-bar ${colorClass}`}
             style={{
               width: '3.5px',
               height: `${height}px`,
               borderRadius: '4px',
-              background: color,
-              transition: 'height 0.2s ease, background 0.2s ease',
               animation: anim,
               animationDelay: delay,
               flexShrink: 0,
@@ -642,118 +646,41 @@ export default function WebPhone({ business }) {
               background: 'var(--bg-surface-elevated, #f0f7ff)',
               border: '1.5px solid var(--border-medium, #bae6fd)',
               borderRadius: '12px',
-              padding: '0.9rem 1.15rem',
+              padding: '1.15rem 1.25rem',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
+              justifyContent: 'center',
+              minHeight: '105px',
               boxShadow: 'inset 0 1px 3px rgba(2, 132, 199, 0.04)',
               transition: 'all 0.2s ease',
             }}
           >
-            {/* Top Telemetry Header */}
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                width: '100%',
-                marginBottom: '6px',
-                paddingBottom: '6px',
-                borderBottom: '1px solid var(--border-subtle, rgba(182, 213, 242, 0.5))',
-              }}
-            >
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  fontSize: '0.68rem',
-                  fontFamily: 'var(--font-mono)',
-                  fontWeight: 600,
-                  color: isSpeaking ? '#059669' : isListening ? '#0284c7' : 'var(--text-secondary, #0369a1)',
-                }}
-              >
-                <Radio size={11} className={callActive ? 'spin' : ''} style={{ color: isSpeaking ? '#10b981' : isListening ? '#0ea5e9' : 'var(--sky-500, #0ea5e9)' }} />
-                <span>{callActive ? 'VOICE LINE ACTIVE • 24kHz OPUS' : 'VOICE LINE READY • 24kHz OPUS'}</span>
-              </div>
-              <div
-                style={{
-                  fontSize: '0.66rem',
-                  fontFamily: 'var(--font-mono)',
-                  fontWeight: 700,
-                  color: isSpeaking ? '#059669' : isListening ? '#0284c7' : 'var(--text-tertiary, #64748b)',
-                  background: 'var(--bg-card, #ffffff)',
-                  padding: '1px 6px',
-                  borderRadius: '4px',
-                  border: '1px solid var(--border-medium, #b6d5f2)',
-                }}
-              >
-                {callActive ? (callDuration || '00:00') : 'STANDBY'}
-              </div>
-            </div>
-
-            {/* Active Undulating Audio Waveform */}
+            {/* Dynamic Undulating Audio Waveform Visualizer */}
             <DynamicAudioWaveform state={waveformState} />
 
-            {/* Spoken Turn Status Headline */}
-            <div style={{ textAlign: 'center', marginTop: '4px' }}>
-              <div
-                style={{
-                  fontSize: '0.84rem',
-                  fontWeight: 700,
-                  color: isSpeaking ? '#059669' : isListening ? '#0284c7' : 'var(--text-primary, #0c4a6e)',
-                  letterSpacing: '-0.01em',
-                }}
-              >
-                {isSpeaking
-                  ? 'AI Receptionist is Speaking...'
-                  : isListening
-                  ? 'Listening to Caller Microphone...'
-                  : isTurnLoading
-                  ? 'Reasoning & Querying Database...'
-                  : callActive
-                  ? 'Voice Link Established • Hands-Free Active'
-                  : 'AI Spoken Receptionist Standing By'}
-              </div>
-              <div
-                style={{
-                  fontSize: '0.7rem',
-                  color: 'var(--text-tertiary, #64748b)',
-                  marginTop: '2px',
-                }}
-              >
-                {callActive
-                  ? 'Turn-taking enabled • Speak naturally into your microphone'
-                  : 'Click the green phone button below to begin live test conversation'}
-              </div>
-            </div>
-
-            {/* Bottom Capability Highlights */}
+            {/* Acoustic State Label */}
             <div
+              className="webphone-acoustic-label"
               style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '12px',
-                marginTop: '8px',
-                paddingTop: '6px',
-                borderTop: '1px solid var(--border-subtle, rgba(182, 213, 242, 0.5))',
-                width: '100%',
-                flexWrap: 'wrap',
+                fontSize: '0.8rem',
+                fontFamily: 'var(--font-mono)',
+                fontWeight: 600,
+                marginTop: '0.65rem',
+                letterSpacing: '0.04em',
+                textAlign: 'center',
+                color: isSpeaking ? '#059669' : isListening ? '#0284c7' : 'var(--text-secondary, #0369a1)',
               }}
             >
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.66rem', color: 'var(--text-secondary, #475569)', fontFamily: 'var(--font-mono)' }}>
-                <Sparkles size={10} style={{ color: '#0ea5e9' }} />
-                <span>Zero-Latency Turn Taking</span>
-              </span>
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.66rem', color: 'var(--text-secondary, #475569)', fontFamily: 'var(--font-mono)' }}>
-                <Languages size={10} style={{ color: '#0ea5e9' }} />
-                <span>Hindi & English Code-Switch</span>
-              </span>
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.66rem', color: 'var(--text-secondary, #475569)', fontFamily: 'var(--font-mono)' }}>
-                <Zap size={10} style={{ color: '#0ea5e9' }} />
-                <span>Live Table Booking</span>
-              </span>
+              {isSpeaking
+                ? 'AI Receptionist is Speaking...'
+                : isListening
+                ? 'Listening to Microphone...'
+                : isTurnLoading
+                ? 'Reasoning & Fetching Data...'
+                : callActive
+                ? 'Voice Link Active • 24kHz HD Audio'
+                : 'Acoustic Standby'}
             </div>
           </div>
 
