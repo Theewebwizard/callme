@@ -313,11 +313,11 @@ export default function LandingPage({ onEnterWorkspace, onEnterAdmin }) {
         </div>
 
         <nav className="landing-nav-links" aria-label="Main Navigation">
-          <a href="#agents">01 · Agents</a>
-          <a href="#workflow">02 · Workflow</a>
-          <a href="#features">03 · Features</a>
-          <a href="#mobile-briefing">04 · Mobile Briefing</a>
-          <a href="#auth-section">05 · Portal</a>
+          <a href="#agents">Agents</a>
+          <a href="#workflow">Workflow</a>
+          <a href="#features">Capabilities</a>
+          <a href="#mobile-briefing">Mobile App</a>
+          <a href="#auth-section">Portal</a>
         </nav>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
