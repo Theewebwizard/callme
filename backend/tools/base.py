@@ -88,6 +88,9 @@ INDUSTRY_NORMALIZATION_MAP: Dict[str, str] = {
     "resort": "hotel",
     "hotel & resort": "hotel",
     "hotel and resort": "hotel",
+    "hotel / hospitality": "hotel",
+    "hotel and hospitality": "hotel",
+    "hotel & hospitality": "hotel",
     "hospitality": "hotel",
     "hospitality & lodging": "hotel",
     "hospitality and lodging": "hotel",
@@ -119,6 +122,9 @@ INDUSTRY_NORMALIZATION_MAP: Dict[str, str] = {
 
     # Healthcare / Clinic sector -> "clinic"
     "clinic": "clinic",
+    "clinic / medical": "clinic",
+    "clinic and medical": "clinic",
+    "clinic & medical": "clinic",
     "doctor": "clinic",
     "healthcare": "clinic",
     "healthcare & services": "clinic",
@@ -135,6 +141,7 @@ INDUSTRY_NORMALIZATION_MAP: Dict[str, str] = {
     "services": "services",
     "salon": "services",
     "spa": "services",
+    "salon / spa": "services",
     "salon & spa": "services",
     "salon and spa": "services",
     "consulting": "services",

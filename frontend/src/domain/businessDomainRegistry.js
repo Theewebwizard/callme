@@ -36,18 +36,7 @@ export function getCanonicalIndustry(rawIndustry) {
     return 'restaurant';
   }
 
-  if (
-    clean.includes('clinic') ||
-    clean.includes('dental') ||
-    clean.includes('doctor') ||
-    clean.includes('health') ||
-    clean.includes('medical') ||
-    clean.includes('hospital') ||
-    clean.includes('therapy')
-  ) {
-    return 'clinic';
-  }
-
+  // Check hotel / hospitality BEFORE clinic to prevent 'hospitality' falsely matching 'hospital'
   if (
     clean.includes('hotel') ||
     clean.includes('resort') ||
@@ -57,6 +46,18 @@ export function getCanonicalIndustry(rawIndustry) {
     clean.includes('suites')
   ) {
     return 'hotel';
+  }
+
+  if (
+    clean.includes('clinic') ||
+    clean.includes('dental') ||
+    clean.includes('doctor') ||
+    clean.includes('health') ||
+    clean.includes('medical') ||
+    (clean.includes('hospital') && !clean.includes('hospitality')) ||
+    clean.includes('therapy')
+  ) {
+    return 'clinic';
   }
 
   if (

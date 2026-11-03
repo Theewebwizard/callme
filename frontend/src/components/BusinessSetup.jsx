@@ -28,13 +28,6 @@ const INDUSTRY_OPTIONS = [
   'Hotel / Hospitality',
   'Clinic / Medical',
   'Salon / Spa',
-  'Astrology / Spiritual',
-  'Consulting / Professional Services',
-  'Real Estate',
-  'Retail / E-commerce',
-  'Automotive',
-  'Legal',
-  'Other',
 ];
 
 const TIMEZONE_OPTIONS = ['Asia/Kolkata', 'UTC', 'America/New_York', 'Europe/London', 'Asia/Dubai'];

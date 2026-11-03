@@ -686,11 +686,10 @@ export default function LandingPage({ onEnterWorkspace, onEnterAdmin }) {
                       onChange={(e) => setIndustry(e.target.value)}
                       className="form-input"
                     >
-                      <option value="Restaurant">Restaurant & Dining</option>
-                      <option value="Clinic">Clinic & Healthcare</option>
-                      <option value="Hotel">Hotel & Hospitality</option>
-                      <option value="Salon">Salon & Wellness</option>
-                      <option value="General Services">General Professional Services</option>
+                      <option value="Restaurant">Restaurant</option>
+                      <option value="Hotel / Hospitality">Hotel / Hospitality</option>
+                      <option value="Clinic / Medical">Clinic / Medical</option>
+                      <option value="Salon / Spa">Salon / Spa</option>
                     </select>
                   </div>
 

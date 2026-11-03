@@ -18,14 +18,9 @@ import { api } from '../api';
 
 const INDUSTRY_OPTIONS = [
   'Restaurant',
-  'Clinic',
-  'Salon',
-  'Astrology / Spiritual',
-  'Consulting / Services',
-  'Real Estate',
-  'Retail / E-commerce',
-  'Legal',
-  'Other',
+  'Hotel / Hospitality',
+  'Clinic / Medical',
+  'Salon / Spa',
 ];
 
 const PRE_EXISTING_TOOLS = [
