@@ -927,10 +927,10 @@ export default function WebPhone({ business }) {
                       style={{
                         padding: '0.7rem 0.95rem',
                         borderRadius: isAssistant ? '4px 14px 14px 14px' : '14px 4px 14px 14px',
-                        background: isAssistant ? 'var(--bg-surface-elevated)' : 'rgba(255, 255, 255, 0.1)',
+                        background: isAssistant ? 'var(--bg-surface-elevated)' : 'color-mix(in oklab, var(--color-primary) 12%, var(--bg-card))',
                         border: '1px solid',
                         borderColor: isAssistant ? 'var(--border-medium)' : 'var(--border-medium)',
-                        color: '#EDEDED',
+                        color: 'var(--text-primary)',
                         fontSize: '0.84rem',
                         lineHeight: 1.5,
                       }}

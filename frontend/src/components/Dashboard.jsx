@@ -523,7 +523,7 @@ export default function Dashboard({ business, onNavigate, calls = [] }) {
                             padding: '2px 6px',
                             borderRadius: '4px',
                             fontSize: '0.78rem',
-                            color: '#ffffff',
+                            color: 'var(--text-primary)',
                             fontFamily: 'var(--font-mono)',
                             border: '1px solid var(--border-medium)',
                           }}

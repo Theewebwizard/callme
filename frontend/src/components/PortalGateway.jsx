@@ -172,9 +172,9 @@ export default function PortalGateway({ onEnterWorkspace, onEnterAdmin }) {
             <button
               className={`btn-secondary ${mode === 'onboard' ? 'active' : ''}`}
               style={{
-                background: mode === 'onboard' ? 'var(--sky-500)' : 'white',
-                color: mode === 'onboard' ? 'white' : 'var(--slate-700)',
-                borderColor: mode === 'onboard' ? 'var(--sky-500)' : 'var(--slate-300)',
+                background: mode === 'onboard' ? 'var(--color-primary)' : 'var(--bg-card)',
+                color: mode === 'onboard' ? 'var(--text-inverse)' : 'var(--text-secondary)',
+                borderColor: mode === 'onboard' ? 'var(--color-primary)' : 'var(--border-medium)',
                 padding: '0.65rem 1.25rem',
                 borderRadius: 'var(--radius-full)',
               }}
@@ -185,9 +185,9 @@ export default function PortalGateway({ onEnterWorkspace, onEnterAdmin }) {
             <button
               className={`btn-secondary ${mode === 'access' ? 'active' : ''}`}
               style={{
-                background: mode === 'access' ? 'var(--sky-500)' : 'white',
-                color: mode === 'access' ? 'white' : 'var(--slate-700)',
-                borderColor: mode === 'access' ? 'var(--sky-500)' : 'var(--slate-300)',
+                background: mode === 'access' ? 'var(--color-primary)' : 'var(--bg-card)',
+                color: mode === 'access' ? 'var(--text-inverse)' : 'var(--text-secondary)',
+                borderColor: mode === 'access' ? 'var(--color-primary)' : 'var(--border-medium)',
                 padding: '0.65rem 1.25rem',
                 borderRadius: 'var(--radius-full)',
               }}
@@ -198,9 +198,9 @@ export default function PortalGateway({ onEnterWorkspace, onEnterAdmin }) {
             <button
               className={`btn-secondary ${mode === 'admin' ? 'active' : ''}`}
               style={{
-                background: mode === 'admin' ? 'var(--slate-800)' : 'white',
-                color: mode === 'admin' ? 'white' : 'var(--slate-700)',
-                borderColor: mode === 'admin' ? 'var(--slate-800)' : 'var(--slate-300)',
+                background: mode === 'admin' ? 'var(--color-primary)' : 'var(--bg-card)',
+                color: mode === 'admin' ? 'var(--text-inverse)' : 'var(--text-secondary)',
+                borderColor: mode === 'admin' ? 'var(--color-primary)' : 'var(--border-medium)',
                 padding: '0.65rem 1.25rem',
                 borderRadius: 'var(--radius-full)',
               }}

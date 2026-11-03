@@ -350,10 +350,10 @@ export default function Playground({ business }) {
                     style={{
                       padding: '0.75rem 1rem',
                       borderRadius: isAssistant ? '4px 14px 14px 14px' : '14px 4px 14px 14px',
-                      background: isAssistant ? 'var(--bg-surface-elevated)' : 'rgba(255, 255, 255, 0.1)',
+                      background: isAssistant ? 'var(--bg-surface-elevated)' : 'color-mix(in oklab, var(--color-primary) 12%, var(--bg-card))',
                       border: '1px solid',
                       borderColor: msg.isError ? 'rgba(244, 63, 94, 0.4)' : isAssistant ? 'var(--border-medium)' : 'var(--border-medium)',
-                      color: msg.isError ? '#fb7185' : isAssistant ? '#EDEDED' : '#ffffff',
+                      color: msg.isError ? '#fb7185' : 'var(--text-primary)',
                       fontSize: '0.85rem',
                       lineHeight: 1.55,
                       boxShadow: 'var(--specular-top)',

@@ -318,7 +318,7 @@ export default function BusinessSetup({ business, onBusinessSaved }) {
                     background: isActive ? 'var(--bg-surface-elevated)' : 'transparent',
                     border: '1px solid',
                     borderColor: isActive ? 'var(--border-medium)' : 'transparent',
-                    color: isActive ? '#ffffff' : 'var(--text-secondary)',
+                    color: isActive ? 'var(--color-primary)' : 'var(--text-secondary)',
                     fontSize: '0.78rem',
                     fontWeight: isActive ? 600 : 500,
                     cursor: 'pointer',
@@ -327,7 +327,7 @@ export default function BusinessSetup({ business, onBusinessSaved }) {
                     boxShadow: isActive ? 'var(--specular-top)' : 'none',
                   }}
                 >
-                  <Icon size={13} style={{ color: isActive ? 'var(--mint-400)' : 'inherit' }} />
+                  <Icon size={13} style={{ color: isActive ? 'var(--color-primary)' : 'inherit' }} />
                   <span>{tab.label}</span>
                 </button>
               );

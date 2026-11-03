@@ -279,7 +279,7 @@ export default function HeroCallPreview({
                   onClick={() => onSelectIndustry && onSelectIndustry(ind.id)}
                   style={{
                     background: isActive ? 'var(--color-primary)' : 'var(--bg-card)',
-                    color: isActive ? '#ffffff' : 'var(--text-secondary)',
+                    color: isActive ? 'var(--text-inverse)' : 'var(--text-secondary)',
                     border: `1px solid ${isActive ? 'var(--color-primary)' : 'var(--border-medium)'}`,
                     padding: '0.25rem 0.65rem',
                     borderRadius: 'var(--radius-full)',

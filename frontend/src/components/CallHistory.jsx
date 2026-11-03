@@ -197,7 +197,7 @@ export default function CallHistory({ business, initialCalls = [], onCallsUpdate
                     border: '1px solid',
                     borderColor: selectedOutcome === oc ? 'var(--border-strong)' : 'var(--border-medium)',
                     background: selectedOutcome === oc ? 'var(--bg-surface-elevated)' : 'transparent',
-                    color: selectedOutcome === oc ? '#ffffff' : 'var(--text-secondary)',
+                    color: selectedOutcome === oc ? 'var(--color-primary)' : 'var(--text-secondary)',
                     fontSize: '0.72rem',
                     fontWeight: 500,
                     cursor: 'pointer',

@@ -543,7 +543,7 @@ export default function ScrollStorytellingSection() {
                     fontSize: '1.35rem',
                     fontWeight: 700,
                     letterSpacing: '-0.02em',
-                    color: isActive ? '#ffffff' : 'var(--text-secondary)',
+                    color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)',
                     marginBottom: '0.75rem',
                     transition: 'color 0.25s ease',
                   }}

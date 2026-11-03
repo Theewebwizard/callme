@@ -306,7 +306,7 @@ export default function MobileBriefingSection() {
                   borderRadius: 'var(--radius-full)',
                   border: isActive ? '1px solid var(--color-primary)' : '1px solid transparent',
                   background: isActive ? 'var(--gradient-primary)' : 'transparent',
-                  color: isActive ? '#ffffff' : 'var(--text-secondary)',
+                  color: isActive ? 'var(--text-inverse)' : 'var(--text-secondary)',
                   fontSize: '0.78rem',
                   fontWeight: 600,
                   cursor: 'pointer',

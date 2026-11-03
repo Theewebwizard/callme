@@ -196,7 +196,7 @@ export default function AnimatedReceptionistDemo({ activePreview, activeIndustry
             }}
           />
           <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#ffffff', fontFamily: 'var(--font-mono)' }}>
+            <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'var(--font-mono)' }}>
               {activePreview.businessName}
             </span>
             <span style={{ fontSize: '0.68rem', color: 'var(--text-tertiary)', fontFamily: 'var(--font-mono)' }}>
@@ -268,7 +268,7 @@ export default function AnimatedReceptionistDemo({ activePreview, activeIndustry
                   borderRadius: 'var(--radius-full)',
                   border: isSelected ? '1px solid var(--border-strong)' : '1px solid transparent',
                   background: isSelected ? 'rgba(255, 255, 255, 0.1)' : 'transparent',
-                  color: isSelected ? '#ffffff' : 'var(--text-secondary)',
+                  color: isSelected ? 'var(--color-primary)' : 'var(--text-secondary)',
                   fontSize: '0.76rem',
                   fontWeight: isSelected ? 600 : 500,
                   cursor: 'pointer',
@@ -355,7 +355,7 @@ export default function AnimatedReceptionistDemo({ activePreview, activeIndustry
                 padding: '6px 4px',
                 fontSize: '0.66rem',
                 fontFamily: 'var(--font-mono)',
-                color: isActive ? '#ffffff' : isPassed ? 'var(--text-secondary)' : 'var(--text-tertiary)',
+                color: isActive ? 'var(--color-primary)' : isPassed ? 'var(--text-secondary)' : 'var(--text-tertiary)',
                 fontWeight: isActive ? 600 : 400,
                 cursor: 'pointer',
                 textAlign: 'center',
@@ -404,7 +404,7 @@ export default function AnimatedReceptionistDemo({ activePreview, activeIndustry
             <div style={{ fontSize: '0.74rem', color: 'var(--amber-500)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '4px' }}>
               ● Inbound Call Detected
             </div>
-            <div style={{ fontSize: '1.15rem', fontWeight: 700, color: '#ffffff', marginBottom: '4px' }}>
+            <div style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '4px' }}>
               Caller: Rohit Verma
             </div>
             <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)', marginBottom: '1.25rem' }}>
@@ -588,7 +588,7 @@ export default function AnimatedReceptionistDemo({ activePreview, activeIndustry
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   <CheckCircle2 size={16} style={{ color: 'var(--mint-400)' }} />
-                  <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#ffffff' }}>
+                  <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-primary)' }}>
                     Session Outcome: {activePreview.outcome}
                   </span>
                 </div>
