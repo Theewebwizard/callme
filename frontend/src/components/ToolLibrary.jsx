@@ -374,22 +374,9 @@ export default function ToolLibrary({ business }) {
   const getConfigurationBadge = (status) => {
     switch (status) {
       case 'ready':
+      case 'configured':
         return (
-          <span
-            style={{
-              background: 'rgba(16, 185, 129, 0.1)',
-              color: 'var(--mint-400)',
-              border: '1px solid rgba(16, 185, 129, 0.25)',
-              padding: '2px 8px',
-              borderRadius: 'var(--radius-full)',
-              fontSize: '0.7rem',
-              fontWeight: 600,
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '4px',
-              fontFamily: 'var(--font-mono)',
-            }}
-          >
+          <span className="cap-badge-configured">
             <CheckCircle2 size={11} /> Configured
           </span>
         );
@@ -397,21 +384,7 @@ export default function ToolLibrary({ business }) {
       case 'not_configured':
       default:
         return (
-          <span
-            style={{
-              background: 'rgba(245, 158, 11, 0.1)',
-              color: 'var(--amber-400)',
-              border: '1px solid rgba(245, 158, 11, 0.25)',
-              padding: '2px 8px',
-              borderRadius: 'var(--radius-full)',
-              fontSize: '0.7rem',
-              fontWeight: 600,
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '4px',
-              fontFamily: 'var(--font-mono)',
-            }}
-          >
+          <span className="cap-badge-needs-setup">
             <AlertCircle size={11} /> Needs Setup
           </span>
         );
@@ -422,61 +395,19 @@ export default function ToolLibrary({ business }) {
     switch (status) {
       case 'ready':
         return (
-          <span
-            style={{
-              background: 'rgba(56, 189, 248, 0.1)',
-              color: '#38bdf8',
-              border: '1px solid rgba(56, 189, 248, 0.25)',
-              padding: '2px 8px',
-              borderRadius: 'var(--radius-full)',
-              fontSize: '0.7rem',
-              fontWeight: 600,
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '4px',
-              fontFamily: 'var(--font-mono)',
-            }}
-          >
+          <span className="cap-badge-verified">
             <ShieldCheck size={11} /> Verified Live
           </span>
         );
       case 'validating':
         return (
-          <span
-            style={{
-              background: 'rgba(255, 255, 255, 0.06)',
-              color: 'var(--text-secondary)',
-              border: '1px solid var(--border-medium)',
-              padding: '2px 8px',
-              borderRadius: 'var(--radius-full)',
-              fontSize: '0.7rem',
-              fontWeight: 600,
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '4px',
-              fontFamily: 'var(--font-mono)',
-            }}
-          >
+          <span className="cap-badge-validating">
             <RefreshCw size={11} className="animate-spin" /> Validating
           </span>
         );
       default:
         return (
-          <span
-            style={{
-              background: 'rgba(255, 255, 255, 0.04)',
-              color: 'var(--text-tertiary)',
-              border: '1px solid var(--border-medium)',
-              padding: '2px 8px',
-              borderRadius: 'var(--radius-full)',
-              fontSize: '0.7rem',
-              fontWeight: 500,
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '4px',
-              fontFamily: 'var(--font-mono)',
-            }}
-          >
+          <span className="cap-badge-unverified">
             <Clock size={11} /> Unverified
           </span>
         );
@@ -867,7 +798,10 @@ export default function ToolLibrary({ business }) {
                                 />
                                 <span className="slider" />
                               </label>
-                              <span style={{ fontSize: '0.74rem', fontFamily: 'var(--font-mono)', color: isEnabled ? 'var(--mint-400)' : 'var(--text-tertiary)' }}>
+                              <span
+                                className={isEnabled ? "cap-link-active" : "cap-link-disabled"}
+                                style={{ fontSize: '0.74rem', fontFamily: 'var(--font-mono)', fontWeight: 600 }}
+                              >
                                 {isEnabled ? 'Active' : 'Disabled'}
                               </span>
                             </div>
@@ -886,9 +820,8 @@ export default function ToolLibrary({ business }) {
                               {t.id === 'query_menu_pricing' && domainConfig.hasMenu && (
                                 <button
                                   type="button"
-                                  className="btn-secondary"
+                                  className="cap-menu-btn"
                                   onClick={() => setMenuModalOpen(true)}
-                                  style={{ padding: '0.25rem 0.6rem', fontSize: '0.74rem', color: 'var(--color-emerald)', borderColor: 'rgba(16, 185, 129, 0.3)' }}
                                   title="Upload and manage restaurant menu"
                                 >
                                   <Utensils size={12} />

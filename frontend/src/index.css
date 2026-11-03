@@ -1233,12 +1233,13 @@ kbd, .kbd-badge {
 }
 
 input:checked + .slider {
-  background-color: var(--mint-500);
+  background-color: #0ea5e9;
 }
 
 input:checked + .slider:before {
   transform: translateX(16px);
-  background-color: #07080a;
+  background-color: #ffffff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
 }
 
 /* ==========================================================================
@@ -3290,4 +3291,166 @@ html.light .waveform-bar.waveform-bar-loading {
 html.light .webphone-acoustic-label {
   color: #0369a1 !important;
   font-weight: 600 !important;
+}
+
+
+/* ==========================================================================
+   Tool Library Capability Table Styling (High-Contrast Light & Dark Theme)
+   ========================================================================== */
+
+/* Switch Slider Light Theme Overrides */
+html.light .slider {
+  background-color: #cbd5e1;
+  border: 1.5px solid #94a3b8;
+}
+
+html.light .slider:before {
+  background-color: #ffffff !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+
+html.light input:checked + .slider {
+  background-color: #0ea5e9 !important;
+  border-color: #0ea5e9 !important;
+  box-shadow: 0 1px 6px rgba(14, 165, 233, 0.35) !important;
+}
+
+html.light input:checked + .slider:before {
+  background-color: #ffffff !important;
+}
+
+/* Telephony Voice Link Active / Disabled Status Text */
+.cap-link-active {
+  color: #38bdf8;
+}
+
+.cap-link-disabled {
+  color: var(--text-tertiary);
+}
+
+html.light .cap-link-active {
+  color: #0284c7 !important;
+  font-weight: 700 !important;
+}
+
+html.light .cap-link-disabled {
+  color: #64748b !important;
+}
+
+/* Base Badge Pill Styles */
+.cap-badge-configured,
+.cap-badge-needs-setup,
+.cap-badge-verified,
+.cap-badge-validating,
+.cap-badge-unverified {
+  padding: 3px 9px;
+  border-radius: var(--radius-full);
+  font-size: 0.72rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-mono);
+  white-space: nowrap;
+  letter-spacing: 0.01em;
+}
+
+/* Dark Theme Badge Styles */
+.cap-badge-configured {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+}
+
+.cap-badge-needs-setup {
+  background: rgba(245, 158, 11, 0.12);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.cap-badge-verified {
+  background: rgba(14, 165, 233, 0.15);
+  color: #38bdf8;
+  border: 1px solid rgba(14, 165, 233, 0.35);
+}
+
+.cap-badge-validating {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-medium);
+}
+
+.cap-badge-unverified {
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-tertiary);
+  border: 1px solid var(--border-medium);
+}
+
+/* Light Theme High-Contrast Badge Overrides */
+html.light .cap-badge-configured {
+  background: #ecfdf5 !important;
+  color: #047857 !important;
+  border: 1.5px solid #6ee7b7 !important;
+  font-weight: 700 !important;
+}
+
+html.light .cap-badge-needs-setup {
+  background: #fffbeb !important;
+  color: #b45309 !important;
+  border: 1.5px solid #fcd34d !important;
+  font-weight: 700 !important;
+}
+
+html.light .cap-badge-verified {
+  background: #f0f7ff !important;
+  color: #0284c7 !important;
+  border: 1.5px solid #7dd3fc !important;
+  font-weight: 700 !important;
+}
+
+html.light .cap-badge-validating {
+  background: #f8fafc !important;
+  color: #475569 !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+html.light .cap-badge-unverified {
+  background: #f1f5f9 !important;
+  color: #64748b !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+/* Menu Action Button */
+.cap-menu-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0.28rem 0.65rem;
+  font-size: 0.74rem;
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+  color: var(--color-primary);
+  border: 1px solid var(--border-medium);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.cap-menu-btn:hover {
+  background: var(--bg-surface-elevated);
+  border-color: var(--color-primary);
+}
+
+html.light .cap-menu-btn {
+  background: #f0f7ff !important;
+  color: #0284c7 !important;
+  border: 1.5px solid #bae6fd !important;
+  font-weight: 700 !important;
+}
+
+html.light .cap-menu-btn:hover {
+  background: #0ea5e9 !important;
+  color: #ffffff !important;
+  border-color: #0ea5e9 !important;
+  box-shadow: 0 1px 4px rgba(14, 165, 233, 0.25) !important;
 }
