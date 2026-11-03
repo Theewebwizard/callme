@@ -18,8 +18,8 @@ import {
   Building2,
   Calendar,
   ShieldCheck,
+  User,
 } from 'lucide-react';
-import InstallAppPrompt from './InstallAppPrompt';
 import ThemeToggle from './ThemeToggle';
 
 export const NAV_GROUPS = [
@@ -56,7 +56,7 @@ export default function Taskbar({
   health,
 }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const isHealthy = health && health.status === 'healthy';
+  const isHealthy = !health || health.status === 'healthy';
 
   const savedGoogleUser = (() => {
     try {
@@ -84,151 +84,130 @@ export default function Taskbar({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [setActiveTab]);
 
-  const activeItem = FLAT_NAV_ITEMS.find((i) => i.id === activeTab) || FLAT_NAV_ITEMS[0];
-
   return (
     <>
-      {/* ── Desktop & Tablet Sidebar (Linear / Raycast Architecture) ── */}
-      <aside className="workspace-sidebar" aria-label="Console Navigation Sidebar">
-        {/* 1. Header: Platform Brand & Version */}
-        <div className="sidebar-header">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-            <div className="brand-icon" title="CallMe Autonomous Voice Platform">
-              <PhoneCall size={16} strokeWidth={2.5} />
+      {/* ── Top Panel Header Navigation (Horizontal Architecture) ── */}
+      <header className="workspace-top-panel" aria-label="Console Navigation Top Panel">
+        {/* Row 1: Brand, Tenant Info, Actions, Profile, Theme Toggle */}
+        <div className="top-panel-main-row">
+          <div className="top-panel-left">
+            {/* Platform Brand */}
+            <div className="top-panel-brand" title="CallMe Autonomous Voice Platform">
+              <div className="brand-icon">
+                <PhoneCall size={16} strokeWidth={2.5} />
+              </div>
+              <div className="brand-text">
+                Call<span>Me</span>
+              </div>
+              <span className="brand-version-badge">v2.4</span>
             </div>
-            <div className="brand-text">
-              Call<span>Me</span>
-            </div>
-            <span
-              style={{
-                fontSize: '0.68rem',
-                fontFamily: 'var(--font-mono)',
-                color: 'var(--text-tertiary)',
-                background: 'rgba(255, 255, 255, 0.05)',
-                border: '1px solid var(--border-medium)',
-                padding: '1px 5px',
-                borderRadius: '4px',
-                marginLeft: 'auto',
-              }}
+
+            <div className="top-panel-divider-v" />
+
+            {/* Active Business Tenant Badge */}
+            {business && (
+              <div className="top-panel-tenant-card" title={`Active Tenant: ${business.name} (${business.industry || 'Restaurant'})`}>
+                <div className="tenant-card-top">
+                  <span className="tenant-card-name">{business.name}</span>
+                  <span className={`tenant-status-pill ${isHealthy ? 'online' : 'standby'}`}>
+                    <span className="status-dot" />
+                    {isHealthy ? 'Online' : 'Standby'}
+                  </span>
+                </div>
+                <div className="tenant-card-bottom">
+                  <span className="tenant-card-industry">{business.industry || 'RESTAURANT'}</span>
+                  <span className="tenant-card-phone">{business.phone_number || '+91 80 4123 5678'}</span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Right Action Controls */}
+          <div className="top-panel-right">
+            {/* Direct Inbound Call Action */}
+            <button
+              type="button"
+              className="top-panel-call-btn"
+              onClick={() => setActiveTab('webphone')}
+              title="Dial direct inbound test call (WebRTC)"
             >
-              v2.4
-            </span>
-          </div>
+              <Phone size={13} />
+              <span>Direct Inbound Call</span>
+            </button>
 
-          {/* 2. Business Tenant Context Card */}
-          {business && (
-            <div className="sidebar-tenant-card" title={`Active Tenant: ${business.name} (${business.industry})`}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
-                <span className="sidebar-tenant-name">{business.name}</span>
-                <span
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                    fontSize: '0.68rem',
-                    fontFamily: 'var(--font-mono)',
-                    color: isHealthy ? 'var(--mint-400)' : 'var(--amber-500)',
-                  }}
-                >
-                  <span
-                    style={{
-                      width: '6px',
-                      height: '6px',
-                      borderRadius: '50%',
-                      background: isHealthy ? 'var(--mint-500)' : 'var(--amber-500)',
-                      boxShadow: isHealthy ? '0 0 6px rgba(16, 185, 129, 0.7)' : 'none',
-                    }}
-                  />
-                  {isHealthy ? 'Online' : 'Standby'}
-                </span>
+            {/* User Profile Pill */}
+            {savedGoogleUser && (
+              <div className="top-panel-user-pill" title={`Logged in as ${savedGoogleUser.email}`}>
+                <div className="user-avatar-circle">
+                  {savedGoogleUser.avatarInitial || (business?.name ? business.name[0].toUpperCase() : 'H')}
+                </div>
+                <div className="user-info-text">
+                  <span className="user-name">{savedGoogleUser.name || business?.name || 'Spice Garden Bistro'}</span>
+                  <span className="user-email">{savedGoogleUser.email || 'haveli.restaurant@gmail.com'}</span>
+                </div>
               </div>
+            )}
 
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-tertiary)' }}>
-                <span style={{ textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                  {business.industry || 'Business'}
-                </span>
-                <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-secondary)' }}>
-                  {business.phone_number || 'DID Unassigned'}
-                </span>
-              </div>
+            {/* Theme Toggle (Light / Dark) */}
+            <div className="top-panel-theme-toggle">
+              <ThemeToggle />
             </div>
-          )}
+
+            {/* Exit Workspace */}
+            <button
+              type="button"
+              className="top-panel-exit-btn"
+              onClick={onExitWorkspace}
+              title="Exit Workspace & Return to Portal"
+            >
+              <LogOut size={13} />
+              <span>Exit Workspace</span>
+            </button>
+          </div>
         </div>
 
-        {/* 3. Grouped Navigation Items */}
-        <nav className="sidebar-nav-groups" aria-label="Console Views">
-          {NAV_GROUPS.map((group) => (
-            <div key={group.group} className="sidebar-group">
-              <div className="sidebar-group-title">{group.group}</div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                {group.items.map((item) => {
-                  const Icon = item.icon;
-                  const isActive = activeTab === item.id;
-                  return (
-                    <button
-                      key={item.id}
-                      type="button"
-                      className={`sidebar-nav-item ${isActive ? 'active' : ''}`}
-                      onClick={() => {
-                        setActiveTab(item.id);
-                        setMobileMenuOpen(false);
-                      }}
-                      title={`${item.label} (${item.desc}) — Press ${item.shortcut}`}
-                    >
-                      <Icon size={15} className="sidebar-nav-icon" />
-                      <span className="sidebar-nav-label">{item.label}</span>
-                      <kbd className="sidebar-kbd">{item.shortcut}</kbd>
-                    </button>
-                  );
-                })}
+        {/* Row 2: Horizontal Navigation Tabs & Telemetry */}
+        <div className="top-panel-nav-row">
+          <nav className="top-panel-nav-tabs" aria-label="Console Views">
+            {NAV_GROUPS.map((group, gIdx) => (
+              <div key={group.group} className="top-nav-group-section">
+                <span className="top-nav-group-label">{group.group}</span>
+                <div className="top-nav-group-pills">
+                  {group.items.map((item) => {
+                    const Icon = item.icon;
+                    const isActive = activeTab === item.id;
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        className={`top-nav-tab-btn ${isActive ? 'active' : ''}`}
+                        onClick={() => {
+                          setActiveTab(item.id);
+                          setMobileMenuOpen(false);
+                        }}
+                        title={`${item.label} (${item.desc}) — Shortcut key: ${item.shortcut}`}
+                      >
+                        <Icon size={14} className="top-nav-icon" />
+                        <span className="top-nav-label">{item.label}</span>
+                        <kbd className="top-nav-kbd">{item.shortcut}</kbd>
+                      </button>
+                    );
+                  })}
+                </div>
+                {gIdx < NAV_GROUPS.length - 1 && <div className="top-nav-group-separator" />}
               </div>
+            ))}
+          </nav>
+
+          {/* Live Line Status Indicator */}
+          <div className="top-panel-telemetry">
+            <div className="live-telemetry-badge">
+              <span className="live-dot-pulse" />
+              <span>LIVE LINE • RTT 280ms</span>
             </div>
-          ))}
-        </nav>
-
-        {/* 4. Sidebar Footer: Actions & Account */}
-        <div className="sidebar-footer">
-          {/* Quick Direct Inbound Call Button */}
-          <button
-            type="button"
-            className="sidebar-call-btn"
-            onClick={() => setActiveTab('webphone')}
-            title="Dial direct inbound test call (WebRTC)"
-          >
-            <Phone size={14} />
-            <span>Direct Inbound Call</span>
-          </button>
-
-          {/* User Profile Pill */}
-          {savedGoogleUser && (
-            <div className="sidebar-user-pill" title={`Logged in as ${savedGoogleUser.email}`}>
-              <div className="sidebar-avatar">
-                {savedGoogleUser.avatarInitial || 'G'}
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-                <span className="sidebar-user-name">{savedGoogleUser.name || 'Business Owner'}</span>
-                <span className="sidebar-user-email">{savedGoogleUser.email}</span>
-              </div>
-            </div>
-          )}
-
-          {/* Theme Toggle */}
-          <div style={{ marginBottom: '0.75rem', display: 'flex', justifyContent: 'center' }}>
-            <ThemeToggle />
           </div>
-
-          {/* Exit Workspace */}
-          <button
-            type="button"
-            className="sidebar-exit-btn"
-            onClick={onExitWorkspace}
-            title="Exit Workspace & Return to Portal"
-          >
-            <LogOut size={13} />
-            <span>Exit Workspace</span>
-          </button>
         </div>
-      </aside>
+      </header>
 
       {/* ── Mobile Top Header (Screens < 900px) ── */}
       <header className="workspace-mobile-header">
@@ -288,7 +267,7 @@ export default function Taskbar({
             </div>
 
             {business && (
-              <div className="sidebar-tenant-card" style={{ marginBottom: '1.25rem' }}>
+              <div className="top-panel-tenant-card" style={{ marginBottom: '1.25rem' }}>
                 <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.85rem' }}>{business.name}</div>
                 <div style={{ fontSize: '0.74rem', color: 'var(--text-tertiary)' }}>{business.industry} • {business.phone_number}</div>
               </div>
@@ -297,7 +276,9 @@ export default function Taskbar({
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
               {NAV_GROUPS.map((group) => (
                 <div key={group.group}>
-                  <div className="sidebar-group-title">{group.group}</div>
+                  <div style={{ fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-tertiary)', marginBottom: '4px', letterSpacing: '0.04em' }}>
+                    {group.group}
+                  </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
                     {group.items.map((item) => {
                       const Icon = item.icon;
@@ -306,7 +287,8 @@ export default function Taskbar({
                         <button
                           key={item.id}
                           type="button"
-                          className={`sidebar-nav-item ${isActive ? 'active' : ''}`}
+                          className={`top-nav-tab-btn ${isActive ? 'active' : ''}`}
+                          style={{ width: '100%', justifyContent: 'flex-start', padding: '8px 12px' }}
                           onClick={() => {
                             setActiveTab(item.id);
                             setMobileMenuOpen(false);
@@ -328,7 +310,7 @@ export default function Taskbar({
               </div>
               <button
                 type="button"
-                className="sidebar-exit-btn"
+                className="top-panel-exit-btn"
                 style={{ width: '100%', justifyContent: 'center' }}
                 onClick={() => {
                   setMobileMenuOpen(false);

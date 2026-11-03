@@ -208,6 +208,7 @@ kbd, .kbd-badge {
    ========================================================================== */
 .workspace-layout {
   display: flex;
+  flex-direction: column;
   min-height: 100vh;
   background: var(--bg-app);
   color: var(--text-primary);
@@ -2659,4 +2660,471 @@ html.light .business-save-bar .save-bar-status-dirty span:first-child {
     left: 0 !important;
     padding: 0.75rem 1rem !important;
   }
+}
+
+
+/* ==========================================================================
+   WORKSPACE TOP PANEL NAVIGATION (Horizontal Header Architecture)
+   ========================================================================== */
+.workspace-top-panel {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  width: 100%;
+  background: #0a0c10;
+  border-bottom: 1px solid var(--border-medium);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.45);
+  box-sizing: border-box;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+/* Row 1: Brand, Tenant Card, Direct Call, Profile, Theme Toggle, Exit */
+.top-panel-main-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.55rem 1.5rem;
+  border-bottom: 1px solid var(--border-medium);
+  gap: 1rem;
+  box-sizing: border-box;
+}
+
+.top-panel-left {
+  display: flex;
+  align-items: center;
+  gap: 1.15rem;
+  min-width: 0;
+}
+
+.top-panel-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  text-decoration: none;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.top-panel-divider-v {
+  width: 1px;
+  height: 28px;
+  background: var(--border-medium);
+  flex-shrink: 0;
+}
+
+/* Tenant Badge Card (Spice Garden Bistro) */
+.top-panel-tenant-card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-medium);
+  border-radius: 8px;
+  min-width: 190px;
+  box-sizing: border-box;
+  transition: all 0.2s ease;
+}
+
+.tenant-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.tenant-card-name {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tenant-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.68rem;
+  font-family: var(--font-mono);
+  color: var(--mint-400);
+  flex-shrink: 0;
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--mint-500);
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.7);
+}
+
+.tenant-card-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.68rem;
+  color: var(--text-tertiary);
+}
+
+.tenant-card-industry {
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 600;
+}
+
+.tenant-card-phone {
+  font-family: var(--font-mono);
+  color: var(--text-secondary);
+}
+
+/* Right Controls Group */
+.top-panel-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-shrink: 0;
+}
+
+/* Direct Inbound Call Button */
+.top-panel-call-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 7px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  background: rgba(14, 165, 233, 0.12);
+  border: 1px solid #0ea5e9;
+  color: #38bdf8;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.top-panel-call-btn:hover {
+  background: #0ea5e9;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(14, 165, 233, 0.3);
+}
+
+/* User Profile Pill */
+.top-panel-user-pill {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 3px 9px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-medium);
+  box-sizing: border-box;
+}
+
+.user-avatar-circle {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #0ea5e9;
+  color: #ffffff;
+  font-weight: 800;
+  font-size: 0.74rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.user-info-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+
+.user-name {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.user-email {
+  font-size: 0.65rem;
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  white-space: nowrap;
+}
+
+.top-panel-theme-toggle {
+  display: flex;
+  align-items: center;
+}
+
+.top-panel-exit-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  background: transparent;
+  border: 1px solid var(--border-medium);
+  border-radius: 6px;
+  color: var(--text-secondary);
+  font-size: 0.74rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.top-panel-exit-btn:hover {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: #ef4444;
+  color: #ef4444;
+}
+
+/* Row 2: Horizontal Navigation Tabs Row */
+.top-panel-nav-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.35rem 1.5rem;
+  background: rgba(13, 17, 23, 0.95);
+  gap: 1rem;
+  box-sizing: border-box;
+  overflow-x: auto;
+}
+
+.top-panel-nav-tabs {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.top-nav-group-section {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.top-nav-group-label {
+  font-size: 0.64rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-tertiary);
+  opacity: 0.85;
+  white-space: nowrap;
+  margin-right: 2px;
+}
+
+.top-nav-group-pills {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.top-nav-group-separator {
+  width: 1px;
+  height: 18px;
+  background: var(--border-medium);
+  margin-left: 0.65rem;
+  flex-shrink: 0;
+}
+
+/* Navigation Tab Buttons */
+.top-nav-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 7px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.top-nav-tab-btn:hover {
+  background: var(--bg-surface-elevated);
+  color: var(--text-primary);
+}
+
+.top-nav-tab-btn.active {
+  background: var(--bg-surface-elevated);
+  border-color: var(--border-strong);
+  color: #ffffff;
+  font-weight: 700;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.top-nav-tab-btn.active .top-nav-icon {
+  color: var(--color-primary);
+}
+
+.top-nav-kbd {
+  font-size: 0.62rem;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border-medium);
+  color: var(--text-tertiary);
+}
+
+/* Right Telemetry Pill */
+.top-panel-telemetry {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.live-telemetry-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 20px;
+  font-size: 0.68rem;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  color: var(--mint-400);
+  white-space: nowrap;
+}
+
+.live-dot-pulse {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.7);
+}
+
+/* ==========================================================================
+   LIGHT THEME STYLING FOR TOP PANEL (Signature White + Sky Blue Aesthetic)
+   ========================================================================== */
+html.light .workspace-top-panel {
+  background: #ffffff !important;
+  border-bottom: 1px solid #b6d5f2 !important;
+  box-shadow: 0 2px 14px rgba(2, 132, 199, 0.08) !important;
+}
+
+html.light .top-panel-main-row {
+  border-bottom: 1px solid #dbeafe !important;
+}
+
+html.light .top-panel-divider-v {
+  background: #dbeafe !important;
+}
+
+html.light .top-panel-tenant-card {
+  background: #f0f7ff !important;
+  border: 1.5px solid #bae6fd !important;
+}
+
+html.light .tenant-card-name {
+  color: #0c4a6e !important;
+}
+
+html.light .tenant-status-pill {
+  color: #0284c7 !important;
+}
+
+html.light .tenant-card-industry {
+  color: #0369a1 !important;
+}
+
+html.light .tenant-card-phone {
+  color: #0284c7 !important;
+}
+
+html.light .top-panel-call-btn {
+  background: #f0f7ff !important;
+  border: 1.5px solid #0ea5e9 !important;
+  color: #0284c7 !important;
+}
+
+html.light .top-panel-call-btn:hover {
+  background: #0ea5e9 !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 8px rgba(14, 165, 233, 0.25) !important;
+}
+
+html.light .top-panel-user-pill {
+  background: #f0f7ff !important;
+  border: 1px solid #bae6fd !important;
+}
+
+html.light .user-name {
+  color: #0c4a6e !important;
+}
+
+html.light .user-email {
+  color: #0284c7 !important;
+}
+
+html.light .top-panel-exit-btn {
+  border-color: #cbd5e1 !important;
+  color: #475569 !important;
+}
+
+html.light .top-panel-exit-btn:hover {
+  background: #fef2f2 !important;
+  border-color: #f87171 !important;
+  color: #dc2626 !important;
+}
+
+html.light .top-panel-nav-row {
+  background: #f8fafc !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+html.light .top-nav-group-label {
+  color: #0369a1 !important;
+}
+
+html.light .top-nav-group-separator {
+  background: #cbd5e1 !important;
+}
+
+html.light .top-nav-tab-btn {
+  color: #475569 !important;
+}
+
+html.light .top-nav-tab-btn:hover {
+  background: #e8f3fc !important;
+  color: #0284c7 !important;
+}
+
+html.light .top-nav-tab-btn.active {
+  background: #ffffff !important;
+  border: 1.5px solid #0ea5e9 !important;
+  color: #0c4a6e !important;
+  font-weight: 700 !important;
+  box-shadow: 0 2px 6px rgba(14, 165, 233, 0.18) !important;
+}
+
+html.light .top-nav-tab-btn.active .top-nav-icon {
+  color: #0ea5e9 !important;
+}
+
+html.light .top-nav-kbd {
+  background: #e8f3fc !important;
+  border-color: #bae6fd !important;
+  color: #0284c7 !important;
+}
+
+html.light .live-telemetry-badge {
+  background: #f0fdf4 !important;
+  border-color: #86efac !important;
+  color: #059669 !important;
 }

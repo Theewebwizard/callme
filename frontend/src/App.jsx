@@ -154,10 +154,10 @@ export default function App() {
     );
   }
 
-  // View 3: Strictly Isolated Business Person Workspace (Linear / Raycast Architecture)
+  // View 3: Strictly Isolated Business Person Workspace (Top Panel Architecture)
   return (
     <div className="workspace-layout">
-      {/* Sidebar Command Navigation */}
+      {/* Top Command Navigation Panel */}
       <Taskbar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
@@ -166,59 +166,8 @@ export default function App() {
         health={health}
       />
 
-      {/* Main Business Viewport */}
-      <div className="workspace-main">
-        {/* Top Operational Command Bar */}
-        <header className="workspace-topbar">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-            <span style={{ fontSize: '0.78rem', color: 'var(--text-tertiary)', fontFamily: 'var(--font-mono)' }}>
-              {activeBusiness.name}
-            </span>
-            <span style={{ color: 'var(--border-strong)', fontSize: '0.75rem' }}>/</span>
-            <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-              {activeTab === 'overview' && 'Cockpit'}
-              {activeTab === 'setup' && 'Voice Persona & Knowledge'}
-              {activeTab === 'playground' && 'AI Dialogue Simulator'}
-              {activeTab === 'webphone' && 'Inbound Web Phone'}
-              {activeTab === 'calls' && 'Audit Trail & Telemetry'}
-              {activeTab === 'tools' && 'Capabilities & Inventory'}
-            </span>
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            {/* Live Operational Indicator */}
-            <div
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '5px',
-                padding: '2px 8px',
-                borderRadius: 'var(--radius-full)',
-                background: 'rgba(16, 185, 129, 0.08)',
-                border: '1px solid rgba(16, 185, 129, 0.25)',
-                fontSize: '0.7rem',
-                color: 'var(--mint-400)',
-                fontFamily: 'var(--font-mono)',
-              }}
-            >
-              <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: 'var(--mint-400)' }} />
-              <span>LIVE LINE • RTT 280ms</span>
-            </div>
-
-            {/* Quick Inbound Test Call Action */}
-            <button
-              type="button"
-              className="btn-primary"
-              style={{ padding: '0.3rem 0.75rem', fontSize: '0.76rem' }}
-              onClick={() => setActiveTab('webphone')}
-            >
-              <span>Test Inbound Call</span>
-            </button>
-          </div>
-        </header>
-
-        {/* Viewport Content */}
-        <main className="workspace-content">
+      {/* Main Business Viewport Content */}
+      <main className="workspace-content">
           {activeTab === 'overview' && (
             <Dashboard
               business={activeBusiness}
@@ -256,7 +205,6 @@ export default function App() {
             <ToolLibrary business={activeBusiness} />
           )}
         </main>
-      </div>
     </div>
   );
 }
