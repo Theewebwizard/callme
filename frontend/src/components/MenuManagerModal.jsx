@@ -433,39 +433,40 @@ export function MenuManagerView({ business, isEmbedded = false, onMenuUpdated, o
           type="button"
           onClick={() => setActiveTab('upload')}
           style={{
-            padding: '10px 12px',
-            borderRadius: '8px',
-            border: activeTab === 'upload' ? '2px solid var(--sky-500, #0ea5e9)' : '1px solid var(--slate-200, #e2e8f0)',
-            background: activeTab === 'upload' ? 'var(--bg-surface-elevated)' : 'var(--bg-card)',
+            padding: '10px 14px',
+            borderRadius: '9px',
+            border: activeTab === 'upload' ? '2px solid #0ea5e9' : '1px solid var(--slate-200, #e2e8f0)',
+            background: activeTab === 'upload' ? '#e8f3fc' : 'var(--bg-card, #ffffff)',
             cursor: 'pointer',
             textAlign: 'left',
             display: 'flex',
             alignItems: 'center',
-            gap: '10px',
-            boxShadow: activeTab === 'upload' ? '0 2px 6px rgba(14, 165, 233, 0.15)' : 'none',
+            gap: '12px',
+            boxShadow: activeTab === 'upload' ? '0 2px 8px rgba(14, 165, 233, 0.2)' : 'none',
             transition: 'all 0.15s ease',
           }}
         >
           <div
             style={{
-              width: '34px',
-              height: '34px',
-              borderRadius: '6px',
-              background: activeTab === 'upload' ? 'var(--sky-500, #0ea5e9)' : 'var(--slate-100, #f1f5f9)',
-              color: activeTab === 'upload' ? 'var(--color-primary)' : 'var(--text-secondary)',
+              width: '36px',
+              height: '36px',
+              borderRadius: '8px',
+              background: activeTab === 'upload' ? '#0ea5e9' : 'var(--slate-100, #f1f5f9)',
+              color: activeTab === 'upload' ? '#ffffff' : 'var(--slate-500, #64748b)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               flexShrink: 0,
+              boxShadow: activeTab === 'upload' ? '0 1px 3px rgba(14, 165, 233, 0.3)' : 'none',
             }}
           >
-            <Upload size={17} />
+            <Upload size={18} color={activeTab === 'upload' ? '#ffffff' : 'var(--slate-500, #64748b)'} strokeWidth={2.2} />
           </div>
           <div>
-            <div style={{ fontWeight: 800, fontSize: '0.84rem', color: activeTab === 'upload' ? 'var(--sky-900, #0c4a6e)' : 'var(--slate-800, #1e293b)' }}>
+            <div style={{ fontWeight: 800, fontSize: '0.84rem', color: activeTab === 'upload' ? '#0c4a6e' : 'var(--slate-800, #1e293b)' }}>
               1. File Upload (CSV/JSON)
             </div>
-            <div style={{ fontSize: '0.7rem', color: 'var(--slate-500, #64748b)', marginTop: '1px' }}>
+            <div style={{ fontSize: '0.72rem', color: activeTab === 'upload' ? '#0284c7' : 'var(--slate-500, #64748b)', marginTop: '1px', fontWeight: activeTab === 'upload' ? 600 : 400 }}>
               Upload spreadsheet file
             </div>
           </div>
@@ -476,39 +477,40 @@ export function MenuManagerView({ business, isEmbedded = false, onMenuUpdated, o
           type="button"
           onClick={() => setActiveTab('paste')}
           style={{
-            padding: '10px 12px',
-            borderRadius: '8px',
-            border: activeTab === 'paste' ? '2px solid var(--sky-500, #0ea5e9)' : '1px solid var(--slate-200, #e2e8f0)',
-            background: activeTab === 'paste' ? 'var(--bg-surface-elevated)' : 'var(--bg-card)',
+            padding: '10px 14px',
+            borderRadius: '9px',
+            border: activeTab === 'paste' ? '2px solid #0ea5e9' : '1px solid var(--slate-200, #e2e8f0)',
+            background: activeTab === 'paste' ? '#e8f3fc' : 'var(--bg-card, #ffffff)',
             cursor: 'pointer',
             textAlign: 'left',
             display: 'flex',
             alignItems: 'center',
-            gap: '10px',
-            boxShadow: activeTab === 'paste' ? '0 2px 6px rgba(14, 165, 233, 0.15)' : 'none',
+            gap: '12px',
+            boxShadow: activeTab === 'paste' ? '0 2px 8px rgba(14, 165, 233, 0.2)' : 'none',
             transition: 'all 0.15s ease',
           }}
         >
           <div
             style={{
-              width: '34px',
-              height: '34px',
-              borderRadius: '6px',
-              background: activeTab === 'paste' ? 'var(--sky-500, #0ea5e9)' : 'var(--slate-100, #f1f5f9)',
-              color: activeTab === 'paste' ? 'var(--color-primary)' : 'var(--text-secondary)',
+              width: '36px',
+              height: '36px',
+              borderRadius: '8px',
+              background: activeTab === 'paste' ? '#0ea5e9' : 'var(--slate-100, #f1f5f9)',
+              color: activeTab === 'paste' ? '#ffffff' : 'var(--slate-500, #64748b)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               flexShrink: 0,
+              boxShadow: activeTab === 'paste' ? '0 1px 3px rgba(14, 165, 233, 0.3)' : 'none',
             }}
           >
-            <FileText size={17} />
+            <FileText size={18} color={activeTab === 'paste' ? '#ffffff' : 'var(--slate-500, #64748b)'} strokeWidth={2.2} />
           </div>
           <div>
-            <div style={{ fontWeight: 800, fontSize: '0.84rem', color: activeTab === 'paste' ? 'var(--sky-900, #0c4a6e)' : 'var(--slate-800, #1e293b)' }}>
+            <div style={{ fontWeight: 800, fontSize: '0.84rem', color: activeTab === 'paste' ? '#0c4a6e' : 'var(--slate-800, #1e293b)' }}>
               2. Paste Menu Text (AI)
             </div>
-            <div style={{ fontSize: '0.7rem', color: 'var(--slate-500, #64748b)', marginTop: '1px' }}>
+            <div style={{ fontSize: '0.72rem', color: activeTab === 'paste' ? '#0284c7' : 'var(--slate-500, #64748b)', marginTop: '1px', fontWeight: activeTab === 'paste' ? 600 : 400 }}>
               Auto-detect dishes & prices
             </div>
           </div>
@@ -519,39 +521,40 @@ export function MenuManagerView({ business, isEmbedded = false, onMenuUpdated, o
           type="button"
           onClick={() => setActiveTab('table')}
           style={{
-            padding: '10px 12px',
-            borderRadius: '8px',
-            border: activeTab === 'table' ? '2px solid var(--sky-500, #0ea5e9)' : '1px solid var(--slate-200, #e2e8f0)',
-            background: activeTab === 'table' ? 'var(--bg-surface-elevated)' : 'var(--bg-card)',
+            padding: '10px 14px',
+            borderRadius: '9px',
+            border: activeTab === 'table' ? '2px solid #0ea5e9' : '1px solid var(--slate-200, #e2e8f0)',
+            background: activeTab === 'table' ? '#e8f3fc' : 'var(--bg-card, #ffffff)',
             cursor: 'pointer',
             textAlign: 'left',
             display: 'flex',
             alignItems: 'center',
-            gap: '10px',
-            boxShadow: activeTab === 'table' ? '0 2px 6px rgba(14, 165, 233, 0.15)' : 'none',
+            gap: '12px',
+            boxShadow: activeTab === 'table' ? '0 2px 8px rgba(14, 165, 233, 0.2)' : 'none',
             transition: 'all 0.15s ease',
           }}
         >
           <div
             style={{
-              width: '34px',
-              height: '34px',
-              borderRadius: '6px',
-              background: activeTab === 'table' ? 'var(--sky-500, #0ea5e9)' : 'var(--slate-100, #f1f5f9)',
-              color: activeTab === 'table' ? 'var(--color-primary)' : 'var(--text-secondary)',
+              width: '36px',
+              height: '36px',
+              borderRadius: '8px',
+              background: activeTab === 'table' ? '#0ea5e9' : 'var(--slate-100, #f1f5f9)',
+              color: activeTab === 'table' ? '#ffffff' : 'var(--slate-500, #64748b)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               flexShrink: 0,
+              boxShadow: activeTab === 'table' ? '0 1px 3px rgba(14, 165, 233, 0.3)' : 'none',
             }}
           >
-            <ListPlus size={17} />
+            <ListPlus size={18} color={activeTab === 'table' ? '#ffffff' : 'var(--slate-500, #64748b)'} strokeWidth={2.2} />
           </div>
           <div>
-            <div style={{ fontWeight: 800, fontSize: '0.84rem', color: activeTab === 'table' ? 'var(--sky-900, #0c4a6e)' : 'var(--slate-800, #1e293b)' }}>
+            <div style={{ fontWeight: 800, fontSize: '0.84rem', color: activeTab === 'table' ? '#0c4a6e' : 'var(--slate-800, #1e293b)' }}>
               3. View & Add Dishes ({menuItems.length})
             </div>
-            <div style={{ fontSize: '0.7rem', color: 'var(--slate-500, #64748b)', marginTop: '1px' }}>
+            <div style={{ fontSize: '0.72rem', color: activeTab === 'table' ? '#0284c7' : 'var(--slate-500, #64748b)', marginTop: '1px', fontWeight: activeTab === 'table' ? 600 : 400 }}>
               Browse & edit {menuItems.length} items
             </div>
           </div>
@@ -789,9 +792,9 @@ export function MenuManagerView({ business, isEmbedded = false, onMenuUpdated, o
                       padding: '3px 8px',
                       fontSize: '0.72rem',
                       borderRadius: '12px',
-                      border: categoryFilter === cat ? '1px solid var(--sky-500, #0ea5e9)' : '1px solid var(--slate-200, #e2e8f0)',
-                      background: categoryFilter === cat ? 'var(--bg-surface-elevated)' : 'var(--bg-card)',
-                      color: categoryFilter === cat ? 'var(--sky-700, #0369a1)' : 'var(--slate-600, #475569)',
+                      border: categoryFilter === cat ? '1px solid #0ea5e9' : '1px solid var(--slate-200, #e2e8f0)',
+                      background: categoryFilter === cat ? '#0ea5e9' : 'var(--bg-card, #ffffff)',
+                      color: categoryFilter === cat ? '#ffffff' : 'var(--slate-600, #475569)',
                       fontWeight: categoryFilter === cat ? 700 : 500,
                       cursor: 'pointer',
                     }}
