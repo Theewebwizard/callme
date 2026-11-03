@@ -2544,3 +2544,34 @@ html.light .google-modal {
   color: #ffffff;
   flex-shrink: 0;
 }
+
+
+/* Drift animations for background floating pills in mobile showcase */
+@keyframes drift-left {
+  0% { transform: translateX(0); }
+  50% { transform: translateX(-24px); }
+  100% { transform: translateX(0); }
+}
+
+@keyframes drift-right {
+  0% { transform: translateX(0); }
+  50% { transform: translateX(24px); }
+  100% { transform: translateX(0); }
+}
+
+.animate-drift-left {
+  animation: drift-left 14s ease-in-out infinite;
+}
+
+.animate-drift-right {
+  animation: drift-right 16s ease-in-out infinite;
+}
+
+/* Smartphone Mockup Interactive Lift */
+.iphone-mockup {
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s ease;
+}
+
+.iphone-mockup:hover {
+  transform: translateY(-4px) scale(1.008);
+}

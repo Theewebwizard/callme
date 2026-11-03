@@ -28,6 +28,7 @@ import AgentPersonasSection from './AgentPersonasSection';
 import AgentWorkflowSection from './AgentWorkflowSection';
 import FeatureGridSection from './FeatureGridSection';
 import ConfigConsoleSection from './ConfigConsoleSection';
+import MobileBriefingSection from './MobileBriefingSection';
 import useScrollReveal from './useScrollReveal';
 import ThemeToggle from './ThemeToggle';
 
@@ -315,7 +316,8 @@ export default function LandingPage({ onEnterWorkspace, onEnterAdmin }) {
           <a href="#agents">01 · Agents</a>
           <a href="#workflow">02 · Workflow</a>
           <a href="#features">03 · Features</a>
-          <a href="#auth-section">04 · Portal</a>
+          <a href="#mobile-briefing">04 · Mobile Briefing</a>
+          <a href="#auth-section">05 · Portal</a>
         </nav>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
@@ -407,7 +409,10 @@ export default function LandingPage({ onEnterWorkspace, onEnterAdmin }) {
       {/* 7. Config Console ("Configure in plain English. Ship in minutes.") */}
       <ConfigConsoleSection />
 
-      {/* 8. Access Portal & Authentication Section */}
+      {/* 8. Mobile Companion: Morning Briefing & Autonomous Schedule */}
+      <MobileBriefingSection />
+
+      {/* 9. Access Portal & Authentication Section */}
       <section
         id="auth-section"
         className="reveal-on-scroll"
