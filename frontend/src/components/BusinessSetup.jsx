@@ -731,50 +731,46 @@ export default function BusinessSetup({ business, onBusinessSaved }) {
 
       {/* 3. Sticky Bottom Save Bar (Shows Unsaved Status & Save Action) */}
       <div
+        className="business-save-bar"
         style={{
           position: 'fixed',
           bottom: 0,
           left: '250px',
           right: 0,
-          background: 'rgba(10, 12, 16, 0.92)',
-          backdropFilter: 'blur(16px)',
-          WebkitBackdropFilter: 'blur(16px)',
-          borderTop: '1px solid var(--border-medium)',
           padding: '0.75rem 2rem',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           zIndex: 35,
-          boxShadow: '0 -4px 20px rgba(0, 0, 0, 0.5)',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
           {isDirty ? (
             <span
+              className="save-bar-status-dirty"
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '5px',
-                fontSize: '0.76rem',
-                color: 'var(--amber-400)',
+                gap: '6px',
+                fontSize: '0.78rem',
                 fontFamily: 'var(--font-mono)',
               }}
             >
-              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--amber-400)' }} />
+              <span style={{ width: '7px', height: '7px', borderRadius: '50%' }} />
               <span>Unsaved modifications detected</span>
             </span>
           ) : (
             <span
+              className="save-bar-status-saved"
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '5px',
-                fontSize: '0.76rem',
-                color: 'var(--text-tertiary)',
+                gap: '6px',
+                fontSize: '0.78rem',
                 fontFamily: 'var(--font-mono)',
               }}
             >
-              <Check size={12} style={{ color: 'var(--mint-400)' }} />
+              <Check size={14} className="save-bar-check-icon" />
               <span>All changes saved to database</span>
             </span>
           )}

@@ -2599,3 +2599,64 @@ html.light .google-modal {
 .iphone-mockup:hover {
   transform: translateY(-4px) scale(1.008);
 }
+
+
+/* ==========================================================================
+   Business Setup Sticky Bottom Save Bar (Responsive + Light & Dark Themes)
+   ========================================================================== */
+.business-save-bar {
+  background: rgba(10, 12, 16, 0.92);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-top: 1px solid var(--border-medium);
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.5);
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.business-save-bar .save-bar-status-saved {
+  color: var(--text-tertiary);
+}
+
+.business-save-bar .save-bar-check-icon {
+  color: var(--mint-400);
+}
+
+.business-save-bar .save-bar-status-dirty {
+  color: var(--amber-400);
+}
+
+.business-save-bar .save-bar-status-dirty span:first-child {
+  background: var(--amber-400);
+}
+
+/* Light Theme Styling for Sticky Bottom Save Bar */
+html.light .business-save-bar {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border-top: 1px solid #b6d5f2 !important;
+  box-shadow: 0 -4px 20px rgba(2, 132, 199, 0.12), 0 -1px 0 #b6d5f2 !important;
+}
+
+html.light .business-save-bar .save-bar-status-saved {
+  color: #0369a1 !important;
+  font-weight: 600;
+}
+
+html.light .business-save-bar .save-bar-check-icon {
+  color: #059669 !important;
+}
+
+html.light .business-save-bar .save-bar-status-dirty {
+  color: #b45309 !important;
+  font-weight: 600;
+}
+
+html.light .business-save-bar .save-bar-status-dirty span:first-child {
+  background: #f59e0b !important;
+}
+
+@media (max-width: 900px) {
+  .business-save-bar {
+    left: 0 !important;
+    padding: 0.75rem 1rem !important;
+  }
+}
