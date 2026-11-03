@@ -1197,49 +1197,64 @@ kbd, .kbd-badge {
 /* Toggle Switch */
 .switch {
   position: relative;
-  display: inline-block;
-  width: 36px;
-  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  width: 38px;
+  height: 22px;
+  flex-shrink: 0;
+  vertical-align: middle;
 }
 
 .switch input {
   opacity: 0;
   width: 0;
   height: 0;
+  position: absolute;
 }
 
 .slider {
   position: absolute;
   cursor: pointer;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(255, 255, 255, 0.12);
-  transition: 0.2s;
-  border-radius: 20px;
+  inset: 0;
+  background-color: rgba(255, 255, 255, 0.16);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.15);
+  border-radius: 9999px;
+  transition: background-color 0.22s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .slider:before {
   position: absolute;
   content: "";
-  height: 14px;
-  width: 14px;
-  left: 3px;
-  bottom: 3px;
-  background-color: #ffffff;
-  transition: 0.2s;
+  height: 18px;
+  width: 18px;
+  left: 2px;
+  top: 2px;
+  background-color: #ffffff !important;
   border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3), 0 1px 1px rgba(0, 0, 0, 0.15);
+  transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 input:checked + .slider {
   background-color: #0ea5e9;
+  box-shadow: 0 0 8px rgba(14, 165, 233, 0.4);
 }
 
 input:checked + .slider:before {
   transform: translateX(16px);
-  background-color: #ffffff;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+  background-color: #ffffff !important;
+}
+
+input:focus-visible + .slider {
+  outline: 2px solid #38bdf8;
+  outline-offset: 2px;
+}
+
+input:disabled + .slider {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 /* ==========================================================================
@@ -3136,25 +3151,26 @@ html.light .live-telemetry-badge {
    ========================================================================== */
 .webphone-toggle-switch {
   background: rgba(255, 255, 255, 0.18);
-  border: 1.5px solid var(--border-medium);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.15);
+  border: none !important;
 }
 
 .webphone-toggle-switch.checked {
   background: #0ea5e9 !important;
-  border-color: #0ea5e9 !important;
-  box-shadow: 0 1px 6px rgba(14, 165, 233, 0.35) !important;
+  box-shadow: 0 0 8px rgba(14, 165, 233, 0.4) !important;
+  border: none !important;
 }
 
 html.light .webphone-toggle-switch {
   background: #cbd5e1 !important;
-  border: 1.5px solid #94a3b8 !important;
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.08) !important;
+  box-shadow: inset 0 0 0 1px #94a3b8 !important;
+  border: none !important;
 }
 
 html.light .webphone-toggle-switch.checked {
-  background: #0ea5e9 !important;
-  border-color: #0ea5e9 !important;
-  box-shadow: 0 1px 6px rgba(14, 165, 233, 0.35) !important;
+  background: #0284c7 !important;
+  box-shadow: inset 0 0 0 1px rgba(2, 132, 199, 0.8), 0 1px 4px rgba(2, 132, 199, 0.3) !important;
+  border: none !important;
 }
 
 
@@ -3301,18 +3317,27 @@ html.light .webphone-acoustic-label {
 /* Switch Slider Light Theme Overrides */
 html.light .slider {
   background-color: #cbd5e1;
-  border: 1.5px solid #94a3b8;
+  box-shadow: inset 0 0 0 1px #94a3b8;
+  border: none;
+}
+
+html.light .slider:hover {
+  background-color: #c2cfde;
 }
 
 html.light .slider:before {
   background-color: #ffffff !important;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.22), 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 html.light input:checked + .slider {
-  background-color: #0ea5e9 !important;
-  border-color: #0ea5e9 !important;
-  box-shadow: 0 1px 6px rgba(14, 165, 233, 0.35) !important;
+  background-color: #0284c7 !important;
+  border-color: transparent !important;
+  box-shadow: inset 0 0 0 1px rgba(2, 132, 199, 0.8), 0 1px 3px rgba(2, 132, 199, 0.3) !important;
+}
+
+html.light input:checked + .slider:hover {
+  background-color: #0369a1 !important;
 }
 
 html.light input:checked + .slider:before {
@@ -3330,11 +3355,12 @@ html.light input:checked + .slider:before {
 
 html.light .cap-link-active {
   color: #0284c7 !important;
-  font-weight: 700 !important;
+  font-weight: 600 !important;
 }
 
 html.light .cap-link-disabled {
   color: #64748b !important;
+  font-weight: 500 !important;
 }
 
 /* Base Badge Pill Styles */

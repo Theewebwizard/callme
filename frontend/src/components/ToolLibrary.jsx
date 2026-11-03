@@ -788,19 +788,20 @@ export default function ToolLibrary({ business }) {
                           </td>
 
                           <td>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-                              <label className="switch">
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                              <label className="switch" title={t.is_implemented === false ? "Tool not yet implemented" : (isEnabled ? "Disable tool" : "Enable tool")}>
                                 <input
                                   type="checkbox"
                                   checked={isEnabled}
                                   disabled={t.is_implemented === false}
                                   onChange={() => handleToggle(t.id)}
+                                  aria-label={`Toggle ${t.name}`}
                                 />
                                 <span className="slider" />
                               </label>
                               <span
                                 className={isEnabled ? "cap-link-active" : "cap-link-disabled"}
-                                style={{ fontSize: '0.74rem', fontFamily: 'var(--font-mono)', fontWeight: 600 }}
+                                style={{ fontSize: '0.78rem', fontWeight: 600, letterSpacing: '-0.01em', userSelect: 'none' }}
                               >
                                 {isEnabled ? 'Active' : 'Disabled'}
                               </span>
