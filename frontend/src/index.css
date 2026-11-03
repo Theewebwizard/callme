@@ -3128,3 +3128,30 @@ html.light .live-telemetry-badge {
   border-color: #86efac !important;
   color: #059669 !important;
 }
+
+
+/* ==========================================================================
+   WebPhone Toggle Switch & Controls (Light & Dark Theme)
+   ========================================================================== */
+.webphone-toggle-switch {
+  background: rgba(255, 255, 255, 0.18);
+  border: 1.5px solid var(--border-medium);
+}
+
+.webphone-toggle-switch.checked {
+  background: #0ea5e9 !important;
+  border-color: #0ea5e9 !important;
+  box-shadow: 0 1px 6px rgba(14, 165, 233, 0.35) !important;
+}
+
+html.light .webphone-toggle-switch {
+  background: #cbd5e1 !important;
+  border: 1.5px solid #94a3b8 !important;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.08) !important;
+}
+
+html.light .webphone-toggle-switch.checked {
+  background: #0ea5e9 !important;
+  border-color: #0ea5e9 !important;
+  box-shadow: 0 1px 6px rgba(14, 165, 233, 0.35) !important;
+}

@@ -28,29 +28,34 @@ function Toggle({ checked, onChange }) {
       role="switch"
       aria-checked={checked}
       onClick={() => onChange(!checked)}
+      className={`webphone-toggle-switch ${checked ? 'checked' : ''}`}
       style={{
-        width: '32px',
-        height: '18px',
-        borderRadius: '9px',
+        width: '38px',
+        height: '22px',
+        borderRadius: '11px',
         position: 'relative',
-        background: checked ? 'var(--mint-500)' : 'rgba(255, 255, 255, 0.15)',
-        border: 'none',
         cursor: 'pointer',
-        transition: 'background 0.2s ease',
+        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
         flexShrink: 0,
+        padding: 0,
+        outline: 'none',
+        display: 'inline-flex',
+        alignItems: 'center',
+        boxSizing: 'border-box',
       }}
     >
       <span
+        className="webphone-toggle-knob"
         style={{
           position: 'absolute',
           top: '2px',
-          left: checked ? '16px' : '2px',
+          left: checked ? '18px' : '2px',
           width: '14px',
           height: '14px',
           borderRadius: '50%',
-          background: 'white',
-          transition: 'left 0.2s ease',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.25)',
+          background: '#ffffff',
+          transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.25)',
           display: 'block',
         }}
       />
@@ -768,30 +773,44 @@ export default function WebPhone({ business }) {
                 <span>Call Language:</span>
               </span>
 
-              <div style={{ display: 'flex', gap: '3px' }}>
+              <div
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  background: 'var(--bg-surface-elevated, #f0f7ff)',
+                  border: '1.5px solid var(--border-medium, #bae6fd)',
+                  borderRadius: '8px',
+                  padding: '2px',
+                  gap: '2px',
+                }}
+              >
                 {[
                   { id: 'hi-IN', label: 'Hindi' },
                   { id: 'en-IN', label: 'English' },
-                ].map((l) => (
-                  <button
-                    key={l.id}
-                    type="button"
-                    onClick={() => changeSpeechLanguage(l.id)}
-                    style={{
-                      background: speechLang === l.id ? 'var(--mint-500)' : 'var(--bg-surface-elevated)',
-                      color: speechLang === l.id ? '#07080a' : 'var(--text-secondary)',
-                      border: '1px solid',
-                      borderColor: speechLang === l.id ? 'var(--mint-500)' : 'var(--border-medium)',
-                      borderRadius: 'var(--radius-sm)',
-                      padding: '2px 8px',
-                      fontSize: '0.72rem',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                    }}
-                  >
-                    {l.label}
-                  </button>
-                ))}
+                ].map((l) => {
+                  const isActive = speechLang === l.id;
+                  return (
+                    <button
+                      key={l.id}
+                      type="button"
+                      onClick={() => changeSpeechLanguage(l.id)}
+                      style={{
+                        background: isActive ? '#0ea5e9' : 'transparent',
+                        color: isActive ? '#ffffff' : 'var(--text-secondary, #475569)',
+                        border: 'none',
+                        borderRadius: '6px',
+                        padding: '4px 11px',
+                        fontSize: '0.74rem',
+                        fontWeight: isActive ? 700 : 600,
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease',
+                        boxShadow: isActive ? '0 1px 4px rgba(14, 165, 233, 0.3)' : 'none',
+                      }}
+                    >
+                      {l.label}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
