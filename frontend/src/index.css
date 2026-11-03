@@ -3155,3 +3155,74 @@ html.light .webphone-toggle-switch.checked {
   border-color: #0ea5e9 !important;
   box-shadow: 0 1px 6px rgba(14, 165, 233, 0.35) !important;
 }
+
+
+/* ==========================================================================
+   WebPhone Dynamic Waveform Animations
+   ========================================================================== */
+@keyframes waveIdleBreath {
+  0% {
+    height: 6px;
+    opacity: 0.55;
+    transform: scaleY(0.7);
+  }
+  50% {
+    height: 24px;
+    opacity: 1;
+    transform: scaleY(1.1);
+  }
+  100% {
+    height: 8px;
+    opacity: 0.6;
+    transform: scaleY(0.8);
+  }
+}
+
+@keyframes waveSpeakingDance {
+  0% {
+    height: 8px;
+    transform: scaleY(0.65);
+  }
+  50% {
+    height: 36px;
+    transform: scaleY(1.25);
+  }
+  100% {
+    height: 12px;
+    transform: scaleY(0.75);
+  }
+}
+
+@keyframes waveListeningRipple {
+  0% {
+    height: 6px;
+    transform: scaleY(0.6);
+  }
+  50% {
+    height: 28px;
+    transform: scaleY(1.2);
+  }
+  100% {
+    height: 8px;
+    transform: scaleY(0.7);
+  }
+}
+
+@keyframes waveLoadingBounce {
+  0% {
+    height: 6px;
+  }
+  50% {
+    height: 22px;
+  }
+  100% {
+    height: 6px;
+  }
+}
+
+/* Light Theme Styling for Acoustic Box */
+html.light .webphone-acoustic-card {
+  background: #f0f7ff !important;
+  border: 1.5px solid #bae6fd !important;
+  box-shadow: inset 0 1px 4px rgba(2, 132, 199, 0.05) !important;
+}
