@@ -55,7 +55,7 @@ def handle_check_appointment_availability(
             )
 
     # Live Mode Execution via Authoritative Integration Adapter
-    if business_config.get("execution_mode") == "live":
+    if biz_id and business_config.get("execution_mode") != "unavailable":
         try:
             from datetime import datetime, timedelta
             from backend.integrations.resolver import resolve_tool_adapter
@@ -70,7 +70,7 @@ def handle_check_appointment_availability(
                 start_time=start_dt,
                 end_time=end_dt,
                 party_size=1,
-                resource_type="room",
+                resource_type="practitioner",
             )
 
             if avail_res.get("available"):
@@ -146,7 +146,7 @@ def handle_create_appointment(
     biz_id = business_config.get("id", "")
 
     # Live Mode Execution via Authoritative Integration Adapter
-    if business_config.get("execution_mode") == "live":
+    if biz_id and business_config.get("execution_mode") != "unavailable":
         try:
             from datetime import datetime, timedelta
             from backend.integrations.resolver import resolve_tool_adapter
@@ -164,6 +164,7 @@ def handle_create_appointment(
                 party_size=1,
                 start_time=start_dt,
                 end_time=end_dt,
+                resource_type="practitioner",
                 special_requests=spec_req,
                 idempotency_key=input_data.idempotency_key,
             )
@@ -182,7 +183,7 @@ def handle_create_appointment(
                 )
 
             ref_code = booking_res.get("appointment_reference", booking_res.get("booking_reference"))
-            room_name = booking_res.get("room_name", "Clinical Consultation Suite")
+            doctor_name = booking_res.get("doctor_name", booking_res.get("room_name", "Consultant Doctor"))
 
             return ToolExecutionResult(
                 tool_id="create_appointment",
@@ -195,7 +196,7 @@ def handle_create_appointment(
                 message=(
                     f"Appointment confirmed for '{input_data.patient_name}' for {input_data.service_or_department} "
                     f"on {input_data.appointment_date} at {input_data.appointment_time} with {biz_name} "
-                    f"({room_name}). Reference: {ref_code}."
+                    f"({doctor_name}). Reference: {ref_code}."
                 ),
             )
         except ReservationConflictError:

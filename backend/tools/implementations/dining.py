@@ -76,7 +76,7 @@ def handle_check_table_availability(
         )
 
     # Live Mode Execution via Authoritative Integration Adapter
-    if business_config.get("execution_mode") == "live":
+    if biz_id and business_config.get("execution_mode") != "unavailable":
         try:
             from datetime import datetime, timedelta
             from backend.integrations.resolver import resolve_tool_adapter
@@ -168,7 +168,7 @@ def handle_create_table_booking(
     biz_id = business_config.get("id", "")
 
     # Live Mode Execution via Authoritative Integration Adapter
-    if business_config.get("execution_mode") == "live":
+    if biz_id and business_config.get("execution_mode") != "unavailable":
         try:
             from datetime import datetime, timedelta
             from backend.integrations.resolver import resolve_tool_adapter

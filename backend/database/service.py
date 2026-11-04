@@ -62,6 +62,11 @@ class DatabaseService:
         else:
             self._profile_cache.clear()
             self._calls_cache.clear()
+        try:
+            from backend.capabilities.wizard import invalidate_capability_cache
+            invalidate_capability_cache(business_id)
+        except Exception:
+            pass
 
     @property
     def engine(self) -> Engine:

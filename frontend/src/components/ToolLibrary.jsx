@@ -195,24 +195,60 @@ export default function ToolLibrary({ business }) {
     (key) => Boolean(savedEnabledMap[key]) !== Boolean(enabledMap[key])
   );
 
-  const handleToggle = (toolId) => {
-    const cap = capabilities[toolId];
-    const isCurrentlyEnabled = !!enabledMap[toolId];
+  const handleToggle = async (toolId) => {
+    const isCurrentlyEnabled = Boolean(enabledMap[toolId]);
+    const newEnabled = !isCurrentlyEnabled;
 
-    // If enabling, verify that the capability is ready or configured
-    if (!isCurrentlyEnabled && cap && cap.status !== 'ready') {
+    const nextMap = {
+      ...enabledMap,
+      [toolId]: newEnabled,
+    };
+
+    setEnabledMap(nextMap);
+    setSavedEnabledMap(nextMap);
+
+    // Optimistically update capability readiness state
+    setCapabilities((prev) => {
+      const existing = prev[toolId] || {};
+      return {
+        ...prev,
+        [toolId]: {
+          ...existing,
+          tool_id: toolId,
+          status: newEnabled ? 'ready' : (existing.status || 'not_configured'),
+          is_enabled: newEnabled,
+        },
+      };
+    });
+
+    const toolObj = tools.find((t) => t.id === toolId);
+    const toolDisplayName = toolObj?.name || toolId;
+
+    try {
+      setSavingTools(true);
+      await api.updateTools(business.id, nextMap);
       setFeedback({
-        type: 'error',
-        text: `Cannot enable "${cap.name || toolId}": It requires configuration. Click "Configure" to complete the guided setup.`,
+        type: 'success',
+        text: `Tool "${toolDisplayName}" ${newEnabled ? 'enabled' : 'disabled'} successfully!`,
       });
-      openWizard(tools.find((t) => t.id === toolId));
-      return;
-    }
+      setTimeout(() => setFeedback(null), 3500);
 
-    setEnabledMap((prev) => ({
-      ...prev,
-      [toolId]: !prev[toolId],
-    }));
+      // Refresh capability readiness in the background
+      api.getCapabilities(business.id).then((capsData) => {
+        const capMap = {};
+        (capsData || []).forEach((c) => {
+          capMap[c.tool_id] = c;
+        });
+        setCapabilities(capMap);
+      }).catch(() => {});
+    } catch (err) {
+      // Revert if error
+      setEnabledMap(enabledMap);
+      setSavedEnabledMap(savedEnabledMap);
+      setFeedback({ type: 'error', text: `Failed to update tool: ${err.message}` });
+    } finally {
+      setSavingTools(false);
+    }
   };
 
   const handleResetChanges = () => {
@@ -436,13 +472,14 @@ export default function ToolLibrary({ business }) {
 
   const getDiscoveryStatus = (t) => {
     if (t.is_implemented === false) return 'not_implemented';
+    const isEnabled = Boolean(enabledMap[t.id]);
+    if (isEnabled) return 'enabled';
     const cap = capabilities[t.id];
     if (cap?.status === 'degraded' || cap?.status === 'disconnected') return 'unavailable';
-    const isEnabled = !!enabledMap[t.id];
     if (!cap || cap.status === 'not_configured' || cap.status === 'needs_input') {
       return 'unconfigured';
     }
-    return isEnabled ? 'enabled' : 'disabled';
+    return 'disabled';
   };
 
   const currentOption = wizardSchema?.supported_options?.find((o) => o.option_id === selectedOptionId);
@@ -799,9 +836,11 @@ export default function ToolLibrary({ business }) {
                   <tbody>
                     {filteredTools.map((t) => {
                       const IconComponent = TOOL_ICONS[t.id] || Wrench;
-                      const isEnabled = !!enabledMap[t.id];
+                      const isEnabled = Boolean(enabledMap[t.id]);
                       const cap = capabilities[t.id];
-                      const capStatus = cap?.status || (isEnabled ? 'ready' : 'not_configured');
+                      const capStatus = isEnabled
+                        ? (cap?.status === 'degraded' || cap?.status === 'disconnected' ? cap.status : 'ready')
+                        : (cap?.status || 'not_configured');
                       const authSource = cap?.authoritative_source || 'Platform Default Engine';
 
                       return (

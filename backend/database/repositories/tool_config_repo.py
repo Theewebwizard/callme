@@ -67,10 +67,29 @@ class ToolConfigRepository(BaseRepository):
         is_enabled: bool,
     ) -> BusinessToolConfig:
         """Insert or update tool activation status for a tenant."""
+        default_opts = {
+            "check_appointment_availability": "builtin_clinic",
+            "create_appointment": "builtin_clinic",
+            "query_treatment_pricing": "builtin_clinic_treatments",
+            "check_table_availability": "builtin_dining",
+            "create_table_booking": "builtin_dining",
+            "query_menu_pricing": "builtin_restaurant_menu",
+            "check_room_availability": "builtin_booking",
+            "create_room_booking": "builtin_booking",
+            "query_room_pricing": "builtin_hotel_rooms",
+            "answer_faq": "builtin_knowledge_base",
+            "take_message": "builtin_messaging",
+            "transfer_call": "simulated_escalation",
+        }
         record = self.get_tool_config(business_id, tool_id)
         now = utcnow()
         if record:
             record.is_enabled = is_enabled
+            if is_enabled:
+                if record.status in ("not_configured", "needs_input", None):
+                    record.status = "ready"
+                if not record.selected_option_id:
+                    record.selected_option_id = default_opts.get(tool_id)
             record.updated_at = now
         else:
             record = BusinessToolConfig(
@@ -79,6 +98,7 @@ class ToolConfigRepository(BaseRepository):
                 tool_id=tool_id,
                 is_enabled=is_enabled,
                 status="ready" if is_enabled else "not_configured",
+                selected_option_id=default_opts.get(tool_id) if is_enabled else None,
                 configuration={},
                 readiness_details={},
                 created_at=now,

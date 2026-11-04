@@ -54,7 +54,20 @@ logger = logging.getLogger(__name__)
 VALID_EXECUTION_MODES: Set[str] = {"mock", "live", "unavailable"}
 
 # Tools that possess verified live integrations in this repository
-LIVE_VERIFIED_TOOLS: Set[str] = {"answer_faq", "take_message", "query_menu_pricing", "query_room_pricing", "query_treatment_pricing"}
+LIVE_VERIFIED_TOOLS: Set[str] = {
+    "answer_faq",
+    "take_message",
+    "transfer_call",
+    "query_menu_pricing",
+    "query_room_pricing",
+    "query_treatment_pricing",
+    "check_appointment_availability",
+    "create_appointment",
+    "check_table_availability",
+    "create_table_booking",
+    "check_room_availability",
+    "create_room_booking",
+}
 
 
 class ToolRegistry:

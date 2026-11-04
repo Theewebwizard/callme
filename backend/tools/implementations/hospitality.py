@@ -78,7 +78,7 @@ def handle_check_room_availability(
         )
 
     # Live Mode Execution via Authoritative Integration Adapter
-    if business_config.get("execution_mode") == "live":
+    if biz_id and business_config.get("execution_mode") != "unavailable":
         try:
             from backend.integrations.resolver import resolve_tool_adapter
 
@@ -183,7 +183,7 @@ def handle_create_room_booking(
         )
 
     # Live Mode Execution via Authoritative Integration Adapter
-    if business_config.get("execution_mode") == "live":
+    if biz_id and business_config.get("execution_mode") != "unavailable":
         try:
             from backend.integrations.resolver import resolve_tool_adapter
 

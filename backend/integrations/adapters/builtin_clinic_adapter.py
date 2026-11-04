@@ -427,8 +427,10 @@ class BuiltinClinicAdapter(ReservationAdapterInterface):
         party_size: int = 1,
         start_time: Optional[datetime] = None,
         end_time: Optional[datetime] = None,
+        resource_type: str = "practitioner",
         special_requests: Optional[str] = None,
         idempotency_key: Optional[str] = None,
+        **kwargs: Any,
     ) -> Dict[str, Any]:
         """Commit clinical appointment to database."""
         db_service = get_database_service()
@@ -438,8 +440,8 @@ class BuiltinClinicAdapter(ReservationAdapterInterface):
             customer_phone=customer_phone,
             party_size=party_size,
             start_time=start_time,
-            end_time=end_time,
-            resource_type="practitioner",
+            end_time=end_dt if (end_dt := end_time) else None,
+            resource_type=resource_type or "practitioner",
             special_requests=special_requests,
             idempotency_key=idempotency_key,
         )
@@ -448,6 +450,9 @@ class BuiltinClinicAdapter(ReservationAdapterInterface):
             "success": True,
             "status": "confirmed",
             "booking_reference": booking["id"],
+            "appointment_reference": booking["id"],
+            "doctor_name": booking.get("resource_name"),
+            "practitioner_name": booking.get("resource_name"),
             "room_name": booking.get("resource_name"),
             "table_name": booking.get("resource_name"),
             "customer_name": booking["customer_name"],
@@ -463,6 +468,7 @@ class BuiltinClinicAdapter(ReservationAdapterInterface):
         self,
         reservation_id: str,
         customer_phone: Optional[str] = None,
+        **kwargs: Any,
     ) -> bool:
         """Cancel clinical appointment in database."""
         db_service = get_database_service()
