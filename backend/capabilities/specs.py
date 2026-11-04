@@ -1143,6 +1143,55 @@ TOOL_CAPABILITY_SPECS: Dict[str, ToolCapabilityRequirement] = {
             ),
         ],
     ),
+
+    # ---------------------------------------------------------------------------
+    # Hotel Room Pricing & Amenities Catalog
+    # ---------------------------------------------------------------------------
+    "query_room_pricing": ToolCapabilityRequirement(
+        tool_id="query_room_pricing",
+        version="1.0.0",
+        name="Query Room & Suite Pricing",
+        description="Searches hotel room types, nightly tariffs, bed configurations, room amenities, and breakfast inclusions.",
+        category="Hospitality & Lodging",
+        allowed_canonical_industries=["hotel"],
+        failure_behavior=FailureBehavior.DEGRADED_RESPONSE,
+        requires_confirmation=False,
+        supported_options=[
+            IntegrationOption(
+                option_id="builtin_hotel_rooms",
+                name="Tenant Room Types & Rate Card Store",
+                description="Semantic room search and multi-tenant rate card storage built directly into CallMe.",
+                is_built_in=True,
+                requires_external_connection=False,
+                authoritative_source=AuthoritativeSource.BUILTIN_DATABASE,
+                setup_fields=[
+                    SetupField(
+                        key="currency",
+                        label="Rate Card Currency",
+                        type=FieldType.STRING,
+                        required=False,
+                        default_value="INR",
+                        description="Default currency for room rates (e.g. INR, USD, EUR).",
+                    ),
+                    SetupField(
+                        key="show_amenities",
+                        label="Include Amenities in Voice Responses",
+                        type=FieldType.BOOLEAN,
+                        required=False,
+                        default_value=True,
+                        description="Mention key room amenities (ocean view, balcony, breakfast) in responses.",
+                    ),
+                ],
+                instructions_markdown=(
+                    "### Tenant Room Types & Rate Card Store\n"
+                    "CallMe manages and semantically indexes your hotel room tiers, nightly tariffs, and amenities directly in your tenant database.\n\n"
+                    "**Readiness Requirements:**\n"
+                    "1. Upload your room types with rates, bed types, and amenities under **Room Rates & Amenities**.\n"
+                    "2. The receptionist AI uses semantic search to answer guest room, rate, and amenity inquiries."
+                ),
+            ),
+        ],
+    ),
 }
 
 

@@ -31,6 +31,7 @@ from backend.database.repositories import (
     ReservationConflictError,
     ConnectionRepository,
     MenuItemRepository,
+    RoomTypeRepository,
 )
 
 logger = logging.getLogger(__name__)
@@ -1438,6 +1439,86 @@ class DatabaseService:
         with session_scope(self.session_factory) as session:
             repo = MenuItemRepository(session)
             return repo.delete(item_id, business_id=business_id)
+
+    # -------------------------------------------------------------------------
+    # Hotel Room Types & Rate Card Management (Hospitality Domain)
+    # -------------------------------------------------------------------------
+    def list_room_types(
+        self,
+        business_id: str,
+        category: Optional[str] = None,
+        only_available: bool = True,
+    ) -> List[Dict[str, Any]]:
+        """Retrieve room types and rate cards for a hotel business."""
+        with session_scope(self.session_factory) as session:
+            repo = RoomTypeRepository(session)
+            return repo.list_dicts_for_business(business_id=business_id, category=category, only_available=only_available)
+
+    def upload_room_types(
+        self,
+        business_id: str,
+        items: List[Dict[str, Any]],
+        replace: bool = True,
+    ) -> List[Dict[str, Any]]:
+        """Upload and persist room types for a hotel. Replaces atomically when replace=True."""
+        self.invalidate_profile_cache(business_id)
+        with session_scope(self.session_factory) as session:
+            repo = RoomTypeRepository(session)
+            if replace:
+                created = repo.replace_all_for_business(business_id, items)
+            else:
+                created = repo.bulk_create(business_id, items)
+            return [c.to_dict() for c in created]
+
+    def search_room_types_semantic(
+        self,
+        business_id: str,
+        query: str,
+        category: Optional[str] = None,
+        amenity_preference: Optional[str] = None,
+        guests_count: Optional[int] = None,
+        max_budget_per_night: Optional[float] = None,
+        limit: int = 6,
+    ) -> List[Dict[str, Any]]:
+        """Perform semantic search over a hotel's room types and rate cards."""
+        with session_scope(self.session_factory) as session:
+            repo = RoomTypeRepository(session)
+            return repo.search_semantic(
+                business_id=business_id,
+                query=query,
+                category=category,
+                amenity_preference=amenity_preference,
+                guests_count=guests_count,
+                max_budget_per_night=max_budget_per_night,
+                limit=limit,
+            )
+
+    def get_room_type(self, business_id: str, room_id: str) -> Optional[Dict[str, Any]]:
+        """Fetch a single room type record with tenant verification."""
+        with session_scope(self.session_factory) as session:
+            repo = RoomTypeRepository(session)
+            room = repo.get(room_id, business_id=business_id)
+            return room.to_dict() if room else None
+
+    def update_room_type(
+        self,
+        business_id: str,
+        room_id: str,
+        updates: Dict[str, Any],
+    ) -> Optional[Dict[str, Any]]:
+        """Update an existing room type record."""
+        self.invalidate_profile_cache(business_id)
+        with session_scope(self.session_factory) as session:
+            repo = RoomTypeRepository(session)
+            updated = repo.update(room_id, business_id, updates)
+            return updated.to_dict() if updated else None
+
+    def delete_room_type(self, business_id: str, room_id: str) -> bool:
+        """Delete a room type record."""
+        self.invalidate_profile_cache(business_id)
+        with session_scope(self.session_factory) as session:
+            repo = RoomTypeRepository(session)
+            return repo.delete(room_id, business_id=business_id)
 
 
 _DEFAULT_SERVICE: Optional[DatabaseService] = None

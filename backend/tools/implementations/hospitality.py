@@ -11,10 +11,16 @@ from backend.tools.base import (
     ToolExecutionStatus,
     ToolExecutionMode,
 )
+import logging
+from typing import Dict, Any, Optional, List
+
 from backend.tools.definitions import (
     CheckRoomAvailabilityInput,
     CreateRoomBookingInput,
+    QueryRoomPricingInput,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def format_hotel_reservation_summary(input_data: CreateRoomBookingInput) -> str:
@@ -249,4 +255,133 @@ def handle_create_room_booking(
             f"check-out: {input_data.check_out_date} (by 11:00) for {nights} night{'s' if nights != 1 else ''}. "
             f"Booking reference: {ref_code}."
         ),
+    )
+
+
+def handle_query_room_pricing(
+    input_data: QueryRoomPricingInput,
+    business_config: Dict[str, Any],
+) -> ToolExecutionResult:
+    """
+    Search hotel room catalog for room types, current rates, amenities, bed types, and inclusions.
+    Uses semantic concept matching and dynamic tenant database access mirroring handle_query_menu_pricing.
+    """
+    biz_id = business_config.get("id", "")
+    biz_name = business_config.get("name", "our hotel")
+    raw_mode = business_config.get("execution_mode", "mock")
+    is_live = (str(raw_mode).lower() == "live")
+    exec_mode = ToolExecutionMode.LIVE if is_live else ToolExecutionMode.MOCK
+
+    query = input_data.query.strip()
+    category = input_data.category.strip() if input_data.category else None
+    amenity_pref = input_data.amenity_preference.strip() if input_data.amenity_preference else None
+    guests_count = input_data.guests_count
+    max_budget = input_data.max_budget_per_night
+
+    nights = None
+    if input_data.check_in_date and input_data.check_out_date:
+        try:
+            d_in = datetime.strptime(input_data.check_in_date, "%Y-%m-%d")
+            d_out = datetime.strptime(input_data.check_out_date, "%Y-%m-%d")
+            if d_out > d_in:
+                nights = (d_out - d_in).days
+        except Exception:
+            nights = None
+
+    matching_rooms: List[Dict[str, Any]] = []
+
+    # 1. Authoritative query via DatabaseService
+    try:
+        from backend.database.service import get_database_service
+        db_service = get_database_service()
+        if db_service and biz_id:
+            matching_rooms = db_service.search_room_types_semantic(
+                business_id=biz_id,
+                query=query,
+                category=category,
+                amenity_preference=amenity_pref,
+                guests_count=guests_count,
+                max_budget_per_night=max_budget,
+                limit=6,
+            )
+    except Exception as exc:
+        logger.warning("Database search failed in handle_query_room_pricing: %s", exc)
+
+    # 2. In-memory fallback if DB returned empty and room_types were supplied in business_config
+    if not matching_rooms and "room_types" in business_config and business_config["room_types"]:
+        from backend.database.repositories.room_repo import rank_room_types_semantic
+        matching_rooms = rank_room_types_semantic(
+            rooms=business_config["room_types"],
+            query=query,
+            category=category,
+            amenity_preference=amenity_pref,
+            guests_count=guests_count,
+            max_budget_per_night=max_budget,
+            limit=6,
+        )
+
+    # 3. Assemble response
+    if not matching_rooms:
+        budget_str = f" under ₹{int(max_budget)}/night" if max_budget else ""
+        amenity_str = f" with {amenity_pref}" if amenity_pref else ""
+        return ToolExecutionResult(
+            tool_id="query_room_pricing",
+            status=ToolExecutionStatus.SUCCESS,
+            success=True,
+            is_business_accepted=True,
+            mode=exec_mode,
+            is_simulated=(not is_live),
+            data={
+                "found": False,
+                "count": 0,
+                "query": query,
+                "rooms": [],
+            },
+            message=(
+                f"We currently do not have any room options matching '{query}'{amenity_str}{budget_str} "
+                f"at {biz_name}. Would you like me to check our other luxury suites or look up availability for specific dates?"
+            ),
+        )
+
+    # Format clear spoken voice summary
+    lines = [f"Here are the matching room options at {biz_name}:"]
+    currency_symbol = matching_rooms[0].get("currency", "INR")
+    curr_prefix = "₹" if currency_symbol in ("INR", "₹") else f"{currency_symbol} "
+
+    for r in matching_rooms:
+        p = r.get("base_price", 0.0)
+        formatted_price = f"{curr_prefix}{int(p)}" if p == int(p) else f"{curr_prefix}{p:.2f}"
+        name = r.get("name", "Standard Room")
+        bed = r.get("bed_type") or "King Bed"
+        cap = r.get("max_occupancy", 2)
+        amenities = r.get("amenities") or []
+        inclusions = r.get("inclusions") or []
+
+        amenity_str = f" ({', '.join(amenities[:3])})" if amenities else ""
+        inclusion_str = f" - includes {', '.join(inclusions[:2])}" if inclusions else ""
+
+        if nights and nights > 0:
+            total_est = p * nights
+            total_fmt = f"{curr_prefix}{int(total_est)}" if total_est == int(total_est) else f"{curr_prefix}{total_est:.2f}"
+            lines.append(f"• {name} - {formatted_price}/night ({total_fmt} for {nights} nights) [{bed}, up to {cap} guests]{amenity_str}{inclusion_str}")
+        else:
+            lines.append(f"• {name} - {formatted_price}/night [{bed}, up to {cap} guests]{amenity_str}{inclusion_str}")
+
+    summary_text = "\n".join(lines)
+
+    return ToolExecutionResult(
+        tool_id="query_room_pricing",
+        status=ToolExecutionStatus.SUCCESS,
+        success=True,
+        is_business_accepted=True,
+        mode=exec_mode,
+        is_simulated=(not is_live),
+        data={
+            "found": True,
+            "count": len(matching_rooms),
+            "query": query,
+            "nights": nights,
+            "rooms": matching_rooms,
+        },
+        message=summary_text,
     )

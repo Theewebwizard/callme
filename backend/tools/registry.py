@@ -21,6 +21,7 @@ from backend.tools.definitions import (
     CheckRoomAvailabilityInput,
     CreateRoomBookingInput,
     QueryMenuPricingInput,
+    QueryRoomPricingInput,
 )
 from backend.tools.implementations.information import handle_answer_faq
 from backend.tools.implementations.dining import (
@@ -42,6 +43,7 @@ from backend.tools.implementations.hospitality import (
     handle_check_room_availability,
     handle_create_room_booking,
     format_hotel_reservation_summary,
+    handle_query_room_pricing,
 )
 
 logger = logging.getLogger(__name__)
@@ -50,7 +52,7 @@ logger = logging.getLogger(__name__)
 VALID_EXECUTION_MODES: Set[str] = {"mock", "live", "unavailable"}
 
 # Tools that possess verified live integrations in this repository
-LIVE_VERIFIED_TOOLS: Set[str] = {"answer_faq", "take_message", "query_menu_pricing"}
+LIVE_VERIFIED_TOOLS: Set[str] = {"answer_faq", "take_message", "query_menu_pricing", "query_room_pricing"}
 
 
 class ToolRegistry:
@@ -395,6 +397,24 @@ def build_default_tool_registry() -> ToolRegistry:
             handler=handle_create_room_booking,
             friendly_name="hotel room reservation",
             confirmation_formatter=format_hotel_reservation_summary,
+        )
+    )
+
+    # 6. Query Room & Suite Pricing (Hotel & Hospitality only)
+    registry.register(
+        ToolDefinition(
+            id="query_room_pricing",
+            name="Query Room & Suite Pricing",
+            description="Answers caller inquiries regarding hotel room types, nightly tariffs, suite amenities (ocean view, balcony, bathtub), bed configurations, breakfast inclusions, and stay policies.",
+            category=ToolCategory.HOSPITALITY,
+            icon="🏨",
+            allowed_industries=["Hotel", "Resort", "Hotel & Resort", "Hospitality & Lodging", "Hospitality", "Lodging", "Bed & Breakfast", "Inn"],
+            allowed_canonical_industries=["hotel"],
+            input_schema=QueryRoomPricingInput,
+            requires_confirmation=False,
+            is_implemented=True,
+            execution_mode=ToolExecutionMode.MOCK,
+            handler=handle_query_room_pricing,
         )
     )
 

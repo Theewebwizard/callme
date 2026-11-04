@@ -330,6 +330,26 @@ export const api = {
       body: JSON.stringify({ text, default_category: defaultCategory }),
     }),
 
+  // Hotel Room Types & Rate Card Management (Hospitality Domain)
+  getRooms: (businessId, category = null) => {
+    const q = category ? `?category=${encodeURIComponent(category)}` : '';
+    return request(`/businesses/${businessId}/rooms${q}`);
+  },
+  uploadRooms: (businessId, items, replace = true) =>
+    request(`/businesses/${businessId}/rooms/upload`, {
+      method: 'POST',
+      body: JSON.stringify({ items, replace }),
+    }),
+  deleteRoomType: (businessId, roomId) =>
+    request(`/businesses/${businessId}/rooms/${roomId}`, { method: 'DELETE' }),
+  searchRooms: (businessId, query) =>
+    request(`/businesses/${businessId}/rooms/search?query=${encodeURIComponent(query)}`, { method: 'POST' }),
+  parseRoomText: (businessId, text, defaultCategory = 'Rooms') =>
+    request(`/businesses/${businessId}/rooms/parse-text`, {
+      method: 'POST',
+      body: JSON.stringify({ text, default_category: defaultCategory }),
+    }),
+
   // Admin Command Center
   getAdminOverview: () => request('/admin/overview'),
   getAdminTools: () => request('/admin/tools'),
@@ -346,5 +366,11 @@ export const uploadMenu = (businessId, items, replace = true) => api.uploadMenu(
 export const deleteMenuItem = (businessId, itemId) => api.deleteMenuItem(businessId, itemId);
 export const searchMenu = (businessId, query) => api.searchMenu(businessId, query);
 export const parseMenuText = (businessId, text, defaultCategory = 'Mains') => api.parseMenuText(businessId, text, defaultCategory);
+
+export const getRooms = (businessId, category = null) => api.getRooms(businessId, category);
+export const uploadRooms = (businessId, items, replace = true) => api.uploadRooms(businessId, items, replace);
+export const deleteRoomType = (businessId, roomId) => api.deleteRoomType(businessId, roomId);
+export const searchRooms = (businessId, query) => api.searchRooms(businessId, query);
+export const parseRoomText = (businessId, text, defaultCategory = 'Rooms') => api.parseRoomText(businessId, text, defaultCategory);
 
 export default api;

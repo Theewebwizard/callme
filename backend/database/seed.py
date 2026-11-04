@@ -30,6 +30,7 @@ from backend.database.repositories import (
     ConversationRepository,
     ResourceRepository,
     MenuItemRepository,
+    RoomTypeRepository,
 )
 from backend.database.seed_data import INITIAL_BUSINESSES, INITIAL_TOOLS, MOCK_CALL_HISTORY
 
@@ -104,6 +105,24 @@ def _get_default_tool_metadata(tool_id: str, business_data: Dict[str, Any]) -> D
                 "default_category": "Mains",
             },
         }
+    elif tool_id == "query_room_pricing":
+        return {
+            "selected_option_id": "builtin_hotel_rooms",
+            "configuration": {
+                "currency": "INR",
+                "show_amenities": True,
+            },
+        }
+    elif tool_id in ("check_room_availability", "create_room_booking"):
+        return {
+            "selected_option_id": "builtin_booking",
+            "configuration": {
+                "business_type": "hotel",
+                "check_in_time": "14:00",
+                "check_out_time": "11:00",
+                "max_stay_nights": 30,
+            },
+        }
     elif tool_id == "answer_faq":
         return {
             "selected_option_id": "builtin_knowledge_base",
@@ -160,6 +179,7 @@ def seed_database(
         conv_repo = ConversationRepository(sess)
         res_repo = ResourceRepository(sess)
         menu_repo = MenuItemRepository(sess)
+        room_repo = RoomTypeRepository(sess)
 
         for b_id, b_data in INITIAL_BUSINESSES.items():
             biz = biz_repo.get(b_id)
@@ -219,6 +239,12 @@ def seed_database(
             if not existing_menu and b_data.get("menu_items"):
                 menu_repo.bulk_create(b_id, b_data["menu_items"])
                 logger.info("Seeded %d menu items for tenant %s", len(b_data["menu_items"]), b_id)
+
+            # 3c. Seed Room Types for this business if not yet seeded (Hospitality domain)
+            existing_rooms = room_repo.list_for_business(b_id, only_available=False)
+            if not existing_rooms and b_data.get("room_types"):
+                room_repo.bulk_create(b_id, b_data["room_types"])
+                logger.info("Seeded %d room types for tenant %s", len(b_data["room_types"]), b_id)
 
             # 4. Seed Reservable Resources for this business if not yet seeded
             existing_resources = res_repo.list_resources(b_id)

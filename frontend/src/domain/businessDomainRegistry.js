@@ -145,6 +145,13 @@ export const DOMAIN_CONFIGS = {
     key: 'hotel',
     name: 'Hotel & Hospitality',
     hasMenu: false,
+    hasRooms: true,
+    roomConfig: {
+      title: 'Hotel Room Types, Rates & Amenities Store',
+      shortTitle: 'Rooms & Rates',
+      icon: Bed,
+      description: 'Upload and manage room tiers, nightly tariffs, bed configurations, and amenities so your receptionist answers rate and room inquiries in real time.',
+    },
     resourceConfig: {
       title: 'Rooms & Suites Inventory',
       shortTitle: 'Rooms & Suites',

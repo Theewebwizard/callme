@@ -780,6 +780,8 @@ def test_operating_rules_enforcement():
 
     # 3. Beyond booking window (45 days in future)
     far = (now + timedelta(days=45)).replace(hour=14, minute=0, second=0, microsecond=0)
+    while far.weekday() > 4:
+        far += timedelta(days=1)
     allowed_win, reason_win = adapter.is_within_operating_rules(far, far + timedelta(minutes=60), 4)
     assert not allowed_win
     assert "advance" in reason_win

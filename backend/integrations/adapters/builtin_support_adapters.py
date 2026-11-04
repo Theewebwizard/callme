@@ -671,3 +671,191 @@ class BuiltinRestaurantMenuAdapter(IntegrationAdapter):
             safe_message=f"Retrieved {len(items)} menu items for tenant restaurant menu.",
             authoritative_source=self.authoritative_source.value,
         )
+
+
+
+class BuiltinHotelRoomsAdapter(IntegrationAdapter):
+    """
+    First-party authoritative adapter for Hotel Room Types & Rate Card catalog.
+    Evaluates database readiness, room inventory, tariffs, and amenity indexing.
+    """
+
+    @property
+    def authoritative_source(self) -> AuthoritativeSource:
+        return AuthoritativeSource.BUILTIN_DATABASE
+
+    def get_manifest(self) -> ProviderManifest:
+        return ProviderManifest(
+            provider_id="builtin_hotel_rooms",
+            display_name="Built-in Room Types & Rate Card Store",
+            category=IntegrationCategory.SUPPORT,
+            supported_capabilities=[
+                CapabilityType.GET_CUSTOMER,
+            ],
+            auth_method=AuthMethod.INTERNAL,
+            authoritative_source=AuthoritativeSource.BUILTIN_DATABASE,
+            required_setup_fields=[],
+            optional_setup_fields=[
+                SetupField(
+                    key="currency",
+                    label="Rate Card Currency",
+                    type=FieldType.STRING,
+                    required=False,
+                    default_value="INR",
+                    description="Default currency for room rates (e.g. INR, USD, EUR).",
+                ),
+                SetupField(
+                    key="show_amenities",
+                    label="Include Amenities in Voice Responses",
+                    type=FieldType.BOOLEAN,
+                    required=False,
+                    default_value=True,
+                    description="Mention key room amenities (ocean view, balcony, breakfast) in responses.",
+                ),
+            ],
+            required_oauth_scopes=[],
+            partner_approval_required=False,
+            required_resources=["room_types"],
+            webhook_events=[],
+            test_connection_procedure="Checks local database connectivity and tenant room types",
+            known_limitations=[
+                "Room rates and features are strictly grounded in configured hotel rate card. Does not invent unlisted rooms.",
+            ],
+            is_mock=False,
+        )
+
+    def validate_configuration(self, config: Dict[str, Any]) -> ReadinessCheckResult:
+        return ReadinessCheckResult(
+            check_id="room_config_valid",
+            name="Room Catalog Configuration",
+            passed=True,
+            details="Room rate card parameters validated.",
+            severity="info",
+        )
+
+    def connect(self, credentials: Dict[str, Any]) -> ReadinessCheckResult:
+        db_ok = _is_db_connected()
+        return ReadinessCheckResult(
+            check_id="room_db_connection",
+            name="Room Database Connection",
+            passed=db_ok,
+            details="Connected to transactional hotel room store" if db_ok else "Database offline",
+            severity="critical",
+        )
+
+    def test_connection(self) -> ReadinessCheckResult:
+        db_ok = _is_db_connected()
+        return ReadinessCheckResult(
+            check_id="room_test_probe",
+            name="Database Operational Probe",
+            passed=db_ok,
+            details="Room catalog storage online and operational" if db_ok else "Database offline",
+            severity="critical",
+        )
+
+    def discover_resources(self, resource_type: str = "") -> List[DiscoveredResource]:
+        svc = get_database_service()
+        items = svc.list_room_types(self.business_id)
+        return [
+            DiscoveredResource(
+                resource_id=item["id"],
+                name=item["name"],
+                resource_type="room_type",
+                is_default=False,
+                metadata={"base_price": item["base_price"], "category": item.get("category", "Rooms")},
+            )
+            for item in items
+        ]
+
+    def get_supported_capabilities(self) -> List[CapabilityType]:
+        return [CapabilityType.GET_CUSTOMER]
+
+    def assess_readiness(self, db_service: Any = None) -> ReadinessReport:
+        checks: List[ReadinessCheckResult] = []
+        missing: List[str] = []
+        svc = db_service or get_database_service()
+
+        # 1. DB connection check
+        db_ok = _is_db_connected()
+        checks.append(
+            ReadinessCheckResult(
+                check_id="room_db_connection",
+                name="Database Connection",
+                passed=db_ok,
+                details="Connected to tenant room store" if db_ok else "Database connection is offline",
+                severity="critical",
+            )
+        )
+
+        # 2. Config validation
+        checks.append(self.validate_configuration(self.configuration))
+
+        # 3. Operational check
+        if db_ok:
+            try:
+                items = svc.list_room_types(self.business_id)
+                item_count = len(items)
+                if item_count > 0:
+                    checks.append(
+                        ReadinessCheckResult(
+                            check_id="room_types_inventory",
+                            name="Room Types Loaded",
+                            passed=True,
+                            details=f"{item_count} room types available for semantic pricing and amenity queries.",
+                            severity="info",
+                        )
+                    )
+                else:
+                    checks.append(
+                        ReadinessCheckResult(
+                            check_id="room_types_inventory",
+                            name="Room Types Check",
+                            passed=False,
+                            details="No room types loaded. Add rooms under Room Rates & Amenities.",
+                            severity="critical",
+                        )
+                    )
+                    missing.append("Upload at least one room type to your rate card under Room Rates & Amenities.")
+            except Exception as exc:
+                checks.append(
+                    ReadinessCheckResult(
+                        check_id="room_types_inventory",
+                        name="Room Types Check",
+                        passed=False,
+                        details=f"Failed querying room types: {exc}",
+                        severity="critical",
+                    )
+                )
+                missing.append(f"Database error querying room types: {exc}")
+
+        if not db_ok:
+            missing.append("Database connection is required.")
+
+        critical_failures = [c for c in checks if not c.passed and c.severity == "critical"]
+        is_ready = len(critical_failures) == 0
+
+        now_str = datetime.now(timezone.utc).isoformat()
+        return ReadinessReport(
+            is_ready=is_ready,
+            status=CapabilityStatus.READY if is_ready else CapabilityStatus.DEGRADED,
+            checks=checks,
+            missing_requirements=missing,
+            checked_at=now_str,
+        )
+
+    def execute(
+        self,
+        operation: CapabilityType,
+        input_data: Dict[str, Any],
+        context: ExecutionContext,
+    ) -> CapabilityResult:
+        svc = get_database_service()
+        items = svc.list_room_types(self.business_id)
+        return CapabilityResult(
+            operation=operation,
+            outcome=ExecutionOutcome.OPERATION_COMPLETED,
+            success=True,
+            data={"room_types_count": len(items)},
+            safe_message=f"Retrieved {len(items)} room types for tenant hotel rate card.",
+            authoritative_source=self.authoritative_source.value,
+        )

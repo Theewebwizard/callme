@@ -23,10 +23,12 @@ import {
   Lock,
   ExternalLink,
   Utensils,
+  Bed,
 } from 'lucide-react';
 import { api } from '../api';
 import BookingCalendarView from './BookingCalendarView';
 import MenuManagerModal, { MenuManagerView } from './MenuManagerModal';
+import RoomManagerModal, { RoomManagerView } from './RoomManagerModal';
 import { getDomainForBusiness } from '../domain/businessDomainRegistry';
 import ResourceInventoryCard from './ResourceInventoryCard';
 
@@ -41,6 +43,7 @@ const TOOL_ICONS = {
   take_message: MessageSquare,
   transfer_call: PhoneForwarded,
   query_menu_pricing: Utensils,
+  query_room_pricing: Bed,
 };
 
 const DEMAND_CATEGORIES = [
@@ -80,6 +83,8 @@ export default function ToolLibrary({ business }) {
   const [wizardOpen, setWizardOpen] = useState(false);
   const [menuModalOpen, setMenuModalOpen] = useState(false);
   const [menuItemCount, setMenuItemCount] = useState(17);
+  const [roomModalOpen, setRoomModalOpen] = useState(false);
+  const [roomCount, setRoomCount] = useState(0);
   const [wizardTool, setWizardTool] = useState(null);
   const [wizardSchema, setWizardSchema] = useState(null);
   const [wizardStep, setWizardStep] = useState(1); // 1: Option, 2: Fields, 3: Validate, 4: Ready
@@ -107,7 +112,10 @@ export default function ToolLibrary({ business }) {
     if (activeTab === 'menu' && !domainConfig.hasMenu) {
       setActiveTab('capabilities');
     }
-  }, [domainConfig.hasMenu, activeTab]);
+    if (activeTab === 'rooms' && !domainConfig.hasRooms) {
+      setActiveTab('capabilities');
+    }
+  }, [domainConfig.hasMenu, domainConfig.hasRooms, activeTab]);
 
   const loadData = async () => {
     setLoading(true);
@@ -128,6 +136,7 @@ export default function ToolLibrary({ business }) {
       setResources(resList || []);
       setReservations(bookingList || []);
       api.getMenu(business.id).then((r) => r?.items && setMenuItemCount(r.items.length)).catch(() => {});
+      api.getRooms(business.id).then((r) => r?.items && setRoomCount(r.items.length)).catch(() => {});
 
       // 2. Fetch full live readiness reports (can take ~10s to audit all integration check engines)
       api.getCapabilities(business.id)
@@ -157,6 +166,7 @@ export default function ToolLibrary({ business }) {
       setResources(resList || []);
       setReservations(bookingList || []);
       api.getMenu(business.id).then((r) => r?.items && setMenuItemCount(r.items.length)).catch(() => {});
+      api.getRooms(business.id).then((r) => r?.items && setRoomCount(r.items.length)).catch(() => {});
     } catch (err) {
       console.error('Failed to load resources:', err);
     } finally {
@@ -569,6 +579,23 @@ export default function ToolLibrary({ business }) {
           </button>
         )}
 
+        {domainConfig.hasRooms && (
+          <button
+            className={`btn-secondary ${activeTab === 'rooms' ? 'active' : ''}`}
+            style={{
+              background: activeTab === 'rooms' ? '#ffffff' : 'var(--bg-card)',
+              borderColor: activeTab === 'rooms' ? '#ffffff' : 'var(--border-medium)',
+              color: activeTab === 'rooms' ? '#07080a' : 'var(--text-secondary)',
+              fontWeight: 600,
+              padding: '0.45rem 0.95rem',
+              fontSize: '0.8rem',
+            }}
+            onClick={() => setActiveTab('rooms')}
+          >
+            <Bed size={14} /> 🏨 {domainConfig.roomConfig?.shortTitle || 'Rooms & Rates'} ({roomCount})
+          </button>
+        )}
+
         <button
           className={`btn-secondary ${activeTab === 'resources' ? 'active' : ''}`}
           style={{
@@ -829,6 +856,17 @@ export default function ToolLibrary({ business }) {
                                   <span>Menu</span>
                                 </button>
                               )}
+                              {t.id === 'query_room_pricing' && domainConfig.hasRooms && (
+                                <button
+                                  type="button"
+                                  className="cap-menu-btn"
+                                  onClick={() => setRoomModalOpen(true)}
+                                  title="Upload and manage hotel room types and rates"
+                                >
+                                  <Bed size={12} />
+                                  <span>Rooms</span>
+                                </button>
+                              )}
                               <button
                                 type="button"
                                 className="btn-secondary"
@@ -882,6 +920,7 @@ export default function ToolLibrary({ business }) {
             onMenuUpdated={() => {
               loadData();
               api.getMenu(business.id).then((r) => r?.items && setMenuItemCount(r.items.length)).catch(() => {});
+      api.getRooms(business.id).then((r) => r?.items && setRoomCount(r.items.length)).catch(() => {});
             }}
           />
         </div>
@@ -1380,6 +1419,14 @@ export default function ToolLibrary({ business }) {
         isOpen={menuModalOpen}
         onClose={() => setMenuModalOpen(false)}
         onMenuUpdated={loadData}
+      />
+
+      {/* Standalone Room Manager Modal */}
+      <RoomManagerModal
+        business={business}
+        isOpen={roomModalOpen}
+        onClose={() => setRoomModalOpen(false)}
+        onRoomsUpdated={loadData}
       />
     </section>
   );

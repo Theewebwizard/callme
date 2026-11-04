@@ -15,6 +15,7 @@ from backend.database.repositories.resource_repo import ResourceRepository
 from backend.database.repositories.reservation_repo import ReservationRepository, ReservationConflictError
 from backend.database.repositories.connection_repo import ConnectionRepository
 from backend.database.repositories.menu_repo import MenuItemRepository
+from backend.database.repositories.room_repo import RoomTypeRepository
 
 __all__ = [
     "BaseRepository",
@@ -31,4 +32,5 @@ __all__ = [
     "ReservationConflictError",
     "ConnectionRepository",
     "MenuItemRepository",
+    "RoomTypeRepository",
 ]

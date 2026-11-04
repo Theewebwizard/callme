@@ -66,6 +66,7 @@ class Business(Base):
     reservable_resources = relationship("ReservableResource", back_populates="business", cascade="all, delete-orphan", lazy="select")
     reservations = relationship("Reservation", back_populates="business", cascade="all, delete-orphan", lazy="select")
     menu_items = relationship("MenuItem", back_populates="business", cascade="all, delete-orphan", lazy="select")
+    room_types = relationship("RoomType", back_populates="business", cascade="all, delete-orphan", lazy="select")
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert model to dictionary representation."""
@@ -157,6 +158,66 @@ class MenuItem(Base):
             "description": self.description or "",
             "dietary_tags": self.dietary_tags or [],
             "spice_level": self.spice_level or "medium",
+            "is_available": self.is_available,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+        }
+
+
+class RoomType(Base):
+    """
+    Business-specific hotel room type and rate card record.
+    Used for semantic room retrieval, rate inquiries, capacity filtering, and amenities matching.
+    """
+    __tablename__ = "room_types"
+
+    id = Column(String(64), primary_key=True, default=lambda: f"room_{uuid.uuid4().hex[:12]}")
+    business_id = Column(String(64), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
+    name = Column(String(255), nullable=False, index=True)
+    category = Column(String(100), nullable=False, index=True)  # e.g., 'Rooms', 'Suites', 'Villas', 'Penthouses'
+    base_price = Column(Float, nullable=False)
+    weekend_price = Column(Float, nullable=True)
+    currency = Column(String(10), default="INR", nullable=False)
+    description = Column(Text, nullable=True)
+    bed_type = Column(String(100), default="1 King Bed", nullable=False)
+    max_occupancy = Column(Integer, default=2, nullable=False)
+    max_adults = Column(Integer, default=2, nullable=False)
+    max_children = Column(Integer, default=1, nullable=False)
+    amenities = Column(JSON, default=list, nullable=False)  # e.g., ['Ocean View', 'Balcony', 'Bathtub', 'High-Speed Wi-Fi']
+    inclusions = Column(JSON, default=list, nullable=False)  # e.g., ['Breakfast Included', 'Airport Transfer', 'Pool Access']
+    check_in_time = Column(String(10), default="14:00", nullable=False)
+    check_out_time = Column(String(10), default="11:00", nullable=False)
+    cancellation_policy = Column(String(255), default="Free cancellation up to 48 hours prior to arrival", nullable=False)
+    is_available = Column(Boolean, default=True, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
+
+    business = relationship("Business", back_populates="room_types")
+
+    __table_args__ = (
+        Index("ix_room_business_category", "business_id", "category"),
+    )
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert room type to dictionary representation."""
+        return {
+            "id": self.id,
+            "business_id": self.business_id,
+            "name": self.name,
+            "category": self.category,
+            "base_price": self.base_price,
+            "weekend_price": self.weekend_price if self.weekend_price is not None else self.base_price,
+            "currency": self.currency,
+            "description": self.description or "",
+            "bed_type": self.bed_type or "1 King Bed",
+            "max_occupancy": self.max_occupancy,
+            "max_adults": self.max_adults,
+            "max_children": self.max_children,
+            "amenities": self.amenities or [],
+            "inclusions": self.inclusions or [],
+            "check_in_time": self.check_in_time or "14:00",
+            "check_out_time": self.check_out_time or "11:00",
+            "cancellation_policy": self.cancellation_policy or "Free cancellation up to 48 hours prior to arrival",
             "is_available": self.is_available,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,

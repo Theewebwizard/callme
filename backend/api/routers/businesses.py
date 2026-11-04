@@ -663,3 +663,243 @@ def parse_menu_text(
         "count": len(parsed_items),
         "items": parsed_items,
     }
+
+
+# =============================================================================
+# Hotel Room Types & Rate Card Endpoints (Hospitality Domain)
+# =============================================================================
+
+class RoomTypePayload(BaseModel):
+    name: str = Field(..., min_length=1, max_length=255)
+    category: str = Field(..., min_length=1, max_length=100)
+    base_price: float = Field(..., ge=0)
+    weekend_price: Optional[float] = Field(None, ge=0)
+    currency: str = Field("INR", max_length=10)
+    description: Optional[str] = Field(None, max_length=1000)
+    bed_type: Optional[str] = Field("1 King Bed", max_length=100)
+    max_occupancy: int = Field(2, ge=1, le=20)
+    max_adults: int = Field(2, ge=1, le=20)
+    max_children: int = Field(1, ge=0, le=10)
+    amenities: Optional[List[str]] = Field(default_factory=list)
+    inclusions: Optional[List[str]] = Field(default_factory=list)
+    check_in_time: Optional[str] = Field("14:00", max_length=10)
+    check_out_time: Optional[str] = Field("11:00", max_length=10)
+    cancellation_policy: Optional[str] = Field("Free cancellation up to 48 hours prior to arrival", max_length=255)
+    is_available: bool = True
+
+
+class RoomUploadRequest(BaseModel):
+    items: List[RoomTypePayload] = Field(..., min_length=1)
+    replace: bool = Field(True, description="When true, replaces all existing rooms. When false, appends new rooms.")
+
+
+@router.get("/{business_id}/rooms")
+def get_business_rooms(
+    business_id: str,
+    category: Optional[str] = None,
+    only_available: bool = False,
+) -> Dict[str, Any]:
+    """Retrieve full room types and rate cards for a hotel tenant."""
+    db_service = get_database_service()
+    if not db_service.business_exists(business_id):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Business tenant '{business_id}' not found.",
+        )
+    items = db_service.list_room_types(business_id, category=category, only_available=only_available)
+    return {
+        "success": True,
+        "business_id": business_id,
+        "count": len(items),
+        "items": items,
+    }
+
+
+@router.post("/{business_id}/rooms/upload")
+def upload_business_rooms(
+    business_id: str,
+    req: RoomUploadRequest,
+    principal: AuthenticatedPrincipal = Depends(verify_business_access),
+) -> Dict[str, Any]:
+    """Upload and persist structured hotel room types with rate cards and amenities."""
+    db_service = get_database_service()
+    if not db_service.business_exists(business_id):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Business tenant '{business_id}' not found.",
+        )
+    item_dicts = [item.model_dump() for item in req.items]
+    persisted = db_service.upload_room_types(business_id, item_dicts, replace=req.replace)
+    return {
+        "success": True,
+        "business_id": business_id,
+        "count": len(persisted),
+        "message": f"Successfully {'replaced' if req.replace else 'added'} {len(persisted)} room types for business '{business_id}'.",
+        "items": persisted,
+    }
+
+
+@router.delete("/{business_id}/rooms/{room_id}")
+def delete_business_room_type(
+    business_id: str,
+    room_id: str,
+    principal: AuthenticatedPrincipal = Depends(verify_business_access),
+) -> Dict[str, Any]:
+    """Delete a specific room type from hotel rate card."""
+    db_service = get_database_service()
+    deleted = db_service.delete_room_type(business_id, room_id)
+    if not deleted:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Room type '{room_id}' not found for business '{business_id}'.",
+        )
+    return {
+        "success": True,
+        "message": f"Room type '{room_id}' successfully deleted.",
+    }
+
+
+@router.post("/{business_id}/rooms/search")
+def search_business_rooms(
+    business_id: str,
+    query: str,
+    category: Optional[str] = None,
+    amenity_preference: Optional[str] = None,
+    guests_count: Optional[int] = None,
+    max_budget: Optional[float] = None,
+) -> Dict[str, Any]:
+    """Semantically search hotel room types and rates."""
+    db_service = get_database_service()
+    results = db_service.search_room_types_semantic(
+        business_id=business_id,
+        query=query,
+        category=category,
+        amenity_preference=amenity_preference,
+        guests_count=guests_count,
+        max_budget_per_night=max_budget,
+    )
+    return {
+        "success": True,
+        "business_id": business_id,
+        "query": query,
+        "count": len(results),
+        "items": results,
+    }
+
+
+class ParseRoomTextRequest(BaseModel):
+    text: str = Field(..., min_length=1)
+    default_category: Optional[str] = "Rooms"
+
+
+@router.post("/{business_id}/rooms/parse-text")
+def parse_room_text(
+    business_id: str,
+    req: ParseRoomTextRequest,
+    principal: AuthenticatedPrincipal = Depends(verify_business_access),
+) -> Dict[str, Any]:
+    """
+    Parse unstructured or pasted hotel room brochure text into structured room objects.
+    Enables hotel managers to paste their room descriptions and rate sheet directly.
+    """
+    lines = req.text.strip().splitlines()
+    current_category = req.default_category or "Rooms"
+    parsed_items = []
+
+    for line in lines:
+        raw_line = line.strip()
+        if not raw_line or len(raw_line) < 3:
+            continue
+
+        # Check for category header (e.g. "[Suites]" or "--- Executive Villas ---")
+        cat_header_match = re.match(r'^[#\-*=\[\s]*(Suites|Rooms|Villas|Penthouses|Cottages|Deluxe)[#\-*=\]\s]*$', raw_line, re.IGNORECASE)
+        if cat_header_match:
+            current_category = cat_header_match.group(1).title()
+            continue
+
+        # Regex for price detection
+        matches = list(re.finditer(r'(?:₹|INR|Rs\.?|\$)\s*([\d,]+(?:\.\d{1,2})?)|([\d,]+(?:\.\d{1,2})?)\s*(?:₹|INR|Rs\.?|\$|per\s*night|/\s*night)', raw_line, re.IGNORECASE))
+        if not matches:
+            continue
+
+        price_match = matches[-1]
+        raw_price_str = (price_match.group(1) or price_match.group(2) or "").replace(",", "")
+        try:
+            price_val = float(raw_price_str)
+        except (ValueError, TypeError):
+            continue
+
+        start_idx, end_idx = price_match.span()
+        name_part = (raw_line[:start_idx] + " " + raw_line[end_idx:]).strip()
+        name_part = re.sub(r'[\-–—:\.\(\)]+$', '', name_part).strip()
+        name_part = re.sub(r'^[\-–—:\.\*\#]+', '', name_part).strip()
+
+        if len(name_part) < 2:
+            continue
+
+        desc = ""
+        desc_match = re.search(r'\((.*?)\)', name_part)
+        if desc_match:
+            desc = desc_match.group(1).strip()
+            name_part = re.sub(r'\(.*?\)', '', name_part).strip()
+
+        name_part = re.sub(r'[\-–—:\.\s]+$', '', name_part).strip()
+        name_part = re.sub(r'^[\-–—:\.\*\#\s]+', '', name_part).strip()
+
+        cat = current_category
+        nl = name_part.lower()
+        if any(w in nl for w in ["suite", "penthouse"]):
+            cat = "Suites"
+        elif any(w in nl for w in ["villa", "cottage", "bungalow"]):
+            cat = "Villas"
+        elif any(w in nl for w in ["room", "deluxe", "superior", "standard"]):
+            cat = "Rooms"
+
+        amenities = []
+        if any(w in nl or w in desc.lower() for w in ["ocean view", "sea view", "beach view"]):
+            amenities.append("Ocean View")
+        if any(w in nl or w in desc.lower() for w in ["balcony", "terrace", "deck"]):
+            amenities.append("Balcony")
+        if any(w in nl or w in desc.lower() for w in ["pool", "private pool", "plunge pool"]):
+            amenities.append("Private Pool")
+        if any(w in nl or w in desc.lower() for w in ["bathtub", "tub", "jacuzzi"]):
+            amenities.append("Bathtub")
+        if not amenities:
+            amenities = ["Wi-Fi", "Air Conditioning", "En-suite Bathroom"]
+
+        inclusions = []
+        if any(w in nl or w in desc.lower() for w in ["breakfast", "bfast"]):
+            inclusions.append("Breakfast Included")
+        if any(w in nl or w in desc.lower() for w in ["transfer", "airport", "shuttle"]):
+            inclusions.append("Airport Transfer")
+
+        bed = "1 King Bed"
+        if "twin" in nl or "twin" in desc.lower():
+            bed = "2 Twin Beds"
+        elif "queen" in nl or "queen" in desc.lower():
+            bed = "1 Queen Bed"
+
+        parsed_items.append({
+            "name": name_part,
+            "category": cat,
+            "base_price": price_val,
+            "weekend_price": price_val * 1.15,
+            "currency": "INR",
+            "description": desc or None,
+            "bed_type": bed,
+            "max_occupancy": 4 if cat in ("Suites", "Villas") else 2,
+            "max_adults": 4 if cat in ("Suites", "Villas") else 2,
+            "max_children": 2 if cat in ("Suites", "Villas") else 1,
+            "amenities": amenities,
+            "inclusions": inclusions or ["Wi-Fi Access"],
+            "check_in_time": "14:00",
+            "check_out_time": "11:00",
+            "cancellation_policy": "Free cancellation up to 48 hours prior to arrival",
+            "is_available": True,
+        })
+
+    return {
+        "success": True,
+        "count": len(parsed_items),
+        "items": parsed_items,
+    }

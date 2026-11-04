@@ -491,3 +491,49 @@ class QueryMenuPricingInput(BaseModel):
         return v.strip() if isinstance(v, str) else v
 
     model_config = ConfigDict(extra="forbid")
+
+
+class QueryRoomPricingInput(BaseModel):
+    """Input payload for searching hotel room types, nightly rates, amenities, bed types, and inclusions."""
+    query: str = Field(
+        ...,
+        min_length=1,
+        max_length=300,
+        description="Room tier, amenity, or feature keyword to search (e.g. 'ocean view suite', 'deluxe king room', 'private pool villa', 'breakfast included', 'rooms with bathtub').",
+    )
+    category: Optional[str] = Field(
+        None,
+        max_length=100,
+        description="Optional room category filter (e.g. Rooms, Suites, Villas, Penthouses).",
+    )
+    amenity_preference: Optional[str] = Field(
+        None,
+        max_length=100,
+        description="Optional amenity filter (e.g. ocean view, balcony, bathtub, private pool, high speed wifi).",
+    )
+    guests_count: Optional[int] = Field(
+        None,
+        ge=1,
+        le=20,
+        description="Optional party size / number of guests to ensure adequate room capacity.",
+    )
+    max_budget_per_night: Optional[float] = Field(
+        None,
+        ge=0,
+        description="Optional maximum budget per night in local currency.",
+    )
+    check_in_date: Optional[str] = Field(
+        None,
+        description="Optional check-in date in YYYY-MM-DD format to compute total estimated stay cost.",
+    )
+    check_out_date: Optional[str] = Field(
+        None,
+        description="Optional check-out date in YYYY-MM-DD format to compute total estimated stay cost.",
+    )
+
+    @field_validator("query", mode="before")
+    @classmethod
+    def clean_query(cls, v: Any) -> Any:
+        return v.strip() if isinstance(v, str) else v
+
+    model_config = ConfigDict(extra="forbid")

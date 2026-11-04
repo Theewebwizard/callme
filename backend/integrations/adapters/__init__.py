@@ -36,6 +36,7 @@ from backend.integrations.adapters.builtin_support_adapters import (
     BuiltinMessagingAdapter,
     SimulatedEscalationAdapter,
     BuiltinRestaurantMenuAdapter,
+    BuiltinHotelRoomsAdapter,
 )
 
 __all__ = [
@@ -52,24 +53,21 @@ __all__ = [
     "BuiltinMessagingAdapter",
     "SimulatedEscalationAdapter",
     "BuiltinRestaurantMenuAdapter",
+    "BuiltinHotelRoomsAdapter",
     "GoogleCalendarAdapter",
     "OutlookCalendarAdapter",
     "OpenTableAdapter",
     "SevenRoomsAdapter",
     "AcuityAdapter",
     "SquareBookingsAdapter",
-    "ExotelTelephonyAdapter",
-    "TwilioMessagingAdapter",
-    "StripePaymentsAdapter",
-    "RazorpayAdapter",
-    "HubspotCrmAdapter",
-    "ZendeskSupportAdapter",
     "ZohoCrmAdapter",
     "SalesforceAdapter",
     "WhatsAppCloudAdapter",
+    "ExotelTelephonyAdapter",
+    "TwilioMessagingAdapter",
+    "StripePaymentsAdapter",
+    "ZendeskSupportAdapter",
     "GmailAdapter",
     "FreshdeskSupportAdapter",
+    "RazorpayAdapter",
 ]
-
-
-
