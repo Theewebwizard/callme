@@ -184,14 +184,14 @@ class BuiltinClinicAdapter(ReservationAdapterInterface):
         checks.append(conn_check)
 
         svc = db_service or get_database_service()
-        rooms = svc.list_resources(self.business_id, resource_type="room", is_active=True)
-        has_inventory = len(rooms) > 0
+        practitioners = svc.list_resources(self.business_id, is_active=True)
+        has_inventory = len(practitioners) > 0
         checks.append(
             ReadinessCheckResult(
                 check_id="resource_inventory",
-                name="Resource Inventory (Suites)",
+                name="Doctor / Practitioner Inventory",
                 passed=has_inventory,
-                details=f"Found {len(rooms)} active suite(s) configured" if has_inventory else "No clinical consultation suites configured",
+                details=f"Found {len(practitioners)} active doctor(s) / practitioner(s) taking appointments" if has_inventory else "No doctors configured for appointment scheduling",
                 severity="critical",
             )
         )
@@ -215,9 +215,9 @@ class BuiltinClinicAdapter(ReservationAdapterInterface):
             checked_at=datetime.now(timezone.utc).isoformat(),
         )
 
-    def discover_resources(self, resource_type: str = "room") -> List[DiscoveredResource]:
+    def discover_resources(self, resource_type: str = "practitioner") -> List[DiscoveredResource]:
         db_service = get_database_service()
-        resources = db_service.list_resources(self.business_id, resource_type=resource_type or "room", is_active=True)
+        resources = db_service.list_resources(self.business_id, is_active=True)
         return [
             DiscoveredResource(
                 resource_id=r["id"],
@@ -225,7 +225,8 @@ class BuiltinClinicAdapter(ReservationAdapterInterface):
                 resource_type=r["resource_type"],
                 metadata={
                     "capacity": r.get("capacity", 1),
-                    "section": r.get("section", "Consultation Suite"),
+                    "section": r.get("section", "Consultant"),
+                    "available_days": (r.get("metadata") or {}).get("available_days", []),
                 },
             )
             for r in resources
@@ -273,7 +274,7 @@ class BuiltinClinicAdapter(ReservationAdapterInterface):
                     outcome=ExecutionOutcome.BUSINESS_REJECTION,
                     success=True,
                     data=avail_res,
-                    safe_message="No clinical consultation rooms available at the requested time.",
+                    safe_message="Doctor is not available at the requested time (weekly off or already booked).",
                     authoritative_source=self.authoritative_source.value,
                 )
 
@@ -388,17 +389,26 @@ class BuiltinClinicAdapter(ReservationAdapterInterface):
         start_time: datetime,
         end_time: datetime,
         party_size: int = 1,
-        resource_type: str = "room",
+        resource_type: str = "practitioner",
     ) -> Dict[str, Any]:
-        """Query available clinical rooms/practitioners from database inventory."""
+        """Query available clinical doctors/practitioners from database inventory."""
         db_service = get_database_service()
+        # Look for practitioner first, fall back to any active resource
         available_rooms = db_service.find_available_resources(
             business_id=self.business_id,
             start_time=start_time,
             end_time=end_time,
             party_size=party_size,
-            resource_type=resource_type,
+            resource_type=resource_type or "practitioner",
         )
+        if not available_rooms and resource_type == "practitioner":
+            available_rooms = db_service.find_available_resources(
+                business_id=self.business_id,
+                start_time=start_time,
+                end_time=end_time,
+                party_size=party_size,
+                resource_type="clinic_room",
+            )
 
         return {
             "available": len(available_rooms) > 0,
@@ -429,7 +439,7 @@ class BuiltinClinicAdapter(ReservationAdapterInterface):
             party_size=party_size,
             start_time=start_time,
             end_time=end_time,
-            resource_type="room",
+            resource_type="practitioner",
             special_requests=special_requests,
             idempotency_key=idempotency_key,
         )

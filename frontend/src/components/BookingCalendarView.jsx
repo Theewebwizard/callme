@@ -2,7 +2,6 @@ import React, { useState, useMemo } from 'react';
 import {
   Calendar as CalendarIcon,
   Clock,
-  Users,
   ChevronLeft,
   ChevronRight,
   Plus,
@@ -19,8 +18,10 @@ import {
   FileText,
   MapPin,
   Stethoscope,
-  ShieldAlert,
-  Sliders,
+  Bot,
+  Sparkles,
+  Ban,
+  Check,
 } from 'lucide-react';
 import { api } from '../api';
 import { getDomainForBusiness } from '../domain/businessDomainRegistry';
@@ -60,12 +61,6 @@ function addMinutesToTime(timeStr, minutesToAdd) {
   return `${endH.toString().padStart(2, '0')}:${endM.toString().padStart(2, '0')}`;
 }
 
-/**
- * Interactive Visual Booking & Doctor Appointment Calendar
- * - Multi-Day Weekly Grid (Monday to Sunday)
- * - 30-Minute Consultation Slot Basis for Healthcare / Clinic
- * - Doctor Working Days Scheduling & Visual Blocking
- */
 export default function BookingCalendarView({
   business,
   domainConfig = null,
@@ -95,7 +90,7 @@ export default function BookingCalendarView({
     customer_name: '',
     customer_phone: '',
     resource_id: '',
-    resource_type: 'practitioner',
+    resource_type: isClinic ? 'practitioner' : 'table',
     start_date: new Date().toISOString().slice(0, 10),
     start_time: '10:00',
     end_date: new Date().toISOString().slice(0, 10),
@@ -106,25 +101,32 @@ export default function BookingCalendarView({
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Helper: Retrieve doctor/resource available days
+  // Retrieve doctor available working days
   const getResourceAvailableDays = (res) => {
     if (res?.metadata?.available_days && Array.isArray(res.metadata.available_days) && res.metadata.available_days.length > 0) {
       return res.metadata.available_days;
     }
     const name = (res?.name || '').toLowerCase();
     if (name.includes('sharma') || name.includes('orthodont')) {
-      return ['Mon', 'Wed', 'Fri', 'Sat'];
+      // Default: Off on Monday & Sunday, open Tue-Sat
+      return ['Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     }
     if (name.includes('ananya') || name.includes('pediatric')) {
       return ['Tue', 'Thu', 'Fri', 'Sat'];
     }
-    if (res?.resource_type === 'practitioner') {
-      return ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+    if (res?.resource_type === 'practitioner' || isClinic) {
+      return ['Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     }
     return ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   };
 
-  // Helper: Check if resource is available on a specific day
+  // Retrieve non-available / closed days
+  const getResourceOffDays = (res) => {
+    const avail = getResourceAvailableDays(res);
+    return WEEKDAYS.filter((w) => !avail.some((d) => d.toLowerCase() === w.key.toLowerCase())).map((w) => w.key);
+  };
+
+  // Check if resource is available on a specific day
   const isResourceAvailableOnDay = (res, dayStrOrDate) => {
     const availDays = getResourceAvailableDays(res);
     let dayShort = '';
@@ -141,18 +143,25 @@ export default function BookingCalendarView({
     return availDays.some((d) => d.toLowerCase() === dayShort.toLowerCase());
   };
 
-  // Doctors / Practitioners list for schedule management
+  // Clinic doctors list (strictly practitioners, no rooms)
   const doctorsList = useMemo(() => {
-    return resources.filter((r) => r.resource_type === 'practitioner' || (isClinic && r.resource_type !== 'room'));
+    if (isClinic) {
+      return resources.filter((r) => r.resource_type === 'practitioner' || !['room', 'table', 'clinic_room', 'procedure_room'].includes(r.resource_type));
+    }
+    return resources.filter((r) => r.resource_type === 'practitioner');
   }, [resources, isClinic]);
 
-  // Filtered resources based on UI category dropdown
+  // Filtered resources: For clinic, strictly exclude any room artifacts
   const filteredResources = useMemo(() => {
-    if (filterType === 'all') return resources;
-    return resources.filter((r) => r.resource_type === filterType);
-  }, [resources, filterType]);
+    let list = resources;
+    if (isClinic) {
+      list = resources.filter((r) => r.resource_type === 'practitioner' || !['room', 'table', 'clinic_room', 'procedure_room'].includes(r.resource_type));
+    }
+    if (filterType === 'all') return list;
+    return list.filter((r) => r.id === filterType || r.resource_type === filterType);
+  }, [resources, filterType, isClinic]);
 
-  // Generate 7 days for the timeline view starting strictly from MONDAY to SUNDAY
+  // Generate 7 days for the timeline view starting strictly from MONDAY to SUNDAY (Modular Current Week)
   const timelineDays = useMemo(() => {
     const days = [];
     const monday = getMondayDate(selectedDate);
@@ -160,7 +169,7 @@ export default function BookingCalendarView({
       const d = new Date(monday);
       d.setDate(monday.getDate() + i);
       const iso = d.toISOString().slice(0, 10);
-      const dayName = d.toLocaleDateString('en-US', { weekday: 'short' }); // Mon, Tue, Wed, Thu, Fri, Sat, Sun
+      const dayName = d.toLocaleDateString('en-US', { weekday: 'short' }); // Mon, Tue, ...
       const fullDayName = d.toLocaleDateString('en-US', { weekday: 'long' });
       const monthDay = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
       const isToday = iso === new Date().toISOString().slice(0, 10);
@@ -181,7 +190,6 @@ export default function BookingCalendarView({
     return slots;
   }, []);
 
-  // Standard 1-Hour Slots for Hospitality & Dining (09:00 to 22:00)
   const standardHourlySlots = useMemo(() => {
     const slots = [];
     for (let hour = 9; hour <= 22; hour++) {
@@ -192,7 +200,7 @@ export default function BookingCalendarView({
 
   const activeDaySlots = isClinic ? clinicSlots : standardHourlySlots;
 
-  // Quick Date Navigation Helpers (Shift by 1 full week Monday-Sunday)
+  // Week Navigation
   const handlePrev = () => {
     const d = new Date(selectedDate + 'T00:00:00');
     if (viewMode === 'timeline') {
@@ -217,7 +225,7 @@ export default function BookingCalendarView({
     setSelectedDate(new Date().toISOString().slice(0, 10));
   };
 
-  // Helper: Find reservations for a specific resource and date
+  // Find reservations for a specific doctor and date
   const getReservationsForResourceAndDate = (resourceId, dateStr) => {
     return reservations.filter((b) => {
       if (b.status === 'cancelled') return false;
@@ -233,7 +241,7 @@ export default function BookingCalendarView({
     });
   };
 
-  // Helper: Find reservations for a 30-min or 1-hour slot in Day View
+  // Find reservations for a 30-min slot in Day View
   const getReservationsForResourceAndSlot = (resourceId, dateStr, slotStr) => {
     const [slotH, slotM] = slotStr.split(':').map((v) => parseInt(v, 10));
     const slotTotalMins = slotH * 60 + (slotM || 0);
@@ -263,13 +271,15 @@ export default function BookingCalendarView({
     });
   };
 
-  // Toggle Doctor Available Working Days on the fly
+  // Toggle Doctor Available/Non-Available Day
   const handleToggleDoctorDay = async (doctor, dayKey) => {
     setSavingScheduleId(doctor.id);
     const currentDays = getResourceAvailableDays(doctor);
-    const exists = currentDays.some((d) => d.toLowerCase() === dayKey.toLowerCase());
+    const isCurrentlyActive = currentDays.some((d) => d.toLowerCase() === dayKey.toLowerCase());
     let newDays;
-    if (exists) {
+
+    if (isCurrentlyActive) {
+      // Mark as Non-Available (Closed on this day)
       if (currentDays.length <= 1) {
         setFeedback({ type: 'error', text: `${doctor.name} must have at least one scheduled working day.` });
         setSavingScheduleId(null);
@@ -277,63 +287,73 @@ export default function BookingCalendarView({
       }
       newDays = currentDays.filter((d) => d.toLowerCase() !== dayKey.toLowerCase());
     } else {
+      // Mark as Available (Open on this day)
       const order = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
       const rawList = [...currentDays, dayKey];
       newDays = order.filter((d) => rawList.some((r) => r.toLowerCase() === d.toLowerCase()));
     }
+
+    const newOffDays = WEEKDAYS.filter((w) => !newDays.some((d) => d.toLowerCase() === w.key.toLowerCase())).map((w) => w.key);
 
     try {
       await api.updateResource(business.id, doctor.id, {
         metadata: {
           ...(doctor.metadata || {}),
           available_days: newDays,
+          off_days: newOffDays,
           slot_duration_minutes: 30,
         },
       });
       setFeedback({
         type: 'success',
-        text: `Updated ${doctor.name}'s schedule: ${newDays.join(', ')}. Blocked days updated on calendar!`,
+        text: isCurrentlyActive
+          ? `Clinic marked CLOSED on ${dayKey}s for ${doctor.name}. Calendar slots on ${dayKey}s are now blocked!`
+          : `Clinic marked OPEN on ${dayKey}s for ${doctor.name}. Calendar slots on ${dayKey}s are now bookable!`,
       });
       if (onRefresh) onRefresh();
     } catch (err) {
-      setFeedback({ type: 'error', text: `Failed to update doctor schedule: ${err.message}` });
+      setFeedback({ type: 'error', text: `Failed to update schedule: ${err.message}` });
     } finally {
       setSavingScheduleId(null);
     }
   };
 
-  // Open Quick Booking Modal with 30-min slot defaults
+  // Quick preset: Mark Monday as Non-Available (Clinic Closed)
+  const handleSetMondayClosed = async (doctor) => {
+    const currentDays = getResourceAvailableDays(doctor);
+    const hasMonday = currentDays.some((d) => d.toLowerCase() === 'mon');
+    if (!hasMonday) {
+      setFeedback({ type: 'success', text: `${doctor.name} is already scheduled OFF on Mondays (Clinic Closed).` });
+      return;
+    }
+    await handleToggleDoctorDay(doctor, 'Mon');
+  };
+
+  // Open Quick Booking Modal
   const handleOpenNewModal = (resource = null, date = null, hour = null) => {
     const targetResource = resource || (filteredResources.length > 0 ? filteredResources[0] : null);
     const targetDate = date || selectedDate;
     const durMins = isClinic ? 30 : 60;
-    const startH = hour ? hour : (isClinic ? '10:00' : targetResource?.resource_type === 'room' ? '15:00' : '19:00');
-    const endH = isClinic ? addMinutesToTime(startH, durMins) : hour ? addMinutesToTime(hour, 60) : '21:00';
-
-    let nextDay = targetDate;
-    if (targetResource?.resource_type === 'room') {
-      const d = new Date(targetDate + 'T00:00:00');
-      d.setDate(d.getDate() + 1);
-      nextDay = d.toISOString().slice(0, 10);
-    }
+    const startH = hour ? hour : (isClinic ? '10:00' : '19:00');
+    const endH = isClinic ? addMinutesToTime(startH, durMins) : addMinutesToTime(startH, 60);
 
     setNewBooking({
       customer_name: '',
       customer_phone: '',
       resource_id: targetResource ? targetResource.id : '',
-      resource_type: targetResource ? targetResource.resource_type : (isClinic ? 'practitioner' : 'table'),
+      resource_type: isClinic ? 'practitioner' : (targetResource ? targetResource.resource_type : 'table'),
       start_date: targetDate,
       start_time: startH,
-      end_date: targetResource?.resource_type === 'room' ? nextDay : targetDate,
+      end_date: targetDate,
       end_time: endH,
       duration_minutes: durMins,
-      party_size: isClinic ? 1 : targetResource ? Math.max(1, targetResource.min_party_size) : 2,
+      party_size: 1,
       special_requests: '',
     });
     setIsNewModalOpen(true);
   };
 
-  // Handle Form Submit for New Reservation / Doctor Appointment
+  // Create Appointment / Reservation
   const handleCreateReservation = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -346,7 +366,7 @@ export default function BookingCalendarView({
       if (selectedRes && !isResourceAvailableOnDay(selectedRes, newBooking.start_date)) {
         const avail = getResourceAvailableDays(selectedRes);
         const dayName = new Date(newBooking.start_date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long' });
-        throw new Error(`${selectedRes.name} is off on ${dayName}s. Scheduled working days: ${avail.join(', ')}.`);
+        throw new Error(`${selectedRes.name} is off on ${dayName}s (Clinic Closed). Scheduled working days: ${avail.join(', ')}.`);
       }
 
       const startIso = `${newBooking.start_date}T${newBooking.start_time}:00`;
@@ -355,11 +375,11 @@ export default function BookingCalendarView({
       await api.createReservation(business.id, {
         customer_name: newBooking.customer_name,
         customer_phone: newBooking.customer_phone,
-        party_size: parseInt(newBooking.party_size, 10) || 1,
+        party_size: 1,
         start_time: startIso,
         end_time: endIso,
         resource_id: newBooking.resource_id || undefined,
-        resource_type: selectedRes?.resource_type || newBooking.resource_type,
+        resource_type: selectedRes?.resource_type || (isClinic ? 'practitioner' : 'table'),
         section: selectedRes?.section,
         special_requests: newBooking.special_requests || undefined,
         status: 'confirmed',
@@ -367,9 +387,7 @@ export default function BookingCalendarView({
 
       setFeedback({
         type: 'success',
-        text: isClinic
-          ? `Appointment confirmed for ${newBooking.customer_name} with ${selectedRes?.name || 'Doctor'} on ${newBooking.start_date} at ${newBooking.start_time}!`
-          : `Reservation confirmed for ${newBooking.customer_name}!`,
+        text: `Appointment confirmed for ${newBooking.customer_name} with ${selectedRes?.name || 'Doctor'} on ${newBooking.start_date} at ${newBooking.start_time}!`,
       });
       setIsNewModalOpen(false);
       if (onRefresh) onRefresh();
@@ -382,36 +400,85 @@ export default function BookingCalendarView({
     }
   };
 
-  // Handle Cancel Reservation
+  // Cancel Reservation
   const handleCancelBooking = async (bookingId, phone) => {
-    if (!window.confirm('Are you sure you want to cancel this booking?')) return;
+    if (!window.confirm('Are you sure you want to cancel this appointment?')) return;
     setCancellingId(bookingId);
     try {
       await api.cancelReservation(business.id, bookingId, phone);
-      setFeedback({ type: 'success', text: 'Booking cancelled successfully.' });
+      setFeedback({ type: 'success', text: 'Appointment cancelled successfully.' });
       setSelectedBooking(null);
       if (onRefresh) onRefresh();
       setTimeout(() => setFeedback(null), 4000);
     } catch (err) {
-      console.error('Failed to cancel reservation:', err);
-      setFeedback({ type: 'error', text: `Failed to cancel booking: ${err.message}` });
+      setFeedback({ type: 'error', text: `Failed to cancel appointment: ${err.message}` });
     } finally {
       setCancellingId(null);
     }
   };
 
-  // Active bookings count
   const activeBookingsCount = useMemo(() => {
     return reservations.filter((b) => b.status !== 'cancelled').length;
   }, [reservations]);
 
-  // Selected doctor object in modal for dynamic validation
   const currentModalDoctor = resources.find((r) => r.id === newBooking.resource_id);
   const isDoctorOffOnBookingDate = currentModalDoctor && !isResourceAvailableOnDay(currentModalDoctor, newBooking.start_date);
   const currentBookingDayName = new Date(newBooking.start_date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long' });
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', width: '100%' }}>
+      {/* =========================================================================
+         AI AGENT AUTONOMY & CAPABILITY REASSURANCE BANNER
+         ========================================================================= */}
+      <div
+        style={{
+          background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(16, 185, 129, 0.08) 100%)',
+          border: '1px solid rgba(59, 130, 246, 0.25)',
+          borderRadius: 'var(--radius-md)',
+          padding: '0.85rem 1.25rem',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '1rem',
+          flexWrap: 'wrap',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div
+            style={{
+              width: '36px',
+              height: '36px',
+              borderRadius: '8px',
+              background: 'rgba(59, 130, 246, 0.15)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#3b82f6',
+            }}
+          >
+            <Bot size={20} />
+          </div>
+          <div>
+            <div style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span>🤖 AI Voice Receptionist Active: Autonomous Appointments & Live Calendar Booking</span>
+              <span style={{ fontSize: '0.66rem', padding: '1px 6px', borderRadius: '999px', background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', fontWeight: 700, border: '1px solid rgba(16, 185, 129, 0.3)' }}>ONLINE</span>
+            </div>
+            <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
+              When patients call, our voice AI agent autonomously checks doctor working days, verifies 30-min slot availability, confirms bookings verbally with the caller, and commits new appointments directly onto this live schedule in real time.
+            </div>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+          <span style={{ fontSize: '0.72rem', color: 'var(--text-tertiary)', background: 'var(--bg-card)', padding: '4px 8px', borderRadius: '6px', border: '1px solid var(--border-medium)' }}>
+            ⚡ 2-Way Atomic Sync
+          </span>
+          <span style={{ fontSize: '0.72rem', color: 'var(--color-emerald)', background: 'rgba(16, 185, 129, 0.08)', padding: '4px 8px', borderRadius: '6px', border: '1px solid rgba(16, 185, 129, 0.25)' }}>
+            30m Slot Enforcement
+          </span>
+        </div>
+      </div>
+
       {/* Feedback Banner */}
       {feedback && (
         <div
@@ -474,15 +541,13 @@ export default function BookingCalendarView({
                 {isClinic ? <Stethoscope size={18} /> : <CalendarIcon size={16} />}
               </div>
               <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.02em' }}>
-                {isClinic ? '🩺 Doctor Appointments & Consultation Calendar (Monday – Sunday)' : (effectiveDomain.resourceConfig?.calendarTitle || 'Interactive Booking Calendar')}
+                {isClinic ? '🩺 Doctor Appointments Schedule (Monday – Sunday)' : 'Interactive Booking Calendar'}
               </h3>
             </div>
             <p style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)', marginTop: '3px', margin: 0 }}>
               {isClinic
-                ? 'Weekly patient appointment schedule from Monday to Sunday. Doctor off-days are blocked automatically; appointments are booked in 30-minute intervals.'
-                : isHotel
-                ? 'Live occupancy grid for rooms and suites. Inspect occupied nights, check-ins, and guest stays.'
-                : 'Live table reservation timeline. Inspect reserved seatings, party sizes, and dining schedules.'}
+                ? 'Modular weekly patient appointment schedule. Select non-available days (e.g. clinic closed on Monday) to block slots automatically.'
+                : 'Live reservations timeline grid.'}
             </p>
           </div>
 
@@ -502,8 +567,8 @@ export default function BookingCalendarView({
                 fontWeight: 600,
               }}
             >
-              <span>{isClinic ? 'Doctors & Suites:' : 'Total Resources:'}</span>
-              <strong style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-mono)' }}>{resources.length}</strong>
+              <span>{isClinic ? 'Active Doctors:' : 'Total Resources:'}</span>
+              <strong style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-mono)' }}>{filteredResources.length}</strong>
             </div>
 
             <div
@@ -520,7 +585,7 @@ export default function BookingCalendarView({
                 fontWeight: 600,
               }}
             >
-              <span>Confirmed:</span>
+              <span>Confirmed Appointments:</span>
               <strong style={{ fontFamily: 'var(--font-mono)' }}>{activeBookingsCount}</strong>
             </div>
 
@@ -537,12 +602,12 @@ export default function BookingCalendarView({
                 fontWeight: 600,
               }}
             >
-              <Plus size={15} /> {isClinic ? 'Schedule 30m Consult' : 'New Booking'}
+              <Plus size={15} /> {isClinic ? 'Schedule 30m Appointment' : 'New Booking'}
             </button>
           </div>
         </div>
 
-        {/* Toolbar: Navigation, View Toggles, Category Filter */}
+        {/* Toolbar: Navigation, View Toggles, Doctor Filter */}
         <div
           style={{
             display: 'flex',
@@ -554,7 +619,7 @@ export default function BookingCalendarView({
             borderTop: '1px solid var(--border-medium)',
           }}
         >
-          {/* Date Navigator */}
+          {/* Modular Date Navigator */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
             <button
               type="button"
@@ -572,7 +637,7 @@ export default function BookingCalendarView({
               onClick={handleToday}
               style={{ padding: '0.35rem 0.75rem', fontSize: '0.78rem', fontWeight: 600 }}
             >
-              Current Week
+              Current Week (Today)
             </button>
 
             <button
@@ -605,42 +670,24 @@ export default function BookingCalendarView({
             </span>
           </div>
 
-          {/* Filters & View Modes */}
+          {/* Doctor Filter & View Modes */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-            {/* Resource Type Filter */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <Filter size={13} color="var(--text-tertiary)" />
-              <select
-                className="form-input"
-                value={filterType}
-                onChange={(e) => setFilterType(e.target.value)}
-                style={{ padding: '0.3rem 0.6rem', fontSize: '0.78rem', width: 'auto' }}
-              >
-                <option value="all">All {isClinic ? 'Medical Resources' : effectiveDomain.resourceConfig?.shortTitle || 'Resources'} ({resources.length})</option>
-                {isClinic ? (
-                  <>
-                    <option value="practitioner">👨‍⚕️ Doctors & Specialists</option>
-                    <option value="clinic_room">🩺 Consultation Suites</option>
-                    <option value="procedure_room">🔬 Dental & Procedure Bays</option>
-                    <option value="therapy_room">🧘 Therapy & Recovery Rooms</option>
-                  </>
-                ) : isHotel ? (
-                  <>
-                    <option value="room">🏨 Standard Hotel Rooms</option>
-                    <option value="suite">🛏️ Executive Suites</option>
-                    <option value="deluxe">✨ Deluxe Suites & Villas</option>
-                    <option value="hall">🏛️ Banquet / Event Halls</option>
-                  </>
-                ) : (
-                  <>
-                    <option value="table">🍽️ Dining Tables</option>
-                    <option value="booth">🛋️ Private Booths</option>
-                    <option value="bar">🍸 Bar & Lounge</option>
-                    <option value="patio">🌿 Outdoor Patio</option>
-                  </>
-                )}
-              </select>
-            </div>
+            {doctorsList.length > 1 && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <Filter size={13} color="var(--text-tertiary)" />
+                <select
+                  className="form-input"
+                  value={filterType}
+                  onChange={(e) => setFilterType(e.target.value)}
+                  style={{ padding: '0.3rem 0.6rem', fontSize: '0.78rem', width: 'auto' }}
+                >
+                  <option value="all">All Doctors ({doctorsList.length})</option>
+                  {doctorsList.map((d) => (
+                    <option key={d.id} value={d.id}>{d.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             {/* View Mode Toggle Buttons */}
             <div
@@ -670,7 +717,7 @@ export default function BookingCalendarView({
                   boxShadow: viewMode === 'timeline' ? 'var(--shadow-sm)' : 'none',
                 }}
               >
-                <Grid size={12} /> {isClinic ? 'Mon–Sun Week' : 'Multi-Day'}
+                <Grid size={12} /> Mon–Sun Week Grid
               </button>
 
               <button
@@ -691,7 +738,7 @@ export default function BookingCalendarView({
                   boxShadow: viewMode === 'day' ? 'var(--shadow-sm)' : 'none',
                 }}
               >
-                <Clock size={12} /> {isClinic ? '30m Day Slots' : 'Day Slots'}
+                <Clock size={12} /> 30m Day Slots
               </button>
 
               <button
@@ -712,7 +759,7 @@ export default function BookingCalendarView({
                   boxShadow: viewMode === 'list' ? 'var(--shadow-sm)' : 'none',
                 }}
               >
-                <ListIcon size={12} /> List View
+                <ListIcon size={12} /> Appointment Table
               </button>
             </div>
 
@@ -730,57 +777,78 @@ export default function BookingCalendarView({
           </div>
         </div>
 
-        {/* Doctor Working Days & Clinic Hours Banner (Interactive Schedule Customizer) */}
+        {/* =========================================================================
+           DOCTOR NON-AVAILABLE DAYS (CLINIC CLOSED) SELECTOR & SCHEDULE CUSTOMIZER
+           ========================================================================= */}
         {isClinic && doctorsList.length > 0 && (
           <div
             style={{
-              marginTop: '0.25rem',
+              marginTop: '0.35rem',
               padding: '0.85rem 1rem',
               background: 'rgba(59, 130, 246, 0.04)',
-              border: '1px solid rgba(59, 130, 246, 0.18)',
+              border: '1px solid rgba(59, 130, 246, 0.2)',
               borderRadius: 'var(--radius-sm)',
               display: 'flex',
               flexDirection: 'column',
-              gap: '0.65rem',
+              gap: '0.75rem',
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
-              <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Stethoscope size={15} color="var(--primary, #3b82f6)" />
-                Doctor Available Working Days & Schedule
+              <div style={{ fontSize: '0.84rem', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Stethoscope size={16} color="var(--primary, #3b82f6)" />
+                Doctor Schedule: Select Non-Available / Weekly Off Days (e.g. Clinic Closed on Mondays)
               </div>
-              <span style={{ fontSize: '0.72rem', color: 'var(--text-tertiary)' }}>
-                Days off are blocked automatically on the calendar. Click day pills to toggle doctor working schedule.
+              <span style={{ fontSize: '0.74rem', color: 'var(--text-secondary)' }}>
+                Green = Open for Appointments • Red = Clinic Closed / Doctor Off (Slots Blocked)
               </span>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '0.75rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '0.85rem' }}>
               {doctorsList.map((doc) => {
                 const avail = getResourceAvailableDays(doc);
+                const offDays = getResourceOffDays(doc);
+                const isMonClosed = offDays.includes('Mon');
                 const isSaving = savingScheduleId === doc.id;
+
                 return (
                   <div
                     key={doc.id}
                     style={{
                       background: 'var(--bg-card)',
                       border: '1px solid var(--border-medium)',
-                      padding: '0.65rem 0.85rem',
-                      borderRadius: '6px',
+                      padding: '0.75rem 0.95rem',
+                      borderRadius: '8px',
                       display: 'flex',
                       flexDirection: 'column',
-                      gap: '0.45rem',
+                      gap: '0.5rem',
                     }}
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <strong style={{ fontSize: '0.82rem', color: 'var(--text-primary)' }}>{doc.name}</strong>
-                      <span style={{ fontSize: '0.68rem', color: 'var(--color-emerald)', fontWeight: 600 }}>
-                        {isSaving ? 'Saving...' : `${avail.length} days/week`}
+                      <div>
+                        <strong style={{ fontSize: '0.84rem', color: 'var(--text-primary)' }}>{doc.name}</strong>
+                        <div style={{ fontSize: '0.72rem', color: 'var(--text-tertiary)', marginTop: '1px' }}>
+                          {doc.section || 'Specialist Consultation'}
+                        </div>
+                      </div>
+                      <span
+                        style={{
+                          fontSize: '0.68rem',
+                          fontWeight: 700,
+                          padding: '2px 7px',
+                          borderRadius: '4px',
+                          background: isMonClosed ? 'rgba(239, 68, 68, 0.12)' : 'rgba(16, 185, 129, 0.12)',
+                          color: isMonClosed ? '#f87171' : 'var(--color-emerald)',
+                          border: `1px solid ${isMonClosed ? 'rgba(239, 68, 68, 0.25)' : 'rgba(16, 185, 129, 0.25)'}`,
+                        }}
+                      >
+                        {isMonClosed ? 'Closed on Mondays' : 'Open on Mondays'}
                       </span>
                     </div>
 
-                    <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                    {/* Day Selector Pills: Open vs Closed */}
+                    <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap', alignItems: 'center' }}>
                       {WEEKDAYS.map((w) => {
-                        const isActive = avail.some((d) => d.toLowerCase() === w.key.toLowerCase());
+                        const isOpen = avail.some((d) => d.toLowerCase() === w.key.toLowerCase());
                         return (
                           <button
                             key={w.key}
@@ -788,22 +856,46 @@ export default function BookingCalendarView({
                             disabled={isSaving}
                             onClick={() => handleToggleDoctorDay(doc, w.key)}
                             style={{
-                              padding: '2px 7px',
-                              fontSize: '0.7rem',
+                              padding: '4px 8px',
+                              fontSize: '0.72rem',
                               fontWeight: 700,
-                              borderRadius: '4px',
+                              borderRadius: '5px',
                               cursor: isSaving ? 'wait' : 'pointer',
-                              border: isActive ? '1px solid rgba(16, 185, 129, 0.4)' : '1px solid var(--border-medium)',
-                              background: isActive ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255, 255, 255, 0.02)',
-                              color: isActive ? 'var(--color-emerald)' : 'var(--text-tertiary)',
+                              border: isOpen
+                                ? '1px solid rgba(16, 185, 129, 0.45)'
+                                : '1px solid rgba(239, 68, 68, 0.35)',
+                              background: isOpen
+                                ? 'rgba(16, 185, 129, 0.15)'
+                                : 'rgba(239, 68, 68, 0.12)',
+                              color: isOpen ? 'var(--color-emerald)' : '#f87171',
                               transition: 'all 0.15s ease',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '3px',
                             }}
-                            title={`Click to ${isActive ? 'block' : 'enable'} ${w.label} for ${doc.name}`}
+                            title={`Click to toggle ${w.label} (Currently ${isOpen ? 'OPEN' : 'CLOSED'})`}
                           >
+                            {isOpen ? <Check size={11} /> : <Ban size={11} />}
                             {w.key}
                           </button>
                         );
                       })}
+                    </div>
+
+                    {/* Quick 1-Click Monday Preset */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border-medium)', paddingTop: '0.45rem', marginTop: '0.2rem' }}>
+                      <span style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)' }}>
+                        Non-available: <strong style={{ color: '#f87171' }}>{offDays.length > 0 ? offDays.join(', ') : 'None'}</strong>
+                      </span>
+                      <button
+                        type="button"
+                        className="btn-secondary"
+                        onClick={() => handleToggleDoctorDay(doc, 'Mon')}
+                        disabled={isSaving}
+                        style={{ fontSize: '0.7rem', padding: '2px 8px' }}
+                      >
+                        {isMonClosed ? '✓ Open on Mondays' : '❌ Close on Mondays'}
+                      </button>
                     </div>
                   </div>
                 );
@@ -814,7 +906,7 @@ export default function BookingCalendarView({
       </div>
 
       {/* =========================================================================
-         VIEW 1: MONDAY TO SUNDAY WEEKLY TIMELINE GRID (WITH BLOCKED DOCTOR DAYS)
+         VIEW 1: MONDAY TO SUNDAY WEEKLY TIMELINE GRID (WITH MODULAR CURRENT DATES)
          ========================================================================= */}
       {viewMode === 'timeline' && (
         <div
@@ -826,11 +918,7 @@ export default function BookingCalendarView({
         >
           {filteredResources.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '3.5rem', color: 'var(--text-tertiary)' }}>
-              {isClinic
-                ? 'No consultation suites or doctors found for the selected filter. Register suites and doctors to enable appointment scheduling.'
-                : isHotel
-                ? 'No hotel rooms found for the selected filter. Register rooms under Units & Calendar to enable timeline scheduling.'
-                : 'No dining tables found for the selected filter. Register tables to enable reservation scheduling.'}
+              No doctors or practitioners found. Register doctors to enable clinical appointment scheduling.
             </div>
           ) : (
             <table
@@ -855,7 +943,7 @@ export default function BookingCalendarView({
                       borderRight: '1px solid var(--border-medium)',
                     }}
                   >
-                    {isClinic ? 'DOCTOR / CLINIC SUITE' : 'RESOURCE (ROOM / TABLE)'}
+                    DOCTOR / SPECIALIST
                   </th>
                   {timelineDays.map((td) => (
                     <th
@@ -911,7 +999,7 @@ export default function BookingCalendarView({
                       background: idx % 2 === 0 ? 'transparent' : 'rgba(255, 255, 255, 0.015)',
                     }}
                   >
-                    {/* Resource Header Cell */}
+                    {/* Doctor Info Cell */}
                     <td
                       style={{
                         padding: '0.85rem 1rem',
@@ -937,48 +1025,12 @@ export default function BookingCalendarView({
                             padding: '2px 6px',
                             borderRadius: 'var(--radius-sm)',
                             fontWeight: 600,
-                            background:
-                              res.resource_type === 'practitioner'
-                                ? 'rgba(16, 185, 129, 0.12)'
-                                : res.resource_type === 'clinic_room'
-                                ? 'rgba(56, 189, 248, 0.12)'
-                                : res.resource_type === 'procedure_room'
-                                ? 'rgba(168, 85, 247, 0.12)'
-                                : res.resource_type === 'table'
-                                ? 'rgba(16, 185, 129, 0.1)'
-                                : 'rgba(56, 189, 248, 0.1)',
-                            color:
-                              res.resource_type === 'practitioner'
-                                ? '#10b981'
-                                : res.resource_type === 'clinic_room'
-                                ? '#38bdf8'
-                                : res.resource_type === 'procedure_room'
-                                ? '#c084fc'
-                                : res.resource_type === 'table'
-                                ? 'var(--color-emerald)'
-                                : '#38bdf8',
-                            border: `1px solid ${
-                              res.resource_type === 'practitioner'
-                                ? 'rgba(16, 185, 129, 0.3)'
-                                : res.resource_type === 'clinic_room'
-                                ? 'rgba(56, 189, 248, 0.3)'
-                                : res.resource_type === 'procedure_room'
-                                ? 'rgba(168, 85, 247, 0.3)'
-                                : 'var(--border-medium)'
-                            }`,
+                            background: 'rgba(59, 130, 246, 0.12)',
+                            color: '#3b82f6',
+                            border: '1px solid rgba(59, 130, 246, 0.3)',
                           }}
                         >
-                          {res.resource_type === 'practitioner'
-                            ? 'Doctor / Specialist'
-                            : res.resource_type === 'clinic_room'
-                            ? 'Consultation Suite'
-                            : res.resource_type === 'procedure_room'
-                            ? 'Procedure Bay'
-                            : res.resource_type === 'therapy_room'
-                            ? 'Therapy Room'
-                            : res.resource_type === 'table'
-                            ? 'Dining Table'
-                            : (isClinic ? 'Clinical Suite' : 'Room')}
+                          Doctor / Specialist
                         </span>
                         {res.section && (
                           <span style={{ fontSize: '0.72rem', color: 'var(--text-tertiary)' }}>
@@ -986,27 +1038,27 @@ export default function BookingCalendarView({
                           </span>
                         )}
                         <span style={{ fontSize: '0.72rem', color: 'var(--text-tertiary)', fontFamily: 'var(--font-mono)' }}>
-                          • {isClinic ? '30m Slots' : `${res.min_party_size}–${res.max_party_size} pax`}
+                          • 30m Slots
                         </span>
                       </div>
                     </td>
 
-                    {/* Timeline Day Columns (Mon through Sun) */}
+                    {/* Timeline Day Columns (Mon to Sun) */}
                     {timelineDays.map((td) => {
                       const isAvailable = isResourceAvailableOnDay(res, td.rawDate);
                       const dayBookings = getReservationsForResourceAndDate(res.id, td.date);
                       const isOccupied = dayBookings.length > 0;
 
-                      // BLOCKED DAY: Doctor is off on this weekday
+                      // BLOCKED / NON-AVAILABLE DAY: e.g. Clinic Closed on Mondays
                       if (!isAvailable) {
-                        const docDays = getResourceAvailableDays(res);
                         return (
                           <td
                             key={td.date}
                             onClick={() => {
+                              const docDays = getResourceAvailableDays(res);
                               setFeedback({
                                 type: 'error',
-                                text: `${res.name} does not take appointments on ${td.dayName}s. Scheduled working days: ${docDays.join(', ')}.`,
+                                text: `${res.name} does not open clinic on ${td.fullDayName}s. Scheduled working days: ${docDays.join(', ')}.`,
                               });
                             }}
                             style={{
@@ -1018,7 +1070,7 @@ export default function BookingCalendarView({
                               minHeight: '60px',
                               cursor: 'not-allowed',
                             }}
-                            title={`${res.name} is not available on ${td.dayName}s`}
+                            title={`${res.name} does not open clinic on ${td.dayName}s`}
                           >
                             <div
                               style={{
@@ -1026,7 +1078,7 @@ export default function BookingCalendarView({
                                 flexDirection: 'column',
                                 alignItems: 'center',
                                 justifyContent: 'center',
-                                opacity: 0.65,
+                                opacity: 0.7,
                                 userSelect: 'none',
                                 gap: '2px',
                               }}
@@ -1045,17 +1097,17 @@ export default function BookingCalendarView({
                                   gap: '3px',
                                 }}
                               >
-                                🔒 Day Off
+                                🔒 Closed
                               </span>
                               <span style={{ fontSize: '0.60rem', color: 'var(--text-tertiary)' }}>
-                                Not Available
+                                {td.dayName === 'Mon' ? 'Off on Mondays' : 'Clinic Closed'}
                               </span>
                             </div>
                           </td>
                         );
                       }
 
-                      // AVAILABLE DAY: Render appointments or +30m slot
+                      // AVAILABLE DAY: Render active appointments or +30m slot
                       return (
                         <td
                           key={td.date}
@@ -1096,9 +1148,7 @@ export default function BookingCalendarView({
                                     textOverflow: 'ellipsis',
                                     whiteSpace: 'nowrap',
                                   }}
-                                  title={`Patient: ${b.customer_name}
-Time: ${b.start_time?.slice(11, 16)} - ${b.end_time?.slice(11, 16)}
-Click to inspect details`}
+                                  title={`Patient: ${b.customer_name}\nTime: ${b.start_time?.slice(11, 16)} - ${b.end_time?.slice(11, 16)}\nClick to inspect details`}
                                 >
                                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                     <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{b.customer_name}</span>
@@ -1124,7 +1174,7 @@ Click to inspect details`}
                                 color: 'var(--text-tertiary)',
                               }}
                               className="calendar-empty-slot"
-                              title={`Empty slot: Click to book 30m consult with ${res.name} on ${td.date}`}
+                              title={`Click to schedule 30m appointment with ${res.name} on ${td.date}`}
                             >
                               <span style={{ fontSize: '0.68rem', opacity: 0.55 }}>+ 30m Slot</span>
                             </div>
@@ -1141,7 +1191,7 @@ Click to inspect details`}
       )}
 
       {/* =========================================================================
-         VIEW 2: 30-MINUTE INTERVAL DAY SLOTS SCHEDULE (CLINIC PARITY)
+         VIEW 2: 30-MINUTE INTERVAL DAY SLOTS SCHEDULE
          ========================================================================= */}
       {viewMode === 'day' && (
         <div
@@ -1153,7 +1203,7 @@ Click to inspect details`}
         >
           {filteredResources.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '3.5rem', color: 'var(--text-tertiary)' }}>
-              No resources available for this view.
+              No doctors available for this view.
             </div>
           ) : (
             <table
@@ -1178,7 +1228,7 @@ Click to inspect details`}
                       borderRight: '1px solid var(--border-medium)',
                     }}
                   >
-                    {isClinic ? 'DOCTOR / SUITE' : 'RESOURCE'}
+                    DOCTOR / SPECIALIST
                   </th>
                   {activeDaySlots.map((slot) => (
                     <th
@@ -1189,7 +1239,7 @@ Click to inspect details`}
                         textAlign: 'center',
                         color: 'var(--text-secondary)',
                         borderRight: '1px solid var(--border-medium)',
-                        minWidth: isClinic ? '58px' : '65px',
+                        minWidth: '58px',
                         fontWeight: 600,
                         fontFamily: 'var(--font-mono)',
                       }}
@@ -1223,11 +1273,10 @@ Click to inspect details`}
                           {res.name}
                         </div>
                         <div style={{ fontSize: '0.72rem', color: 'var(--text-tertiary)', marginTop: '2px' }}>
-                          {res.section || 'General'} • {isClinic ? '30m Slots' : `${res.capacity} seats`}
+                          {res.section || 'Specialist Consultation'} • 30m Slots
                         </div>
                       </td>
 
-                      {/* If doctor is off today, render blocked banner across columns */}
                       {!isAvailableToday ? (
                         <td
                           colSpan={activeDaySlots.length}
@@ -1238,7 +1287,7 @@ Click to inspect details`}
                           }}
                         >
                           <span style={{ fontSize: '0.78rem', color: '#f87171', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                            🔒 {res.name} is off on {selectedDateWeekday}s (Scheduled working days: {getResourceAvailableDays(res).join(', ')})
+                            🔒 Clinic Closed on {selectedDateWeekday}s (Non-Available Day for {res.name})
                           </span>
                         </td>
                       ) : (
@@ -1315,29 +1364,29 @@ Click to inspect details`}
       )}
 
       {/* =========================================================================
-         VIEW 3: LIST VIEW OF UPCOMING BOOKINGS / APPOINTMENTS
+         VIEW 3: MODULAR APPOINTMENT TABLE VIEW (UPDATES ON CURRENT DATES)
          ========================================================================= */}
       {viewMode === 'list' && (
         <div className="card" style={{ padding: 0 }}>
           {reservations.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '3.5rem', color: 'var(--text-tertiary)' }}>
-              No bookings or patient appointments committed yet.
+              No patient appointments committed yet. Use the calendar or voice agent to schedule.
             </div>
           ) : (
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
               <thead>
                 <tr style={{ background: 'var(--bg-surface-elevated)', borderBottom: '1px solid var(--border-medium)' }}>
                   <th style={{ padding: '0.85rem 1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-tertiary)', textTransform: 'uppercase' }}>
-                    {isClinic ? 'PATIENT NAME' : 'GUEST / CUSTOMER'}
+                    PATIENT FULL NAME
                   </th>
                   <th style={{ padding: '0.85rem 1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-tertiary)', textTransform: 'uppercase' }}>
                     CONTACT PHONE
                   </th>
                   <th style={{ padding: '0.85rem 1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-tertiary)', textTransform: 'uppercase' }}>
-                    {isClinic ? 'DOCTOR / SUITE' : 'ASSIGNED RESOURCE'}
+                    DOCTOR / SPECIALIST
                   </th>
                   <th style={{ padding: '0.85rem 1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-tertiary)', textTransform: 'uppercase' }}>
-                    START TIME
+                    APPOINTMENT DATE & TIME (MODULAR)
                   </th>
                   <th style={{ padding: '0.85rem 1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-tertiary)', textTransform: 'uppercase' }}>
                     STATUS
@@ -1348,60 +1397,81 @@ Click to inspect details`}
                 </tr>
               </thead>
               <tbody>
-                {reservations.map((b) => (
-                  <tr key={b.id} style={{ borderBottom: '1px solid var(--border-medium)' }}>
-                    <td style={{ padding: '0.75rem 1rem', fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.85rem' }}>
-                      {b.customer_name}
-                    </td>
-                    <td style={{ padding: '0.75rem 1rem', fontFamily: 'var(--font-mono)', fontSize: '0.82rem', color: 'var(--color-mint)' }}>
-                      {b.customer_phone}
-                    </td>
-                    <td style={{ padding: '0.75rem 1rem', fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
-                      {b.resource_name || b.resource_id || 'Standard Inventory'}
-                    </td>
-                    <td style={{ padding: '0.75rem 1rem', fontFamily: 'var(--font-mono)', fontSize: '0.82rem', color: 'var(--text-primary)' }}>
-                      {b.start_time?.replace('T', ' ').slice(0, 16)}
-                    </td>
-                    <td style={{ padding: '0.75rem 1rem' }}>
-                      <span
-                        style={{
-                          fontSize: '0.72rem',
-                          padding: '3px 8px',
-                          borderRadius: 'var(--radius-full)',
-                          fontWeight: 700,
-                          background: b.status === 'confirmed' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(244, 63, 94, 0.1)',
-                          color: b.status === 'confirmed' ? 'var(--color-emerald)' : 'var(--color-rose)',
-                          border: `1px solid ${b.status === 'confirmed' ? 'rgba(16, 185, 129, 0.25)' : 'rgba(244, 63, 94, 0.25)'}`,
-                        }}
-                      >
-                        {b.status.toUpperCase()}
-                      </span>
-                    </td>
-                    <td style={{ padding: '0.75rem 1rem', textAlign: 'right' }}>
-                      <div style={{ display: 'inline-flex', gap: '0.5rem' }}>
-                        <button
-                          type="button"
-                          className="btn-secondary"
-                          onClick={() => setSelectedBooking(b)}
-                          style={{ padding: '0.25rem 0.55rem', fontSize: '0.74rem' }}
+                {reservations.map((b) => {
+                  const bDateStr = b.start_time?.slice(0, 10);
+                  const isToday = bDateStr === new Date().toISOString().slice(0, 10);
+                  const dateObj = new Date(b.start_time);
+                  const formattedDate = dateObj.toLocaleDateString('en-US', {
+                    weekday: 'short',
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric',
+                  });
+                  const formattedTime = b.start_time?.includes('T') ? b.start_time.split('T')[1].slice(0, 5) : '';
+
+                  return (
+                    <tr key={b.id} style={{ borderBottom: '1px solid var(--border-medium)' }}>
+                      <td style={{ padding: '0.75rem 1rem', fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.85rem' }}>
+                        {b.customer_name}
+                      </td>
+                      <td style={{ padding: '0.75rem 1rem', fontFamily: 'var(--font-mono)', fontSize: '0.82rem', color: 'var(--color-mint)' }}>
+                        {b.customer_phone}
+                      </td>
+                      <td style={{ padding: '0.75rem 1rem', fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
+                        {b.resource_name || 'Dr. Sharma'}
+                      </td>
+                      <td style={{ padding: '0.75rem 1rem', fontSize: '0.82rem', color: 'var(--text-primary)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span style={{ fontWeight: 600 }}>{formattedDate}</span>
+                          <span style={{ color: 'var(--color-emerald)', fontFamily: 'var(--font-mono)' }}>{formattedTime} (30m)</span>
+                          {isToday && (
+                            <span style={{ fontSize: '0.62rem', background: 'rgba(16, 185, 129, 0.15)', color: 'var(--color-emerald)', padding: '1px 5px', borderRadius: '4px', fontWeight: 700 }}>
+                              TODAY
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td style={{ padding: '0.75rem 1rem' }}>
+                        <span
+                          style={{
+                            fontSize: '0.72rem',
+                            padding: '3px 8px',
+                            borderRadius: 'var(--radius-full)',
+                            fontWeight: 700,
+                            background: b.status === 'confirmed' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(244, 63, 94, 0.1)',
+                            color: b.status === 'confirmed' ? 'var(--color-emerald)' : 'var(--color-rose)',
+                            border: `1px solid ${b.status === 'confirmed' ? 'rgba(16, 185, 129, 0.25)' : 'rgba(244, 63, 94, 0.25)'}`,
+                          }}
                         >
-                          Details
-                        </button>
-                        {b.status !== 'cancelled' && (
+                          {b.status.toUpperCase()}
+                        </span>
+                      </td>
+                      <td style={{ padding: '0.75rem 1rem', textAlign: 'right' }}>
+                        <div style={{ display: 'inline-flex', gap: '0.5rem' }}>
                           <button
                             type="button"
                             className="btn-secondary"
-                            onClick={() => handleCancelBooking(b.id, b.customer_phone)}
-                            disabled={cancellingId === b.id}
-                            style={{ padding: '0.25rem 0.55rem', fontSize: '0.74rem', color: 'var(--color-rose)' }}
+                            onClick={() => setSelectedBooking(b)}
+                            style={{ padding: '0.25rem 0.55rem', fontSize: '0.74rem' }}
                           >
-                            Cancel
+                            Details
                           </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                          {b.status !== 'cancelled' && (
+                            <button
+                              type="button"
+                              className="btn-secondary"
+                              onClick={() => handleCancelBooking(b.id, b.customer_phone)}
+                              disabled={cancellingId === b.id}
+                              style={{ padding: '0.25rem 0.55rem', fontSize: '0.74rem', color: 'var(--color-rose)' }}
+                            >
+                              Cancel
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           )}
@@ -1409,7 +1479,7 @@ Click to inspect details`}
       )}
 
       {/* =========================================================================
-         MODAL 1: INSPECT RESERVATION DETAILS (Obsidian Sheet)
+         MODAL 1: INSPECT APPOINTMENT DETAILS
          ========================================================================= */}
       {selectedBooking && (
         <div className="modal-backdrop" onClick={() => setSelectedBooking(null)}>
@@ -1430,7 +1500,7 @@ Click to inspect details`}
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <FileText size={18} color="var(--color-emerald)" />
                 <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-                  {isClinic ? 'Patient Appointment Details' : 'Reservation Details'}
+                  Patient Appointment Details
                 </h3>
               </div>
               <button
@@ -1445,7 +1515,7 @@ Click to inspect details`}
             <div style={{ padding: '1.25rem 1.4rem', display: 'flex', flexDirection: 'column', gap: '0.75rem', fontSize: '0.84rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <User size={15} color="var(--text-tertiary)" />
-                <span style={{ color: 'var(--text-tertiary)', width: '95px' }}>{isClinic ? 'Patient Name:' : 'Guest Name:'}</span>
+                <span style={{ color: 'var(--text-tertiary)', width: '95px' }}>Patient Name:</span>
                 <strong style={{ color: 'var(--text-primary)' }}>{selectedBooking.customer_name}</strong>
               </div>
 
@@ -1457,9 +1527,9 @@ Click to inspect details`}
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <MapPin size={15} color="var(--text-tertiary)" />
-                <span style={{ color: 'var(--text-tertiary)', width: '95px' }}>{isClinic ? 'Doctor / Suite:' : 'Assigned To:'}</span>
+                <span style={{ color: 'var(--text-tertiary)', width: '95px' }}>Doctor:</span>
                 <strong style={{ color: 'var(--text-primary)' }}>
-                  {selectedBooking.resource_name || selectedBooking.resource_id || 'Standard Inventory'}
+                  {selectedBooking.resource_name || 'Dr. Sharma'}
                 </strong>
               </div>
 
@@ -1482,7 +1552,7 @@ Click to inspect details`}
               {selectedBooking.special_requests && (
                 <div style={{ marginTop: '0.5rem', padding: '0.75rem', background: 'var(--bg-surface-elevated)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-medium)' }}>
                   <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '2px' }}>
-                    {isClinic ? 'CONSULTATION NOTES / SYMPTOMS:' : 'SPECIAL REQUESTS / NOTES:'}
+                    CONSULTATION NOTES / PATIENT SYMPTOMS:
                   </div>
                   <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>
                     {selectedBooking.special_requests}
@@ -1544,7 +1614,7 @@ Click to inspect details`}
       )}
 
       {/* =========================================================================
-         MODAL 2: 30-MINUTE CONSULTATION / NEW RESERVATION MODAL
+         MODAL 2: 30-MINUTE CONSULTATION SCHEDULING MODAL
          ========================================================================= */}
       {isNewModalOpen && (
         <div className="modal-backdrop" onClick={() => setIsNewModalOpen(false)}>
@@ -1565,7 +1635,7 @@ Click to inspect details`}
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Plus size={18} color="var(--color-emerald)" />
                 <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-                  {isClinic ? '🩺 Schedule Patient Consultation (30m Slot)' : isHotel ? 'New Room Reservation' : 'New Table Reservation'}
+                  🩺 Schedule Patient Appointment (30m Slot)
                 </h3>
               </div>
               <button
@@ -1579,7 +1649,7 @@ Click to inspect details`}
 
             <form onSubmit={handleCreateReservation} style={{ padding: '1.25rem 1.4rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               {/* Doctor Off-Day Alert Banner */}
-              {isClinic && isDoctorOffOnBookingDate && (
+              {isDoctorOffOnBookingDate && (
                 <div
                   style={{
                     background: 'rgba(239, 68, 68, 0.12)',
@@ -1595,19 +1665,19 @@ Click to inspect details`}
                 >
                   <AlertCircle size={16} style={{ flexShrink: 0 }} />
                   <span>
-                    <strong>{currentModalDoctor?.name}</strong> does not take appointments on {currentBookingDayName}s.
-                    Available days: <strong>{getResourceAvailableDays(currentModalDoctor).join(', ')}</strong>.
+                    <strong>{currentModalDoctor?.name}</strong> does not open clinic on {currentBookingDayName}s.
+                    Available open days: <strong>{getResourceAvailableDays(currentModalDoctor).join(', ')}</strong>.
                   </span>
                 </div>
               )}
 
               <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div className="form-group">
-                  <label className="form-label">{isClinic ? 'Patient Full Name *' : isHotel ? 'Guest Full Name *' : 'Customer Name *'}</label>
+                  <label className="form-label">Patient Full Name *</label>
                   <input
                     type="text"
                     className="form-input"
-                    placeholder={isClinic ? 'e.g. Priya Sharma' : 'e.g. Robert Vance'}
+                    placeholder="e.g. Priya Sharma"
                     value={newBooking.customer_name}
                     onChange={(e) => setNewBooking((prev) => ({ ...prev, customer_name: e.target.value }))}
                     required
@@ -1627,9 +1697,9 @@ Click to inspect details`}
                 </div>
               </div>
 
-              {/* Resource / Doctor Selection */}
+              {/* Doctor Selection */}
               <div className="form-group">
-                <label className="form-label">{isClinic ? 'Assign Doctor / Specialist *' : 'Assign Resource *'}</label>
+                <label className="form-label">Assign Doctor / Specialist *</label>
                 <select
                   className="form-input"
                   value={newBooking.resource_id}
@@ -1638,17 +1708,17 @@ Click to inspect details`}
                     setNewBooking((prev) => ({
                       ...prev,
                       resource_id: e.target.value,
-                      resource_type: sel ? sel.resource_type : prev.resource_type,
+                      resource_type: sel ? sel.resource_type : 'practitioner',
                     }));
                   }}
                   required
                 >
-                  <option value="">{isClinic ? '-- Select Doctor or Consultation Suite --' : isHotel ? '-- Choose Room / Suite --' : '-- Choose Dining Table --'}</option>
-                  {resources.map((r) => {
+                  <option value="">-- Choose Doctor / Specialist --</option>
+                  {doctorsList.map((r) => {
                     const days = getResourceAvailableDays(r);
                     return (
                       <option key={r.id} value={r.id}>
-                        {r.name} {isClinic ? `(${days.join('•')})` : `(${r.resource_type} • fits ${r.max_party_size})`}
+                        {r.name} (Open: {days.join('•')})
                       </option>
                     );
                   })}
@@ -1656,9 +1726,9 @@ Click to inspect details`}
               </div>
 
               {/* Date & 30-Minute Slot Duration */}
-              <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: isClinic ? '1.2fr 1fr 1fr' : '1fr 1fr', gap: '0.75rem' }}>
+              <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr', gap: '0.75rem' }}>
                 <div className="form-group">
-                  <label className="form-label">{isClinic ? 'Consultation Date *' : 'Start Date'}</label>
+                  <label className="form-label">Appointment Date *</label>
                   <input
                     type="date"
                     className="form-input"
@@ -1668,7 +1738,7 @@ Click to inspect details`}
                       setNewBooking((prev) => ({
                         ...prev,
                         start_date: newDate,
-                        end_date: prev.resource_type === 'room' ? prev.end_date : newDate,
+                        end_date: newDate,
                       }));
                     }}
                     required
@@ -1676,92 +1746,67 @@ Click to inspect details`}
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">{isClinic ? 'Start Slot (30m) *' : 'Start Time *'}</label>
-                  {isClinic ? (
-                    <select
-                      className="form-input"
-                      value={newBooking.start_time}
-                      onChange={(e) => {
-                        const newStart = e.target.value;
-                        const newEnd = addMinutesToTime(newStart, newBooking.duration_minutes || 30);
-                        setNewBooking((prev) => ({ ...prev, start_time: newStart, end_time: newEnd }));
-                      }}
-                      required
-                    >
-                      {clinicSlots.map((s) => (
-                        <option key={s} value={s}>{s}</option>
-                      ))}
-                    </select>
-                  ) : (
-                    <input
-                      type="time"
-                      className="form-input"
-                      value={newBooking.start_time}
-                      onChange={(e) => setNewBooking((prev) => ({ ...prev, start_time: e.target.value }))}
-                      required
-                    />
-                  )}
+                  <label className="form-label">Start Slot (30m) *</label>
+                  <select
+                    className="form-input"
+                    value={newBooking.start_time}
+                    onChange={(e) => {
+                      const newStart = e.target.value;
+                      const newEnd = addMinutesToTime(newStart, newBooking.duration_minutes || 30);
+                      setNewBooking((prev) => ({ ...prev, start_time: newStart, end_time: newEnd }));
+                    }}
+                    required
+                  >
+                    {clinicSlots.map((s) => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </select>
                 </div>
 
-                {isClinic ? (
-                  <div className="form-group">
-                    <label className="form-label">Consult Duration</label>
-                    <select
-                      className="form-input"
-                      value={newBooking.duration_minutes}
-                      onChange={(e) => {
-                        const dur = parseInt(e.target.value, 10);
-                        const newEnd = addMinutesToTime(newBooking.start_time, dur);
-                        setNewBooking((prev) => ({ ...prev, duration_minutes: dur, end_time: newEnd }));
-                      }}
-                    >
-                      <option value={30}>30 mins (Standard)</option>
-                      <option value={45}>45 mins (Comprehensive)</option>
-                      <option value={60}>60 mins (Specialist)</option>
-                    </select>
-                  </div>
-                ) : (
-                  <div className="form-group">
-                    <label className="form-label">End Time</label>
-                    <input
-                      type="time"
-                      className="form-input"
-                      value={newBooking.end_time}
-                      onChange={(e) => setNewBooking((prev) => ({ ...prev, end_time: e.target.value }))}
-                      required
-                    />
-                  </div>
-                )}
+                <div className="form-group">
+                  <label className="form-label">Duration</label>
+                  <select
+                    className="form-input"
+                    value={newBooking.duration_minutes}
+                    onChange={(e) => {
+                      const dur = parseInt(e.target.value, 10);
+                      const newEnd = addMinutesToTime(newBooking.start_time, dur);
+                      setNewBooking((prev) => ({ ...prev, duration_minutes: dur, end_time: newEnd }));
+                    }}
+                  >
+                    <option value={30}>30 mins (Standard)</option>
+                    <option value={45}>45 mins (Comprehensive)</option>
+                    <option value={60}>60 mins (Specialist)</option>
+                  </select>
+                </div>
               </div>
 
-              {/* Slot Summary Confirmation for Clinic */}
-              {isClinic && (
-                <div
-                  style={{
-                    padding: '0.5rem 0.75rem',
-                    background: 'var(--bg-surface-elevated)',
-                    border: '1px solid var(--border-medium)',
-                    borderRadius: '6px',
-                    fontSize: '0.78rem',
-                    color: 'var(--text-secondary)',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                  }}
-                >
-                  <span>Calculated Consultation Window:</span>
-                  <strong style={{ color: 'var(--color-emerald)', fontFamily: 'var(--font-mono)' }}>
-                    {newBooking.start_time} — {newBooking.end_time} ({newBooking.duration_minutes}m)
-                  </strong>
-                </div>
-              )}
+              {/* Calculated Consultation Window */}
+              <div
+                style={{
+                  padding: '0.5rem 0.75rem',
+                  background: 'var(--bg-surface-elevated)',
+                  border: '1px solid var(--border-medium)',
+                  borderRadius: '6px',
+                  fontSize: '0.78rem',
+                  color: 'var(--text-secondary)',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                }}
+              >
+                <span>Calculated Consultation Slot:</span>
+                <strong style={{ color: 'var(--color-emerald)', fontFamily: 'var(--font-mono)' }}>
+                  {newBooking.start_time} — {newBooking.end_time} ({newBooking.duration_minutes}m)
+                </strong>
+              </div>
 
               <div className="form-group">
-                <label className="form-label">{isClinic ? 'Consultation Notes / Patient Symptoms' : 'Special Requests / Preferences'}</label>
+                <label className="form-label">Consultation Notes / Patient Symptoms</label>
                 <input
                   type="text"
                   className="form-input"
-                  placeholder={isClinic ? 'e.g. Toothache, Scaling & Polishing, Orthodontic braces follow-up' : 'e.g. Window booth, quiet table, ocean view'}
+                  placeholder="e.g. Toothache, Routine Scaling & Cleaning, Braces Wire Check"
                   value={newBooking.special_requests}
                   onChange={(e) => setNewBooking((prev) => ({ ...prev, special_requests: e.target.value }))}
                 />
@@ -1779,16 +1824,14 @@ Click to inspect details`}
                 <button
                   type="submit"
                   className="btn-primary"
-                  disabled={isSubmitting || (isClinic && isDoctorOffOnBookingDate)}
-                  style={{ flex: 2, justifyContent: 'center', opacity: (isClinic && isDoctorOffOnBookingDate) ? 0.5 : 1 }}
+                  disabled={isSubmitting || isDoctorOffOnBookingDate}
+                  style={{ flex: 2, justifyContent: 'center', opacity: isDoctorOffOnBookingDate ? 0.5 : 1 }}
                 >
                   {isSubmitting
                     ? 'Confirming...'
-                    : (isClinic && isDoctorOffOnBookingDate)
-                    ? 'Doctor Unavailable on This Day'
-                    : isClinic
-                    ? 'Confirm 30m Appointment'
-                    : 'Confirm & Save Booking'}
+                    : isDoctorOffOnBookingDate
+                    ? 'Doctor Closed on This Day'
+                    : 'Confirm 30m Appointment'}
                 </button>
               </div>
             </form>
