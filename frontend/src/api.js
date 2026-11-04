@@ -350,6 +350,29 @@ export const api = {
       body: JSON.stringify({ text, default_category: defaultCategory }),
     }),
 
+  // Hotel Property Floor Grid & PMS (OYO-Style Front-Desk)
+  getHotelFloors: (businessId) =>
+    request(`/businesses/${businessId}/hotel/floors`),
+  bulkSetupHotelFloors: (businessId, payload) =>
+    request(`/businesses/${businessId}/hotel/floors/bulk-setup`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  updateRoomStatus: (businessId, resourceId, status) =>
+    request(`/businesses/${businessId}/hotel/rooms/${resourceId}/status`, {
+      method: 'PUT',
+      body: JSON.stringify({ status }),
+    }),
+  hotelCheckIn: (businessId, resourceId, payload) =>
+    request(`/businesses/${businessId}/hotel/rooms/${resourceId}/check-in`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  hotelCheckOut: (businessId, resourceId) =>
+    request(`/businesses/${businessId}/hotel/rooms/${resourceId}/check-out`, {
+      method: 'POST',
+    }),
+
   // Admin Command Center
   getAdminOverview: () => request('/admin/overview'),
   getAdminTools: () => request('/admin/tools'),
@@ -372,5 +395,11 @@ export const uploadRooms = (businessId, items, replace = true) => api.uploadRoom
 export const deleteRoomType = (businessId, roomId) => api.deleteRoomType(businessId, roomId);
 export const searchRooms = (businessId, query) => api.searchRooms(businessId, query);
 export const parseRoomText = (businessId, text, defaultCategory = 'Rooms') => api.parseRoomText(businessId, text, defaultCategory);
+
+export const getHotelFloors = (businessId) => api.getHotelFloors(businessId);
+export const bulkSetupHotelFloors = (businessId, payload) => api.bulkSetupHotelFloors(businessId, payload);
+export const updateRoomStatus = (businessId, resourceId, status) => api.updateRoomStatus(businessId, resourceId, status);
+export const hotelCheckIn = (businessId, resourceId, payload) => api.hotelCheckIn(businessId, resourceId, payload);
+export const hotelCheckOut = (businessId, resourceId) => api.hotelCheckOut(businessId, resourceId);
 
 export default api;

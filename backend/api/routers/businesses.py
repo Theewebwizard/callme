@@ -903,3 +903,118 @@ def parse_room_text(
         "count": len(parsed_items),
         "items": parsed_items,
     }
+
+
+
+# =========================================================================
+# Hotel Floor Layout & PMS Operations (OYO-Style Front-Desk)
+# =========================================================================
+
+class HotelBulkSetupRequest(BaseModel):
+    floors_count: int = Field(default=3, ge=1, le=20)
+    rooms_per_floor: int = Field(default=4, ge=1, le=50)
+    starting_floor: int = Field(default=1, ge=0, le=10)
+    room_type_id: Optional[str] = None
+    replace_existing: bool = False
+
+
+class RoomStatusUpdateRequest(BaseModel):
+    status: str = Field(..., description="'clean', 'dirty', or 'maintenance'")
+
+
+class HotelCheckInRequest(BaseModel):
+    customer_name: str = Field(..., min_length=2)
+    customer_phone: str = Field(..., min_length=5)
+    nights: int = Field(default=1, ge=1, le=60)
+    party_size: int = Field(default=2, ge=1, le=10)
+    notes: Optional[str] = None
+
+
+@router.get("/{business_id}/hotel/floors")
+def get_hotel_floors(
+    business_id: str,
+    principal: AuthenticatedPrincipal = Depends(verify_business_access),
+) -> Dict[str, Any]:
+    """Retrieve full floor grid, room occupancy, and housekeeping statuses."""
+    db_service = get_database_service()
+    return db_service.get_hotel_floor_layout(business_id)
+
+
+@router.post("/{business_id}/hotel/floors/bulk-setup")
+def bulk_setup_hotel_floors(
+    business_id: str,
+    req: HotelBulkSetupRequest,
+    principal: AuthenticatedPrincipal = Depends(verify_business_access),
+) -> Dict[str, Any]:
+    """Bulk setup property layout by floors and room numbers (OYO Onboarding Parity)."""
+    db_service = get_database_service()
+    return db_service.bulk_setup_hotel_floors(
+        business_id=business_id,
+        floors_count=req.floors_count,
+        rooms_per_floor=req.rooms_per_floor,
+        starting_floor=req.starting_floor,
+        room_type_id=req.room_type_id,
+        replace_existing=req.replace_existing,
+    )
+
+
+@router.put("/{business_id}/hotel/rooms/{resource_id}/status")
+def update_hotel_room_status(
+    business_id: str,
+    resource_id: str,
+    req: RoomStatusUpdateRequest,
+    principal: AuthenticatedPrincipal = Depends(verify_business_access),
+) -> Dict[str, Any]:
+    """Update room operational status (clean, dirty, maintenance)."""
+    db_service = get_database_service()
+    try:
+        updated = db_service.update_room_housekeeping_status(
+            business_id=business_id,
+            resource_id=resource_id,
+            status=req.status,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    if not updated:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Room resource not found.")
+    return updated
+
+
+@router.post("/{business_id}/hotel/rooms/{resource_id}/check-in")
+def hotel_check_in(
+    business_id: str,
+    resource_id: str,
+    req: HotelCheckInRequest,
+    principal: AuthenticatedPrincipal = Depends(verify_business_access),
+) -> Dict[str, Any]:
+    """Perform front-desk guest check-in (Walk-in or Online)."""
+    db_service = get_database_service()
+    try:
+        return db_service.hotel_check_in(
+            business_id=business_id,
+            resource_id=resource_id,
+            customer_name=req.customer_name,
+            customer_phone=req.customer_phone,
+            nights=req.nights,
+            party_size=req.party_size,
+            notes=req.notes,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+@router.post("/{business_id}/hotel/rooms/{resource_id}/check-out")
+def hotel_check_out(
+    business_id: str,
+    resource_id: str,
+    principal: AuthenticatedPrincipal = Depends(verify_business_access),
+) -> Dict[str, Any]:
+    """Perform front-desk guest check-out and mark room dirty."""
+    db_service = get_database_service()
+    try:
+        return db_service.hotel_check_out(
+            business_id=business_id,
+            resource_id=resource_id,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))

@@ -10,6 +10,8 @@ import {
 } from 'lucide-react';
 import { api } from '../api';
 import BookingCalendarView from './BookingCalendarView';
+import HotelFloorGridView from './HotelFloorGridView';
+import { Building2, Layers as LayersIcon } from 'lucide-react';
 import { getDomainForBusiness } from '../domain/businessDomainRegistry';
 
 export default function ResourceInventoryCard({
@@ -23,6 +25,7 @@ export default function ResourceInventoryCard({
   const rc = domainConfig.resourceConfig;
   const DomainIcon = rc.icon || Database;
 
+  const [viewMode, setViewMode] = useState(domainConfig.key === 'hotel' ? 'floor_grid' : 'calendar');
   const [loading, setLoading] = useState(false);
   const [feedback, setFeedback] = useState(null);
 
@@ -99,13 +102,56 @@ export default function ResourceInventoryCard({
         </div>
       )}
 
-      {/* Interactive Booking Calendar & Timeline Grid */}
-      <BookingCalendarView
-        business={business}
-        resources={resources}
-        reservations={reservations}
-        onRefresh={onRefresh}
-      />
+      {/* Domain Navigation / View Mode Toggle for Hotel */}
+      {domainConfig.key === 'hotel' && (
+        <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '-0.5rem' }}>
+          <button
+            type="button"
+            className={`btn-secondary ${viewMode === 'floor_grid' ? 'active' : ''}`}
+            style={{
+              fontSize: '0.8rem',
+              padding: '0.4rem 0.95rem',
+              fontWeight: 600,
+              background: viewMode === 'floor_grid' ? '#ffffff' : 'var(--bg-card)',
+              borderColor: viewMode === 'floor_grid' ? '#ffffff' : 'var(--border-medium)',
+              color: viewMode === 'floor_grid' ? '#07080a' : 'var(--text-secondary)',
+            }}
+            onClick={() => setViewMode('floor_grid')}
+          >
+            <Building2 size={13} /> 🏢 Property Floor Grid & Front-Desk
+          </button>
+          <button
+            type="button"
+            className={`btn-secondary ${viewMode === 'calendar' ? 'active' : ''}`}
+            style={{
+              fontSize: '0.8rem',
+              padding: '0.4rem 0.95rem',
+              fontWeight: 600,
+              background: viewMode === 'calendar' ? '#ffffff' : 'var(--bg-card)',
+              borderColor: viewMode === 'calendar' ? '#ffffff' : 'var(--border-medium)',
+              color: viewMode === 'calendar' ? '#07080a' : 'var(--text-secondary)',
+            }}
+            onClick={() => setViewMode('calendar')}
+          >
+            <Calendar size={13} /> 📅 Occupancy Timeline Calendar
+          </button>
+        </div>
+      )}
+
+      {/* Render selected view */}
+      {domainConfig.key === 'hotel' && viewMode === 'floor_grid' ? (
+        <HotelFloorGridView
+          business={business}
+          onLayoutUpdated={onRefresh}
+        />
+      ) : (
+        <BookingCalendarView
+          business={business}
+          resources={resources}
+          reservations={reservations}
+          onRefresh={onRefresh}
+        />
+      )}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem', alignItems: 'flex-start' }}>
         {/* Domain-Adapted Add Form */}

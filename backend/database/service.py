@@ -4,12 +4,13 @@ Provides transactional boundaries, fallback detection, and decoupled data access
 """
 
 from typing import Optional, Dict, List, Any, Tuple
-from datetime import datetime
+from datetime import datetime, timedelta
 import time
 import logging
 from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy import Engine, select, func
 
+from backend.database.models import utcnow
 from backend.database.engine import (
     get_engine,
     get_session_factory,
@@ -1519,6 +1520,360 @@ class DatabaseService:
         with session_scope(self.session_factory) as session:
             repo = RoomTypeRepository(session)
             return repo.delete(room_id, business_id=business_id)
+
+    # -------------------------------------------------------------------------
+    # Hotel Floor & Property Front-Desk Management (OYO-Style PMS)
+    # -------------------------------------------------------------------------
+    def get_hotel_floor_layout(self, business_id: str) -> Dict[str, Any]:
+        """
+        Retrieve complete property floor-by-floor layout, room numbers,
+        housekeeping statuses, and active guest occupancies for a hotel.
+        """
+        import re
+        from backend.database.models import Reservation, utcnow
+        from sqlalchemy import or_, and_
+
+        with session_scope(self.session_factory) as session:
+            res_repo = ResourceRepository(session)
+            room_repo = RoomTypeRepository(session)
+            resources = res_repo.list_resources(business_id=business_id)
+            room_types = {rt.id: rt for rt in room_repo.list_for_business(business_id)}
+
+            now = utcnow()
+            # Fetch active reservations overlapping current time or checked in
+            active_reservations = (
+                session.query(Reservation)
+                .filter(
+                    Reservation.business_id == business_id,
+                    Reservation.resource_id.isnot(None),
+                    or_(
+                        Reservation.status == "checked_in",
+                        and_(
+                            Reservation.status.in_(["confirmed", "hold"]),
+                            Reservation.start_time <= now,
+                            Reservation.end_time > now,
+                        ),
+                    ),
+                )
+                .all()
+            )
+            res_by_resource = {r.resource_id: r for r in active_reservations}
+
+            # Filter for hotel rooms (exclude non-room dining tables if mixed)
+            hotel_resources = [
+                r for r in resources
+                if r.resource_type in ("room", "suite", "deluxe", "villa", "hall") or "room" in r.name.lower() or "suite" in r.name.lower() or "villa" in r.name.lower()
+            ]
+            if not hotel_resources and resources:
+                hotel_resources = resources
+
+            floors_map: Dict[int, Dict[str, Any]] = {}
+            clean_count = 0
+            dirty_count = 0
+            occupied_count = 0
+            maint_count = 0
+
+            for res in hotel_resources:
+                meta = dict(res.metadata_json or {})
+                floor_num = meta.get("floor")
+                if floor_num is None:
+                    sec = (res.section or "").lower()
+                    name = res.name.lower()
+                    match_num = re.search(r"\b([1-9])\d{2}\b", name)
+                    if match_num:
+                        floor_num = int(match_num.group(1))
+                    elif "ground" in sec or "beach" in sec:
+                        floor_num = 0
+                    elif "1" in sec or "first" in sec or "east" in sec:
+                        floor_num = 1
+                    elif "2" in sec or "second" in sec or "ocean" in sec:
+                        floor_num = 2
+                    elif "3" in sec or "third" in sec:
+                        floor_num = 3
+                    else:
+                        floor_num = 1
+
+                floor_name = meta.get("floor_name")
+                if not floor_name:
+                    if floor_num == 0:
+                        floor_name = "Ground Floor"
+                    elif floor_num == 1:
+                        floor_name = "1st Floor"
+                    elif floor_num == 2:
+                        floor_name = "2nd Floor"
+                    elif floor_num == 3:
+                        floor_name = "3rd Floor"
+                    else:
+                        floor_name = f"{floor_num}th Floor"
+
+                room_num = meta.get("room_number")
+                if not room_num:
+                    match_rn = re.search(r"\b\d{3,4}\b", res.name)
+                    if match_rn:
+                        room_num = match_rn.group(0)
+                    else:
+                        room_num = res.name.replace("Room", "").replace("Suite", "").replace("-", "").strip()[:10]
+
+                # Status resolution
+                active_res = res_by_resource.get(res.id)
+                if active_res:
+                    status = "occupied"
+                    occupied_count += 1
+                else:
+                    raw_hk = str(meta.get("housekeeping_status", "clean")).lower()
+                    if raw_hk in ("dirty", "needs_cleaning"):
+                        status = "dirty"
+                        dirty_count += 1
+                    elif raw_hk in ("maintenance", "out_of_order"):
+                        status = "maintenance"
+                        maint_count += 1
+                    else:
+                        status = "clean"
+                        clean_count += 1
+
+                rt_id = meta.get("room_type_id")
+                rt = room_types.get(rt_id) if rt_id else None
+                rt_name = meta.get("room_type_name") or (rt.name if rt else res.resource_type.title())
+
+                active_guest = None
+                if active_res:
+                    active_guest = {
+                        "reservation_id": active_res.id,
+                        "customer_name": active_res.customer_name,
+                        "customer_phone": active_res.customer_phone,
+                        "party_size": active_res.party_size,
+                        "start_time": active_res.start_time.isoformat() if active_res.start_time else None,
+                        "end_time": active_res.end_time.isoformat() if active_res.end_time else None,
+                        "status": active_res.status,
+                    }
+
+                room_data = {
+                    "id": res.id,
+                    "name": res.name,
+                    "room_number": room_num,
+                    "floor": floor_num,
+                    "floor_name": floor_name,
+                    "section": res.section or floor_name,
+                    "capacity": res.capacity,
+                    "status": status,
+                    "room_type_id": rt_id,
+                    "room_type_name": rt_name,
+                    "bed_type": meta.get("bed_type") or (rt.bed_type if rt else "Double Bed"),
+                    "base_price": meta.get("base_price") or (rt.base_price if rt else None),
+                    "active_guest": active_guest,
+                }
+
+                if floor_num not in floors_map:
+                    floors_map[floor_num] = {
+                        "floor_number": floor_num,
+                        "floor_name": floor_name,
+                        "rooms": [],
+                    }
+                floors_map[floor_num]["rooms"].append(room_data)
+
+            sorted_floors = [floors_map[k] for k in sorted(floors_map.keys())]
+            for f in sorted_floors:
+                f["rooms"].sort(key=lambda x: str(x["room_number"]))
+
+            total = len(hotel_resources)
+            return {
+                "business_id": business_id,
+                "total_rooms": total,
+                "clean_count": clean_count,
+                "dirty_count": dirty_count,
+                "occupied_count": occupied_count,
+                "maintenance_count": maint_count,
+                "occupancy_rate_pct": round((occupied_count / total * 100), 1) if total > 0 else 0.0,
+                "floors": sorted_floors,
+            }
+
+    def bulk_setup_hotel_floors(
+        self,
+        business_id: str,
+        floors_count: int,
+        rooms_per_floor: int,
+        starting_floor: int = 1,
+        room_type_id: Optional[str] = None,
+        replace_existing: bool = False,
+    ) -> Dict[str, Any]:
+        """
+        Bulk generate property floor and room unit layout (OYO Onboarding Parity).
+        """
+        self.invalidate_profile_cache(business_id)
+        with session_scope(self.session_factory) as session:
+            res_repo = ResourceRepository(session)
+            room_repo = RoomTypeRepository(session)
+
+            rt = room_repo.get(room_type_id, business_id=business_id) if room_type_id else None
+            rt_name = rt.name if rt else "Deluxe Room"
+            bed_type = rt.bed_type if rt else "King Bed"
+            capacity = rt.max_occupancy if rt else 2
+
+            if replace_existing:
+                existing = res_repo.list_resources(business_id=business_id)
+                for r in existing:
+                    res_repo.delete_resource(business_id, r.id)
+
+            created_count = 0
+            for f_idx in range(floors_count):
+                floor_num = starting_floor + f_idx
+                floor_name = "Ground Floor" if floor_num == 0 else f"{floor_num}st Floor" if floor_num == 1 else f"{floor_num}nd Floor" if floor_num == 2 else f"{floor_num}rd Floor" if floor_num == 3 else f"{floor_num}th Floor"
+
+                for r_idx in range(1, rooms_per_floor + 1):
+                    room_number = f"{floor_num}{r_idx:02d}"
+                    room_name = f"Room {room_number}"
+
+                    meta = {
+                        "floor": floor_num,
+                        "floor_name": floor_name,
+                        "room_number": room_number,
+                        "room_type_id": rt.id if rt else None,
+                        "room_type_name": rt_name,
+                        "bed_type": bed_type,
+                        "housekeeping_status": "clean",
+                    }
+
+                    res_repo.create_resource(
+                        business_id=business_id,
+                        resource_type="room",
+                        name=room_name,
+                        capacity=capacity,
+                        min_party_size=1,
+                        max_party_size=capacity,
+                        section=floor_name,
+                        is_active=True,
+                        metadata_json=meta,
+                    )
+                    created_count += 1
+
+        return self.get_hotel_floor_layout(business_id)
+
+    def update_room_housekeeping_status(
+        self,
+        business_id: str,
+        resource_id: str,
+        status: str,
+    ) -> Optional[Dict[str, Any]]:
+        """Update room operational / housekeeping state: 'clean', 'dirty', 'maintenance'."""
+        status_clean = status.strip().lower()
+        if status_clean not in ("clean", "dirty", "maintenance"):
+            raise ValueError(f"Invalid housekeeping status '{status}'. Must be clean, dirty, or maintenance.")
+
+        self.invalidate_profile_cache(business_id)
+        with session_scope(self.session_factory) as session:
+            res_repo = ResourceRepository(session)
+            resource = res_repo.get_resource(resource_id, business_id=business_id)
+            if not resource:
+                return None
+
+            meta = dict(resource.metadata_json or {})
+            meta["housekeeping_status"] = status_clean
+            meta["last_status_change"] = utcnow().isoformat()
+            res_repo.update_resource(business_id, resource_id, {"metadata_json": meta})
+
+        return self.get_hotel_floor_layout(business_id)
+
+    def hotel_check_in(
+        self,
+        business_id: str,
+        resource_id: str,
+        customer_name: str,
+        customer_phone: str,
+        nights: int = 1,
+        party_size: int = 2,
+        notes: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Perform front-desk guest check-in (Walk-in or Online).
+        Allocates physical room and records active reservation.
+        """
+        import uuid
+        from backend.database.models import Reservation, utcnow
+        self.invalidate_profile_cache(business_id)
+
+        now = utcnow()
+        end = now + timedelta(days=max(1, nights))
+
+        with session_scope(self.session_factory) as session:
+            res_repo = ResourceRepository(session)
+            resource = res_repo.get_resource(resource_id, business_id=business_id)
+            if not resource:
+                raise ValueError(f"Room resource '{resource_id}' not found.")
+
+            booking_id = f"HTL-{uuid.uuid4().hex[:8].upper()}"
+            resv = Reservation(
+                id=booking_id,
+                business_id=business_id,
+                resource_id=resource_id,
+                customer_name=customer_name.strip(),
+                customer_phone=customer_phone.strip(),
+                party_size=party_size,
+                start_time=now,
+                end_time=end,
+                status="checked_in",
+                special_requests=notes.strip() if notes else None,
+                metadata_json={
+                    "check_in_type": "front_desk",
+                    "room_name": resource.name,
+                    "nights": nights,
+                },
+            )
+            session.add(resv)
+
+            # Update room metadata to occupied
+            meta = dict(resource.metadata_json or {})
+            meta["housekeeping_status"] = "occupied"
+            meta["current_reservation_id"] = booking_id
+            res_repo.update_resource(business_id, resource_id, {"metadata_json": meta})
+            session.flush()
+
+        return self.get_hotel_floor_layout(business_id)
+
+    def hotel_check_out(
+        self,
+        business_id: str,
+        resource_id: str,
+    ) -> Dict[str, Any]:
+        """
+        Perform front-desk guest check-out.
+        Completes active reservation and transitions room to 'dirty' (needs cleaning).
+        """
+        from backend.database.models import Reservation, utcnow
+        self.invalidate_profile_cache(business_id)
+        now = utcnow()
+
+        with session_scope(self.session_factory) as session:
+            res_repo = ResourceRepository(session)
+            resource = res_repo.get_resource(resource_id, business_id=business_id)
+            if not resource:
+                raise ValueError(f"Room resource '{resource_id}' not found.")
+
+            # Find active checked-in reservation
+            active_res = (
+                session.query(Reservation)
+                .filter(
+                    Reservation.business_id == business_id,
+                    Reservation.resource_id == resource_id,
+                    Reservation.status.in_(["checked_in", "confirmed"]),
+                )
+                .order_by(Reservation.start_time.desc())
+                .first()
+            )
+            if active_res:
+                active_res.status = "completed"
+                active_res.end_time = now
+                res_meta = dict(active_res.metadata_json or {})
+                res_meta["checked_out_at"] = now.isoformat()
+                active_res.metadata_json = res_meta
+
+            # Room transitions to dirty
+            meta = dict(resource.metadata_json or {})
+            meta["housekeeping_status"] = "dirty"
+            meta.pop("current_reservation_id", None)
+            res_repo.update_resource(business_id, resource_id, {"metadata_json": meta})
+            session.flush()
+
+        return self.get_hotel_floor_layout(business_id)
 
 
 _DEFAULT_SERVICE: Optional[DatabaseService] = None
