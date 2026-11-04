@@ -147,6 +147,7 @@ export default function ResourceInventoryCard({
       ) : (
         <BookingCalendarView
           business={business}
+          domainConfig={domainConfig}
           resources={resources}
           reservations={reservations}
           onRefresh={onRefresh}
@@ -301,7 +302,15 @@ export default function ResourceInventoryCard({
                     </div>
                     <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginTop: '4px', flexWrap: 'wrap' }}>
                       <span style={{ fontSize: '0.7rem', background: 'rgba(16, 185, 129, 0.1)', color: 'var(--color-emerald)', border: '1px solid rgba(16, 185, 129, 0.25)', padding: '2px 8px', borderRadius: 'var(--radius-full)', fontWeight: 600, fontFamily: 'var(--font-mono)' }}>
-                        {res.resource_type}
+                        {res.resource_type === 'clinic_room'
+                          ? 'Consultation Suite'
+                          : res.resource_type === 'procedure_room'
+                          ? 'Procedure Bay'
+                          : res.resource_type === 'practitioner'
+                          ? 'Doctor / Specialist'
+                          : res.resource_type === 'table'
+                          ? 'Dining Table'
+                          : res.resource_type}
                       </span>
                       {res.section && (
                         <span style={{ fontSize: '0.74rem', color: 'var(--text-tertiary)' }}>

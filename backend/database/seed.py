@@ -47,9 +47,9 @@ DOMAIN_RESERVABLE_RESOURCES: Dict[str, List[Dict[str, Any]]] = {
         {"name": "Table 5 (VIP Dining Room)", "capacity": 10, "min_party_size": 6, "max_party_size": 12, "resource_type": "table", "section": "VIP Lounge"},
     ],
     "biz_apex_dental": [
-        {"name": "Dental Suite 1 (Consultation)", "capacity": 1, "min_party_size": 1, "max_party_size": 2, "resource_type": "room", "section": "1st Floor"},
-        {"name": "Dental Suite 2 (Procedures & Scaling)", "capacity": 1, "min_party_size": 1, "max_party_size": 2, "resource_type": "room", "section": "1st Floor"},
-        {"name": "Dental Surgery Suite (Orthodontics & Implants)", "capacity": 1, "min_party_size": 1, "max_party_size": 2, "resource_type": "room", "section": "2nd Floor"},
+        {"name": "Dental Suite 1 (Consultation)", "capacity": 1, "min_party_size": 1, "max_party_size": 2, "resource_type": "clinic_room", "section": "1st Floor"},
+        {"name": "Dental Suite 2 (Procedures & Scaling)", "capacity": 1, "min_party_size": 1, "max_party_size": 2, "resource_type": "procedure_room", "section": "1st Floor"},
+        {"name": "Dental Surgery Suite (Orthodontics & Implants)", "capacity": 1, "min_party_size": 1, "max_party_size": 2, "resource_type": "procedure_room", "section": "2nd Floor"},
         {"name": "Dr. Sharma (Senior Orthodontist)", "capacity": 1, "min_party_size": 1, "max_party_size": 1, "resource_type": "practitioner", "section": "Specialists"},
         {"name": "Dr. Ananya Rao (Pediatric Dental Specialist)", "capacity": 1, "min_party_size": 1, "max_party_size": 1, "resource_type": "practitioner", "section": "Specialists"},
     ],

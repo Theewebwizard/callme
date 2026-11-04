@@ -20,6 +20,7 @@ import {
   MapPin,
 } from 'lucide-react';
 import { api } from '../api';
+import { getDomainForBusiness } from '../domain/businessDomainRegistry';
 
 /**
  * Interactive Visual Booking Calendar & Timeline Grid
@@ -28,10 +29,15 @@ import { api } from '../api';
  */
 export default function BookingCalendarView({
   business,
+  domainConfig = null,
   resources = [],
   reservations = [],
   onRefresh,
 }) {
+  const effectiveDomain = domainConfig || getDomainForBusiness(business?.industry || '');
+  const isClinic = effectiveDomain.key === 'clinic';
+  const isHotel = effectiveDomain.key === 'hotel';
+  const isRestaurant = effectiveDomain.key === 'restaurant';
   const [viewMode, setViewMode] = useState('timeline'); // 'timeline' (multi-day), 'day' (hourly), 'list'
   const [selectedDate, setSelectedDate] = useState(() => {
     const today = new Date();
@@ -300,11 +306,15 @@ export default function BookingCalendarView({
                 <CalendarIcon size={16} />
               </div>
               <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.02em' }}>
-                Interactive Booking Calendar & Timeline
+                {effectiveDomain.resourceConfig?.calendarTitle || 'Interactive Booking Calendar & Timeline'}
               </h3>
             </div>
             <p style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)', marginTop: '3px', margin: 0 }}>
-              Live occupancy grid for rooms, tables, and consultation suites. Inspect occupied nights, seatings, and guest reservations.
+              {isClinic
+                ? 'Live appointment schedule for consultation suites and doctors. Inspect booked patient slots, treatment procedures, and clinical availability.'
+                : isHotel
+                ? 'Live occupancy grid for rooms and suites. Inspect occupied nights, check-ins, and guest stays.'
+                : 'Live table reservation timeline. Inspect reserved seatings, party sizes, and dining schedules.'}
             </p>
           </div>
 
@@ -438,10 +448,29 @@ export default function BookingCalendarView({
                 onChange={(e) => setFilterType(e.target.value)}
                 style={{ padding: '0.3rem 0.6rem', fontSize: '0.78rem', width: 'auto' }}
               >
-                <option value="all">All Types ({resources.length})</option>
-                <option value="room">🏨 Hotel Rooms & Suites</option>
-                <option value="table">🍽️ Dining Tables</option>
-                <option value="clinic_room">🩺 Clinical Suites</option>
+                <option value="all">All {effectiveDomain.resourceConfig?.shortTitle || 'Resources'} ({resources.length})</option>
+                {isClinic ? (
+                  <>
+                    <option value="clinic_room">🩺 Consultation Suites</option>
+                    <option value="procedure_room">🔬 Dental & Procedure Bays</option>
+                    <option value="practitioner">👨‍⚕️ Doctors & Specialists</option>
+                    <option value="therapy_room">🧘 Therapy & Recovery Rooms</option>
+                  </>
+                ) : isHotel ? (
+                  <>
+                    <option value="room">🏨 Standard Hotel Rooms</option>
+                    <option value="suite">🛏️ Executive Suites</option>
+                    <option value="deluxe">✨ Deluxe Suites & Villas</option>
+                    <option value="hall">🏛️ Banquet / Event Halls</option>
+                  </>
+                ) : (
+                  <>
+                    <option value="table">🍽️ Dining Tables</option>
+                    <option value="booth">🛋️ Private Booths</option>
+                    <option value="bar">🍸 Bar & Lounge</option>
+                    <option value="patio">🌿 Outdoor Patio</option>
+                  </>
+                )}
               </select>
             </div>
 
@@ -550,7 +579,11 @@ export default function BookingCalendarView({
         >
           {filteredResources.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '3.5rem', color: 'var(--text-tertiary)' }}>
-              No resources found for the selected filter. Register a room or table to enable timeline scheduling.
+              {isClinic
+                ? 'No consultation suites or doctors found for the selected filter. Register suites and doctors to enable appointment scheduling.'
+                : isHotel
+                ? 'No hotel rooms found for the selected filter. Register rooms under Units & Calendar to enable timeline scheduling.'
+                : 'No dining tables found for the selected filter. Register tables to enable reservation scheduling.'}
             </div>
           ) : (
             <table
@@ -658,27 +691,47 @@ export default function BookingCalendarView({
                             borderRadius: 'var(--radius-sm)',
                             fontWeight: 600,
                             background:
-                              res.resource_type === 'room'
-                                ? 'rgba(56, 189, 248, 0.1)'
+                              res.resource_type === 'practitioner'
+                                ? 'rgba(16, 185, 129, 0.12)'
+                                : res.resource_type === 'clinic_room'
+                                ? 'rgba(56, 189, 248, 0.12)'
+                                : res.resource_type === 'procedure_room'
+                                ? 'rgba(168, 85, 247, 0.12)'
                                 : res.resource_type === 'table'
                                 ? 'rgba(16, 185, 129, 0.1)'
-                                : 'rgba(255, 255, 255, 0.05)',
+                                : 'rgba(56, 189, 248, 0.1)',
                             color:
-                              res.resource_type === 'room'
+                              res.resource_type === 'practitioner'
+                                ? '#10b981'
+                                : res.resource_type === 'clinic_room'
                                 ? '#38bdf8'
+                                : res.resource_type === 'procedure_room'
+                                ? '#c084fc'
                                 : res.resource_type === 'table'
                                 ? 'var(--color-emerald)'
-                                : 'var(--text-secondary)',
+                                : '#38bdf8',
                             border: `1px solid ${
-                              res.resource_type === 'room'
-                                ? 'rgba(56, 189, 248, 0.25)'
-                                : res.resource_type === 'table'
-                                ? 'rgba(16, 185, 129, 0.25)'
+                              res.resource_type === 'practitioner'
+                                ? 'rgba(16, 185, 129, 0.3)'
+                                : res.resource_type === 'clinic_room'
+                                ? 'rgba(56, 189, 248, 0.3)'
+                                : res.resource_type === 'procedure_room'
+                                ? 'rgba(168, 85, 247, 0.3)'
                                 : 'var(--border-medium)'
                             }`,
                           }}
                         >
-                          {res.resource_type === 'room' ? 'Room' : res.resource_type === 'table' ? 'Table' : 'Suite'}
+                          {res.resource_type === 'practitioner'
+                            ? 'Doctor / Specialist'
+                            : res.resource_type === 'clinic_room'
+                            ? 'Consultation Suite'
+                            : res.resource_type === 'procedure_room'
+                            ? 'Procedure Bay'
+                            : res.resource_type === 'therapy_room'
+                            ? 'Therapy Room'
+                            : res.resource_type === 'table'
+                            ? 'Dining Table'
+                            : (isClinic ? 'Clinical Suite' : 'Room')}
                         </span>
                         {res.section && (
                           <span style={{ fontSize: '0.72rem', color: 'var(--text-tertiary)' }}>
@@ -1224,7 +1277,7 @@ export default function BookingCalendarView({
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Plus size={18} color="var(--color-emerald)" />
                 <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-                  New Reservation / Room Night
+                  {isClinic ? 'Schedule Patient Appointment / Consultation' : isHotel ? 'New Room Reservation' : 'New Table Reservation'}
                 </h3>
               </div>
               <button
@@ -1239,7 +1292,7 @@ export default function BookingCalendarView({
             <form onSubmit={handleCreateReservation} style={{ padding: '1.25rem 1.4rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div className="form-group">
-                  <label className="form-label">Guest Full Name *</label>
+                  <label className="form-label">{isClinic ? 'Patient Full Name *' : isHotel ? 'Guest Full Name *' : 'Customer Name *'}</label>
                   <input
                     type="text"
                     className="form-input"
@@ -1279,7 +1332,7 @@ export default function BookingCalendarView({
                     }}
                     required
                   >
-                    <option value="">-- Choose Table or Room --</option>
+                    <option value="">{isClinic ? '-- Choose Doctor or Consultation Suite --' : isHotel ? '-- Choose Room / Suite --' : '-- Choose Dining Table --'}</option>
                     {resources.map((r) => (
                       <option key={r.id} value={r.id}>
                         {r.name} ({r.resource_type} • fits {r.max_party_size})
