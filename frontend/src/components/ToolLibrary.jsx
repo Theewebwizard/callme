@@ -24,6 +24,7 @@ import {
   ExternalLink,
   Utensils,
   Bed,
+  Clock,
 } from 'lucide-react';
 import { api } from '../api';
 import BookingCalendarView from './BookingCalendarView';
