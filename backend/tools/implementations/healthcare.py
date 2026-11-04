@@ -3,7 +3,8 @@ Healthcare and appointment scheduling tool handlers.
 """
 
 import uuid
-from typing import Dict, Any
+import logging
+from typing import Dict, Any, List, Optional
 from backend.tools.base import (
     ToolExecutionResult,
     ToolExecutionStatus,
@@ -12,7 +13,10 @@ from backend.tools.base import (
 from backend.tools.definitions import (
     CheckAppointmentAvailabilityInput,
     CreateAppointmentInput,
+    QueryTreatmentPricingInput,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def handle_check_appointment_availability(
@@ -254,3 +258,113 @@ def format_appointment_summary(args: Dict[str, Any]) -> str:
         f"• Date & Time: {args.get('appointment_date')} at {args.get('appointment_time')}"
         f"{notes}"
     )
+
+def handle_query_treatment_pricing(
+    input_data: QueryTreatmentPricingInput,
+    business_config: Dict[str, Any],
+) -> ToolExecutionResult:
+    """
+    Search clinic treatment fee catalog, consultation charges, doctor specializations,
+    procedure durations, and patient preparation notes.
+    """
+    biz_id = business_config.get("id", "")
+    biz_name = business_config.get("name", "our clinic")
+    raw_mode = business_config.get("execution_mode", "mock")
+    is_live = (str(raw_mode).lower() == "live")
+    exec_mode = ToolExecutionMode.LIVE if is_live else ToolExecutionMode.MOCK
+
+    query = input_data.query.strip()
+    category = input_data.category.strip() if input_data.category else None
+    practitioner_type = input_data.practitioner_type.strip() if input_data.practitioner_type else None
+    max_budget = input_data.max_budget
+
+    matching_treatments: List[Dict[str, Any]] = []
+
+    # 1. Authoritative query via DatabaseService
+    try:
+        from backend.database.service import get_database_service
+        db_service = get_database_service()
+        if db_service and biz_id:
+            matching_treatments = db_service.search_treatments_semantic(
+                business_id=biz_id,
+                query=query,
+                category=category,
+                practitioner_type=practitioner_type,
+                max_budget=max_budget,
+                limit=6,
+            )
+    except Exception as exc:
+        logger.warning("Database search failed in handle_query_treatment_pricing: %s", exc)
+
+    # 2. In-memory fallback if DB returned empty and treatments were supplied in business_config
+    if not matching_treatments and "treatments" in business_config and business_config["treatments"]:
+        from backend.database.repositories.treatment_repo import rank_treatments_semantic
+        matching_treatments = rank_treatments_semantic(
+            treatments=business_config["treatments"],
+            query=query,
+            category=category,
+            practitioner_type=practitioner_type,
+            max_budget=max_budget,
+            limit=6,
+        )
+
+    # 3. Assemble response
+    if not matching_treatments:
+        budget_str = f" under ₹{int(max_budget)}" if max_budget else ""
+        spec_str = f" with {practitioner_type}" if practitioner_type else ""
+        return ToolExecutionResult(
+            tool_id="query_treatment_pricing",
+            status=ToolExecutionStatus.SUCCESS,
+            success=True,
+            is_business_accepted=True,
+            mode=exec_mode,
+            is_simulated=(not is_live),
+            data={
+                "found": False,
+                "count": 0,
+                "query": query,
+                "treatments": [],
+            },
+            message=(
+                f"We currently do not have any treatments or procedures matching '{query}'{spec_str}{budget_str} "
+                f"at {biz_name}. Would you like me to check our other clinical services or book a general consultation with our doctor?"
+            ),
+        )
+
+    lines = [f"Here are the matching treatments and consultation fees at {biz_name}:"]
+    currency_symbol = matching_treatments[0].get("currency", "INR")
+    curr_prefix = "₹" if currency_symbol in ("INR", "₹") else f"{currency_symbol} "
+
+    for t in matching_treatments:
+        p_base = t.get("base_fee", 0.0)
+        p_max = t.get("fee_range_max", p_base)
+        if p_max and p_max > p_base:
+            fee_str = f"{curr_prefix}{int(p_base)} - {curr_prefix}{int(p_max)}"
+        else:
+            fee_str = f"{curr_prefix}{int(p_base)}" if p_base == int(p_base) else f"{curr_prefix}{p_base:.2f}"
+
+        name = t.get("name", "Treatment")
+        duration = t.get("duration_minutes", 30)
+        doctor = t.get("practitioner_type") or "Doctor / Specialist"
+        prep = t.get("preparation_instructions")
+        prep_str = f" [Prep: {prep}]" if prep else ""
+
+        lines.append(f"• {name} - {fee_str} (~{duration} mins, {doctor}){prep_str}")
+
+    summary_text = "\n".join(lines)
+    return ToolExecutionResult(
+        tool_id="query_treatment_pricing",
+        status=ToolExecutionStatus.SUCCESS,
+        success=True,
+        is_business_accepted=True,
+        mode=exec_mode,
+        is_simulated=(not is_live),
+        data={
+            "found": True,
+            "count": len(matching_treatments),
+            "query": query,
+            "treatments": matching_treatments,
+        },
+        message=summary_text,
+    )
+

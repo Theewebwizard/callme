@@ -67,6 +67,7 @@ class Business(Base):
     reservations = relationship("Reservation", back_populates="business", cascade="all, delete-orphan", lazy="select")
     menu_items = relationship("MenuItem", back_populates="business", cascade="all, delete-orphan", lazy="select")
     room_types = relationship("RoomType", back_populates="business", cascade="all, delete-orphan", lazy="select")
+    medical_treatments = relationship("MedicalTreatment", back_populates="business", cascade="all, delete-orphan", lazy="select")
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert model to dictionary representation."""
@@ -89,6 +90,54 @@ class Business(Base):
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }
+
+class MedicalTreatment(Base):
+    """
+    Business-specific clinic treatment, medical service, and consultation fee record.
+    Used for semantic procedure retrieval, fee inquiries, doctor specialty matching, and preparation instructions.
+    """
+    __tablename__ = "medical_treatments"
+
+    id = Column(String(64), primary_key=True, default=lambda: f"treat_{uuid.uuid4().hex[:12]}")
+    business_id = Column(String(64), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False, index=True)
+    name = Column(String(255), nullable=False, index=True)
+    category = Column(String(100), nullable=False, index=True)  # e.g., 'Consultation', 'Orthodontics', 'Cosmetic', 'Preventive', 'Surgery'
+    base_fee = Column(Float, nullable=False)
+    fee_range_max = Column(Float, nullable=True)
+    currency = Column(String(10), default="INR", nullable=False)
+    duration_minutes = Column(Integer, default=30, nullable=False)
+    practitioner_type = Column(String(100), default="General Dentist", nullable=False)
+    description = Column(Text, nullable=True)
+    preparation_instructions = Column(Text, nullable=True)
+    is_available = Column(Boolean, default=True, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
+
+    business = relationship("Business", back_populates="medical_treatments")
+
+    __table_args__ = (
+        Index("ix_treatment_business_category", "business_id", "category"),
+    )
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert medical treatment to dictionary representation."""
+        return {
+            "id": self.id,
+            "business_id": self.business_id,
+            "name": self.name,
+            "category": self.category,
+            "base_fee": self.base_fee,
+            "fee_range_max": self.fee_range_max if self.fee_range_max is not None else self.base_fee,
+            "currency": self.currency,
+            "duration_minutes": self.duration_minutes,
+            "practitioner_type": self.practitioner_type or "General Specialist",
+            "description": self.description or "",
+            "preparation_instructions": self.preparation_instructions or "No special preparation needed.",
+            "is_available": self.is_available,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+        }
+
 
 
 class BusinessFAQ(Base):

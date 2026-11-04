@@ -537,3 +537,35 @@ class QueryRoomPricingInput(BaseModel):
         return v.strip() if isinstance(v, str) else v
 
     model_config = ConfigDict(extra="forbid")
+
+class QueryTreatmentPricingInput(BaseModel):
+    """Input payload for searching clinic medical treatments, doctor consultation fees, procedure durations, and preparation guidelines."""
+    query: str = Field(
+        ...,
+        min_length=1,
+        max_length=300,
+        description="Clinical treatment, procedure name, doctor specialty, or symptom keyword (e.g. 'root canal', 'teeth whitening', 'braces cost', 'consultation fee', 'wisdom tooth removal').",
+    )
+    category: Optional[str] = Field(
+        None,
+        max_length=100,
+        description="Optional category filter (e.g. 'Consultation', 'Preventive', 'Restoration', 'Orthodontics', 'Prosthodontics', 'Cosmetic', 'Surgery').",
+    )
+    practitioner_type: Optional[str] = Field(
+        None,
+        max_length=100,
+        description="Optional specialist / practitioner type filter (e.g. 'General Dentist', 'Orthodontist', 'Endodontist', 'Oral Surgeon', 'Physician').",
+    )
+    max_budget: Optional[float] = Field(
+        None,
+        ge=0,
+        description="Optional maximum budget or fee ceiling in local currency.",
+    )
+
+    @field_validator("query", mode="before")
+    @classmethod
+    def clean_query(cls, v: Any) -> Any:
+        return v.strip() if isinstance(v, str) else v
+
+    model_config = ConfigDict(extra="forbid")
+

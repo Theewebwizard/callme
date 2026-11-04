@@ -37,6 +37,7 @@ from backend.integrations.adapters.builtin_support_adapters import (
     SimulatedEscalationAdapter,
     BuiltinRestaurantMenuAdapter,
     BuiltinHotelRoomsAdapter,
+    BuiltinClinicTreatmentsAdapter,
 )
 
 __all__ = [
@@ -54,6 +55,7 @@ __all__ = [
     "SimulatedEscalationAdapter",
     "BuiltinRestaurantMenuAdapter",
     "BuiltinHotelRoomsAdapter",
+    "BuiltinClinicTreatmentsAdapter",
     "GoogleCalendarAdapter",
     "OutlookCalendarAdapter",
     "OpenTableAdapter",

@@ -25,11 +25,13 @@ import {
   Utensils,
   Bed,
   Clock,
+  Stethoscope,
 } from 'lucide-react';
 import { api } from '../api';
 import BookingCalendarView from './BookingCalendarView';
 import MenuManagerModal, { MenuManagerView } from './MenuManagerModal';
 import RoomManagerModal, { RoomManagerView } from './RoomManagerModal';
+import TreatmentManagerModal, { TreatmentManagerView } from './TreatmentManagerModal';
 import { getDomainForBusiness } from '../domain/businessDomainRegistry';
 import ResourceInventoryCard from './ResourceInventoryCard';
 
@@ -45,6 +47,7 @@ const TOOL_ICONS = {
   transfer_call: PhoneForwarded,
   query_menu_pricing: Utensils,
   query_room_pricing: Bed,
+  query_treatment_pricing: Stethoscope,
 };
 
 const DEMAND_CATEGORIES = [
@@ -86,6 +89,8 @@ export default function ToolLibrary({ business }) {
   const [menuItemCount, setMenuItemCount] = useState(17);
   const [roomModalOpen, setRoomModalOpen] = useState(false);
   const [roomCount, setRoomCount] = useState(0);
+  const [treatmentModalOpen, setTreatmentModalOpen] = useState(false);
+  const [treatmentCount, setTreatmentCount] = useState(0);
   const [wizardTool, setWizardTool] = useState(null);
   const [wizardSchema, setWizardSchema] = useState(null);
   const [wizardStep, setWizardStep] = useState(1); // 1: Option, 2: Fields, 3: Validate, 4: Ready
@@ -116,7 +121,10 @@ export default function ToolLibrary({ business }) {
     if (activeTab === 'rooms' && !domainConfig.hasRooms) {
       setActiveTab('capabilities');
     }
-  }, [domainConfig.hasMenu, domainConfig.hasRooms, activeTab]);
+    if (activeTab === 'treatments' && !domainConfig.hasTreatments) {
+      setActiveTab('capabilities');
+    }
+  }, [domainConfig.hasMenu, domainConfig.hasRooms, domainConfig.hasTreatments, activeTab]);
 
   const loadData = async () => {
     setLoading(true);
@@ -138,6 +146,7 @@ export default function ToolLibrary({ business }) {
       setReservations(bookingList || []);
       api.getMenu(business.id).then((r) => r?.items && setMenuItemCount(r.items.length)).catch(() => {});
       api.getRooms(business.id).then((r) => r?.items && setRoomCount(r.items.length)).catch(() => {});
+      api.getTreatments(business.id).then((r) => r?.items && setTreatmentCount(r.items.length)).catch(() => {});
 
       // 2. Fetch full live readiness reports (can take ~10s to audit all integration check engines)
       api.getCapabilities(business.id)
@@ -597,6 +606,23 @@ export default function ToolLibrary({ business }) {
           </button>
         )}
 
+        {domainConfig.hasTreatments && (
+          <button
+            className={`btn-secondary ${activeTab === 'treatments' ? 'active' : ''}`}
+            style={{
+              background: activeTab === 'treatments' ? '#ffffff' : 'var(--bg-card)',
+              borderColor: activeTab === 'treatments' ? '#ffffff' : 'var(--border-medium)',
+              color: activeTab === 'treatments' ? '#07080a' : 'var(--text-secondary)',
+              fontWeight: 600,
+              padding: '0.45rem 0.95rem',
+              fontSize: '0.8rem',
+            }}
+            onClick={() => setActiveTab('treatments')}
+          >
+            <Stethoscope size={14} /> 🩺 {domainConfig.treatmentConfig?.shortTitle || 'Treatments & Fees'} ({treatmentCount})
+          </button>
+        )}
+
         <button
           className={`btn-secondary ${activeTab === 'resources' ? 'active' : ''}`}
           style={{
@@ -954,6 +980,32 @@ export default function ToolLibrary({ business }) {
       )}
 
       {/* =========================================================================
+         TAB: CLINIC MEDICAL TREATMENTS & FEE STORE
+         ========================================================================= */}
+      {activeTab === 'treatments' && domainConfig.hasTreatments && (
+        <div className="card" style={{ padding: '1.5rem', background: 'var(--bg-card)', border: '1px solid var(--border-medium)' }}>
+          <div style={{ marginBottom: '1.25rem' }}>
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Stethoscope size={20} color="var(--primary, #3b82f6)" />
+              {domainConfig.treatmentConfig?.title || 'Clinic Treatments, Services & Fee Store'}
+            </h2>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: 0 }}>
+              {domainConfig.treatmentConfig?.description || 'Manage procedures, doctor specializations, and fee catalog for ' + business.name}
+            </p>
+          </div>
+          <TreatmentManagerView
+            business={business}
+            isEmbedded={true}
+            defaultTab="treatments"
+            onTreatmentsUpdated={() => {
+              loadData();
+              api.getTreatments(business.id).then((r) => r?.items && setTreatmentCount(r.items.length)).catch(() => {});
+            }}
+          />
+        </div>
+      )}
+
+      {/* =========================================================================
          TAB 2: RESOURCE INVENTORY & BOOKINGS (FIRST-PARTY ENGINE)
          ========================================================================= */}
       {activeTab === 'resources' && (
@@ -1276,6 +1328,27 @@ export default function ToolLibrary({ business }) {
                     </div>
                   )}
 
+                  {(wizardTool?.id === 'query_treatment_pricing' || currentOption.option_id === 'builtin_clinic_treatments') && domainConfig.hasTreatments && (
+                    <div style={{ marginTop: '1.5rem', borderTop: '2px solid var(--slate-100)', paddingTop: '1.25rem' }}>
+                      <div style={{ marginBottom: '1rem' }}>
+                        <h3 style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--slate-900)', margin: '0 0 4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <Stethoscope size={18} color="var(--primary, #3b82f6)" /> Clinical Treatments & Fee Store
+                        </h3>
+                        <p style={{ fontSize: '0.8rem', color: 'var(--slate-600)', margin: 0 }}>
+                          Upload, paste, or manage your procedures, consultation charges, and doctor specialties. The receptionist AI uses this dynamically for caller inquiries.
+                        </p>
+                      </div>
+                      <TreatmentManagerView
+                        business={business}
+                        isEmbedded={true}
+                        onTreatmentsUpdated={() => {
+                          loadData();
+                          api.getTreatments(business.id).then((r) => r?.items && setTreatmentCount(r.items.length)).catch(() => {});
+                        }}
+                      />
+                    </div>
+                  )}
+
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1.5rem' }}>
                     <button
                       type="button"
@@ -1454,6 +1527,14 @@ export default function ToolLibrary({ business }) {
         isOpen={roomModalOpen}
         onClose={() => setRoomModalOpen(false)}
         onRoomsUpdated={loadData}
+      />
+
+      {/* Standalone Treatment Manager Modal */}
+      <TreatmentManagerModal
+        business={business}
+        isOpen={treatmentModalOpen}
+        onClose={() => setTreatmentModalOpen(false)}
+        onTreatmentsUpdated={loadData}
       />
     </section>
   );

@@ -373,6 +373,26 @@ export const api = {
       method: 'POST',
     }),
 
+  // Clinic Treatments & Fee Store (Healthcare Domain)
+  getTreatments: (businessId, category = null) => {
+    const q = category ? `?category=${encodeURIComponent(category)}` : '';
+    return request(`/businesses/${businessId}/treatments${q}`);
+  },
+  uploadTreatments: (businessId, items, replace = true) =>
+    request(`/businesses/${businessId}/treatments/upload`, {
+      method: 'POST',
+      body: JSON.stringify({ items, replace }),
+    }),
+  deleteTreatment: (businessId, treatmentId) =>
+    request(`/businesses/${businessId}/treatments/${treatmentId}`, { method: 'DELETE' }),
+  searchTreatments: (businessId, query) =>
+    request(`/businesses/${businessId}/treatments/search?query=${encodeURIComponent(query)}`, { method: 'POST' }),
+  parseTreatmentText: (businessId, text, defaultCategory = 'Consultation') =>
+    request(`/businesses/${businessId}/treatments/parse-text`, {
+      method: 'POST',
+      body: JSON.stringify({ text, default_category: defaultCategory }),
+    }),
+
   // Admin Command Center
   getAdminOverview: () => request('/admin/overview'),
   getAdminTools: () => request('/admin/tools'),
@@ -401,5 +421,11 @@ export const bulkSetupHotelFloors = (businessId, payload) => api.bulkSetupHotelF
 export const updateRoomStatus = (businessId, resourceId, status) => api.updateRoomStatus(businessId, resourceId, status);
 export const hotelCheckIn = (businessId, resourceId, payload) => api.hotelCheckIn(businessId, resourceId, payload);
 export const hotelCheckOut = (businessId, resourceId) => api.hotelCheckOut(businessId, resourceId);
+
+export const getTreatments = (businessId, category = null) => api.getTreatments(businessId, category);
+export const uploadTreatments = (businessId, items, replace = true) => api.uploadTreatments(businessId, items, replace);
+export const deleteTreatment = (businessId, treatmentId) => api.deleteTreatment(businessId, treatmentId);
+export const searchTreatments = (businessId, query) => api.searchTreatments(businessId, query);
+export const parseTreatmentText = (businessId, text, defaultCategory = 'Consultation') => api.parseTreatmentText(businessId, text, defaultCategory);
 
 export default api;

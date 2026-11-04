@@ -859,3 +859,190 @@ class BuiltinHotelRoomsAdapter(IntegrationAdapter):
             safe_message=f"Retrieved {len(items)} room types for tenant hotel rate card.",
             authoritative_source=self.authoritative_source.value,
         )
+
+class BuiltinClinicTreatmentsAdapter(IntegrationAdapter):
+    """
+    First-party authoritative adapter for Clinic Medical Treatments & Consultation Fee Catalog.
+    Evaluates database readiness, treatment inventory, procedure fees, and doctor specialization indexing.
+    """
+
+    @property
+    def authoritative_source(self) -> AuthoritativeSource:
+        return AuthoritativeSource.BUILTIN_DATABASE
+
+    def get_manifest(self) -> ProviderManifest:
+        return ProviderManifest(
+            provider_id="builtin_clinic_treatments",
+            display_name="Built-in Medical Treatments & Fee Store",
+            category=IntegrationCategory.SUPPORT,
+            supported_capabilities=[
+                CapabilityType.GET_CUSTOMER,
+            ],
+            auth_method=AuthMethod.INTERNAL,
+            authoritative_source=AuthoritativeSource.BUILTIN_DATABASE,
+            required_setup_fields=[],
+            optional_setup_fields=[
+                SetupField(
+                    key="currency",
+                    label="Fee Store Currency",
+                    type=FieldType.STRING,
+                    required=False,
+                    default_value="INR",
+                    description="Default currency for procedure fees (e.g. INR, USD, EUR).",
+                ),
+                SetupField(
+                    key="show_preparation_instructions",
+                    label="Include Patient Instructions in Responses",
+                    type=FieldType.BOOLEAN,
+                    required=False,
+                    default_value=True,
+                    description="Mention pre-procedure guidelines or fasting requirements in voice responses.",
+                ),
+            ],
+            required_oauth_scopes=[],
+            partner_approval_required=False,
+            required_resources=["medical_treatments"],
+            webhook_events=[],
+            test_connection_procedure="Checks local database connectivity and tenant medical treatments",
+            known_limitations=[
+                "Treatment fees and clinical procedures are strictly grounded in configured clinic fee store. Does not invent unlisted procedures.",
+            ],
+            is_mock=False,
+        )
+
+    def validate_configuration(self, config: Dict[str, Any]) -> ReadinessCheckResult:
+        return ReadinessCheckResult(
+            check_id="treatment_config_valid",
+            name="Treatment Catalog Configuration",
+            passed=True,
+            details="Treatment fee catalog parameters validated.",
+            severity="info",
+        )
+
+    def connect(self, credentials: Dict[str, Any]) -> ReadinessCheckResult:
+        db_ok = _is_db_connected()
+        return ReadinessCheckResult(
+            check_id="treatment_db_connection",
+            name="Treatment Database Connection",
+            passed=db_ok,
+            details="Connected to transactional clinic treatment store" if db_ok else "Database offline",
+            severity="critical",
+        )
+
+    def test_connection(self) -> ReadinessCheckResult:
+        db_ok = _is_db_connected()
+        return ReadinessCheckResult(
+            check_id="treatment_test_probe",
+            name="Database Operational Probe",
+            passed=db_ok,
+            details="Treatment catalog storage online and operational" if db_ok else "Database offline",
+            severity="critical",
+        )
+
+    def discover_resources(self, resource_type: str = "") -> List[DiscoveredResource]:
+        svc = get_database_service()
+        items = svc.list_treatments(self.business_id)
+        return [
+            DiscoveredResource(
+                resource_id=item["id"],
+                name=item["name"],
+                resource_type="medical_treatment",
+                is_default=False,
+                metadata={"base_fee": item["base_fee"], "category": item.get("category", "Consultation")},
+            )
+            for item in items
+        ]
+
+    def get_supported_capabilities(self) -> List[CapabilityType]:
+        return [CapabilityType.GET_CUSTOMER]
+
+    def assess_readiness(self, db_service: Any = None) -> ReadinessReport:
+        checks: List[ReadinessCheckResult] = []
+        missing: List[str] = []
+        svc = db_service or get_database_service()
+
+        # 1. DB connection check
+        db_ok = _is_db_connected()
+        checks.append(
+            ReadinessCheckResult(
+                check_id="treatment_db_connection",
+                name="Database Connection",
+                passed=db_ok,
+                details="Connected to tenant treatment store" if db_ok else "Database connection is offline",
+                severity="critical",
+            )
+        )
+
+        # 2. Config validation
+        checks.append(self.validate_configuration(self.configuration))
+
+        # 3. Operational check
+        if db_ok:
+            try:
+                items = svc.list_treatments(self.business_id)
+                item_count = len(items)
+                if item_count > 0:
+                    checks.append(
+                        ReadinessCheckResult(
+                            check_id="treatments_inventory",
+                            name="Treatments Loaded",
+                            passed=True,
+                            details=f"{item_count} treatments available for semantic fee and procedure inquiries.",
+                            severity="info",
+                        )
+                    )
+                else:
+                    checks.append(
+                        ReadinessCheckResult(
+                            check_id="treatments_inventory",
+                            name="Treatments Check",
+                            passed=False,
+                            details="No treatments loaded. Add treatments under Treatments & Fees.",
+                            severity="critical",
+                        )
+                    )
+                    missing.append("Upload at least one procedure or consultation fee to your fee store under Treatments & Fees.")
+            except Exception as exc:
+                checks.append(
+                    ReadinessCheckResult(
+                        check_id="treatments_inventory",
+                        name="Treatments Check",
+                        passed=False,
+                        details=f"Failed querying treatments: {exc}",
+                        severity="critical",
+                    )
+                )
+                missing.append(f"Database error querying treatments: {exc}")
+
+        if not db_ok:
+            missing.append("Database connection is required.")
+
+        critical_failures = [c for c in checks if not c.passed and c.severity == "critical"]
+        is_ready = len(critical_failures) == 0
+
+        now_str = datetime.now(timezone.utc).isoformat()
+        return ReadinessReport(
+            is_ready=is_ready,
+            status=CapabilityStatus.READY if is_ready else CapabilityStatus.DEGRADED,
+            checks=checks,
+            missing_requirements=missing,
+            checked_at=now_str,
+        )
+
+    def execute(
+        self,
+        operation: CapabilityType,
+        input_data: Dict[str, Any],
+        context: ExecutionContext,
+    ) -> CapabilityResult:
+        svc = get_database_service()
+        items = svc.list_treatments(self.business_id)
+        return CapabilityResult(
+            operation=operation,
+            outcome=ExecutionOutcome.OPERATION_COMPLETED,
+            success=True,
+            data={"treatments_count": len(items)},
+            safe_message=f"Retrieved {len(items)} treatments for tenant clinic fee store.",
+            authoritative_source=self.authoritative_source.value,
+        )
+

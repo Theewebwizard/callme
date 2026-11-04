@@ -1018,3 +1018,259 @@ def hotel_check_out(
         )
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+# -------------------------------------------------------------
+# Clinic Medical Treatments, Procedures & Fee Store Endpoints
+# -------------------------------------------------------------
+
+class TreatmentPayload(BaseModel):
+    id: Optional[str] = None
+    name: str = Field(..., min_length=1, max_length=255)
+    category: str = Field(default="Consultation", max_length=100)
+    base_fee: float = Field(..., ge=0)
+    fee_range_max: Optional[float] = Field(None, ge=0)
+    currency: str = Field(default="INR", max_length=10)
+    duration_minutes: int = Field(default=30, ge=5, le=480)
+    practitioner_type: str = Field(default="General Dentist", max_length=100)
+    description: Optional[str] = None
+    preparation_instructions: Optional[str] = None
+    is_available: bool = True
+
+
+class TreatmentUploadRequest(BaseModel):
+    items: List[TreatmentPayload] = Field(..., min_length=1)
+    replace: bool = Field(True, description="When true, replaces all existing treatments. When false, appends new items.")
+
+
+@router.get("/{business_id}/treatments")
+def get_business_treatments(
+    business_id: str,
+    category: Optional[str] = None,
+    only_available: bool = False,
+) -> Dict[str, Any]:
+    """Retrieve treatment procedures and fee store for a clinic tenant."""
+    db_service = get_database_service()
+    if not db_service.business_exists(business_id):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Business tenant '{business_id}' not found.",
+        )
+    items = db_service.list_treatments(business_id, category=category, only_available=only_available)
+    return {
+        "success": True,
+        "business_id": business_id,
+        "count": len(items),
+        "items": items,
+    }
+
+
+@router.post("/{business_id}/treatments/upload")
+def upload_business_treatments(
+    business_id: str,
+    req: TreatmentUploadRequest,
+    principal: AuthenticatedPrincipal = Depends(verify_business_access),
+) -> Dict[str, Any]:
+    """Upload and persist structured medical treatments and procedure fees."""
+    db_service = get_database_service()
+    if not db_service.business_exists(business_id):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Business tenant '{business_id}' not found.",
+        )
+    item_dicts = [item.model_dump() for item in req.items]
+    persisted = db_service.upload_treatments(business_id, item_dicts, replace=req.replace)
+    return {
+        "success": True,
+        "business_id": business_id,
+        "count": len(persisted),
+        "message": f"Successfully {'replaced' if req.replace else 'added'} {len(persisted)} treatments for business '{business_id}'.",
+        "items": persisted,
+    }
+
+
+@router.delete("/{business_id}/treatments/{treatment_id}")
+def delete_business_treatment(
+    business_id: str,
+    treatment_id: str,
+    principal: AuthenticatedPrincipal = Depends(verify_business_access),
+) -> Dict[str, Any]:
+    """Delete a specific treatment from clinic fee store."""
+    db_service = get_database_service()
+    deleted = db_service.delete_treatment(business_id, treatment_id)
+    if not deleted:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Treatment '{treatment_id}' not found for business '{business_id}'.",
+        )
+    return {
+        "success": True,
+        "message": f"Treatment '{treatment_id}' successfully deleted.",
+    }
+
+
+@router.post("/{business_id}/treatments/search")
+def search_business_treatments(
+    business_id: str,
+    query: str,
+    category: Optional[str] = None,
+    practitioner_type: Optional[str] = None,
+    max_budget: Optional[float] = None,
+) -> Dict[str, Any]:
+    """Semantically search clinic procedures, doctor consultations, and treatments."""
+    db_service = get_database_service()
+    results = db_service.search_treatments_semantic(
+        business_id=business_id,
+        query=query,
+        category=category,
+        practitioner_type=practitioner_type,
+        max_budget=max_budget,
+    )
+    return {
+        "success": True,
+        "business_id": business_id,
+        "query": query,
+        "count": len(results),
+        "items": results,
+    }
+
+
+class ParseTreatmentTextRequest(BaseModel):
+    text: str = Field(..., min_length=1)
+    default_category: Optional[str] = "Consultation"
+
+
+@router.post("/{business_id}/treatments/parse-text")
+def parse_treatment_text(
+    business_id: str,
+    req: ParseTreatmentTextRequest,
+    principal: AuthenticatedPrincipal = Depends(verify_business_access),
+) -> Dict[str, Any]:
+    """
+    Parse unstructured or pasted clinic rate brochure text into structured treatment objects.
+    Enables clinic administrators to paste their service menu and fee sheet directly.
+    """
+    lines = req.text.strip().splitlines()
+    current_category = req.default_category or "Consultation"
+    parsed_items = []
+
+    for line in lines:
+        raw_line = line.strip()
+        if not raw_line or len(raw_line) < 3:
+            continue
+
+        # Check for category header (e.g. "[Consultations]" or "=== Orthodontics ===")
+        cat_header_match = re.match(
+            r'^[#\-*=\[\s]*(Consultations?|Preventive|Restorations?|Orthodontics?|Prosthodontics?|Cosmetics?|Surger(?:y|ies)|Pediatric)[#\-*=\]\s]*$',
+            raw_line,
+            re.IGNORECASE,
+        )
+        if cat_header_match:
+            current_category = cat_header_match.group(1).title()
+            continue
+
+        # Regex for price detection (single price or range: e.g. ₹500 or ₹1,000 - ₹2,000)
+        range_match = re.search(
+            r'(?:₹|INR|Rs\.?|\$)\s*([\d,]+(?:\.\d{1,2})?)\s*(?:-|to)\s*(?:₹|INR|Rs\.?|\$)?\s*([\d,]+(?:\.\d{1,2})?)',
+            raw_line,
+            re.IGNORECASE,
+        )
+        price_val = 0.0
+        fee_range_max = None
+
+        if range_match:
+            try:
+                price_val = float(range_match.group(1).replace(",", ""))
+                fee_range_max = float(range_match.group(2).replace(",", ""))
+                start_idx, end_idx = range_match.span()
+                name_part = (raw_line[:start_idx] + " " + raw_line[end_idx:]).strip()
+            except (ValueError, TypeError):
+                continue
+        else:
+            matches = list(re.finditer(r'(?:₹|INR|Rs\.?|\$)\s*([\d,]+(?:\.\d{1,2})?)|([\d,]+(?:\.\d{1,2})?)\s*(?:₹|INR|Rs\.?|\$)', raw_line, re.IGNORECASE))
+            if not matches:
+                continue
+            price_match = matches[-1]
+            raw_price_str = (price_match.group(1) or price_match.group(2) or "").replace(",", "")
+            try:
+                price_val = float(raw_price_str)
+            except (ValueError, TypeError):
+                continue
+            start_idx, end_idx = price_match.span()
+            name_part = (raw_line[:start_idx] + " " + raw_line[end_idx:]).strip()
+
+        # Clean up name part
+        name_part = re.sub(r'[\-–—:\.\(\)]+$', '', name_part).strip()
+        name_part = re.sub(r'^[\-–—:\.\*\#]+', '', name_part).strip()
+
+        if len(name_part) < 2:
+            continue
+
+        desc = ""
+        desc_match = re.search(r'\((.*?)\)', name_part)
+        if desc_match:
+            desc = desc_match.group(1).strip()
+            name_part = re.sub(r'\(.*?\)', '', name_part).strip()
+
+        name_part = re.sub(r'[\-–—:\.\s]+$', '', name_part).strip()
+        name_part = re.sub(r'^[\-–—:\.\*\#\s]+', '', name_part).strip()
+
+        # Duration detection
+        duration_minutes = 30
+        dur_match = re.search(r'(\d+)\s*(?:mins?|minutes?)', raw_line, re.IGNORECASE)
+        if dur_match:
+            duration_minutes = int(dur_match.group(1))
+        elif "1 hour" in raw_line.lower() or "60 min" in raw_line.lower():
+            duration_minutes = 60
+        elif "90 min" in raw_line.lower():
+            duration_minutes = 90
+
+        # Category inference
+        cat = current_category
+        nl = name_part.lower()
+        if any(w in nl for w in ["checkup", "consult", "exam", "x-ray", "opg"]):
+            cat = "Consultation"
+        elif any(w in nl for w in ["cleaning", "scaling", "polishing", "hygiene"]):
+            cat = "Preventive"
+        elif any(w in nl for w in ["root canal", "rct", "filling", "cavity"]):
+            cat = "Restoration"
+        elif any(w in nl for w in ["braces", "aligner", "invisalign", "straightening"]):
+            cat = "Orthodontics"
+        elif any(w in nl for w in ["implant", "crown", "cap", "bridge", "denture"]):
+            cat = "Prosthodontics"
+        elif any(w in nl for w in ["whitening", "bleaching", "veneer", "smile"]):
+            cat = "Cosmetic"
+        elif any(w in nl for w in ["extraction", "surgery", "wisdom"]):
+            cat = "Surgery"
+
+        # Practitioner inference
+        practitioner = "General Dentist"
+        if cat == "Orthodontics":
+            practitioner = "Orthodontist"
+        elif cat == "Restoration" and "root canal" in nl:
+            practitioner = "Endodontist"
+        elif cat == "Prosthodontics":
+            practitioner = "Prosthodontist"
+        elif cat == "Surgery":
+            practitioner = "Oral Surgeon"
+        elif cat == "Pediatric":
+            practitioner = "Pediatric Dentist"
+
+        parsed_items.append({
+            "name": name_part.title(),
+            "category": cat,
+            "base_fee": price_val,
+            "fee_range_max": fee_range_max or price_val,
+            "currency": "INR",
+            "duration_minutes": duration_minutes,
+            "practitioner_type": practitioner,
+            "description": desc or None,
+            "preparation_instructions": None,
+            "is_available": True,
+        })
+
+    return {
+        "success": True,
+        "count": len(parsed_items),
+        "items": parsed_items,
+    }
+

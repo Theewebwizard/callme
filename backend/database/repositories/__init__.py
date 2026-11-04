@@ -16,6 +16,7 @@ from backend.database.repositories.reservation_repo import ReservationRepository
 from backend.database.repositories.connection_repo import ConnectionRepository
 from backend.database.repositories.menu_repo import MenuItemRepository
 from backend.database.repositories.room_repo import RoomTypeRepository
+from backend.database.repositories.treatment_repo import TreatmentRepository, rank_treatments_semantic
 
 __all__ = [
     "BaseRepository",
@@ -33,4 +34,6 @@ __all__ = [
     "ConnectionRepository",
     "MenuItemRepository",
     "RoomTypeRepository",
+    "TreatmentRepository",
+    "rank_treatments_semantic",
 ]

@@ -1192,6 +1192,54 @@ TOOL_CAPABILITY_SPECS: Dict[str, ToolCapabilityRequirement] = {
             ),
         ],
     ),
+    # ---------------------------------------------------------------------------
+    # Clinic Medical Treatments & Fee Catalog
+    # ---------------------------------------------------------------------------
+    "query_treatment_pricing": ToolCapabilityRequirement(
+        tool_id="query_treatment_pricing",
+        version="1.0.0",
+        name="Query Treatment & Consultation Pricing",
+        description="Searches clinical treatments, consultation fees, specialist doctors, procedure duration, and patient preparation guidelines.",
+        category="Healthcare & Services",
+        allowed_canonical_industries=["clinic"],
+        failure_behavior=FailureBehavior.DEGRADED_RESPONSE,
+        requires_confirmation=False,
+        supported_options=[
+            IntegrationOption(
+                option_id="builtin_clinic_treatments",
+                name="Tenant Treatment Catalog & Fee Store",
+                description="Semantic procedure search and multi-tenant consultation fee storage built directly into CallMe.",
+                is_built_in=True,
+                requires_external_connection=False,
+                authoritative_source=AuthoritativeSource.BUILTIN_DATABASE,
+                setup_fields=[
+                    SetupField(
+                        key="currency",
+                        label="Fee Store Currency",
+                        type=FieldType.STRING,
+                        required=False,
+                        default_value="INR",
+                        description="Default currency for procedure fees (e.g. INR, USD, EUR).",
+                    ),
+                    SetupField(
+                        key="show_preparation_instructions",
+                        label="Include Patient Instructions in Voice Responses",
+                        type=FieldType.BOOLEAN,
+                        required=False,
+                        default_value=True,
+                        description="Mention pre-procedure guidelines or fasting requirements in responses.",
+                    ),
+                ],
+                instructions_markdown=(
+                    "### Tenant Treatment Catalog & Fee Store\n"
+                    "CallMe manages and semantically indexes your clinical treatments, procedure fees, and doctor specializations directly in your tenant database.\n\n"
+                    "**Readiness Requirements:**\n"
+                    "1. Upload your treatments with base fees, duration, and preparation notes under **Treatments & Fees**.\n"
+                    "2. The receptionist AI uses semantic search to answer patient procedure, fee, and doctor inquiries."
+                ),
+            ),
+        ],
+    ),
 }
 
 

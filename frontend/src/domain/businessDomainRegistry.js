@@ -120,6 +120,13 @@ export const DOMAIN_CONFIGS = {
     key: 'clinic',
     name: 'Clinic & Healthcare',
     hasMenu: false, // Menus strictly disabled for medical / clinic
+    hasTreatments: true,
+    treatmentConfig: {
+      title: 'Clinic Treatments, Services & Fee Store',
+      shortTitle: 'Treatments & Fees',
+      icon: Stethoscope,
+      description: 'Upload and manage clinical procedures, consultation charges, doctor specializations, and patient preparation notes so your receptionist answers fee queries in real time.',
+    },
     resourceConfig: {
       title: 'Consultation Suites & Doctors',
       shortTitle: 'Suites & Doctors',

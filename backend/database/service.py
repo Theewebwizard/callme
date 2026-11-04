@@ -33,6 +33,7 @@ from backend.database.repositories import (
     ConnectionRepository,
     MenuItemRepository,
     RoomTypeRepository,
+    TreatmentRepository,
 )
 
 logger = logging.getLogger(__name__)
@@ -1520,6 +1521,85 @@ class DatabaseService:
         with session_scope(self.session_factory) as session:
             repo = RoomTypeRepository(session)
             return repo.delete(room_id, business_id=business_id)
+
+    # -------------------------------------------------------------------------
+    # Clinic Medical Treatments & Consultation Fees
+    # -------------------------------------------------------------------------
+    def list_treatments(
+        self,
+        business_id: str,
+        category: Optional[str] = None,
+        only_available: bool = True,
+    ) -> List[Dict[str, Any]]:
+        """Retrieve medical treatments and procedure fees for a clinic business."""
+        with session_scope(self.session_factory) as session:
+            repo = TreatmentRepository(session)
+            return repo.list_dicts_for_business(business_id=business_id, category=category, only_available=only_available)
+
+    def upload_treatments(
+        self,
+        business_id: str,
+        items: List[Dict[str, Any]],
+        replace: bool = True,
+    ) -> List[Dict[str, Any]]:
+        """Upload and persist medical treatments. Replaces atomically when replace=True."""
+        self.invalidate_profile_cache(business_id)
+        with session_scope(self.session_factory) as session:
+            repo = TreatmentRepository(session)
+            if replace:
+                created = repo.replace_all_for_business(business_id, items)
+            else:
+                created = repo.bulk_create(business_id, items)
+            return [c.to_dict() for c in created]
+
+    def search_treatments_semantic(
+        self,
+        business_id: str,
+        query: str,
+        category: Optional[str] = None,
+        practitioner_type: Optional[str] = None,
+        max_budget: Optional[float] = None,
+        limit: int = 6,
+    ) -> List[Dict[str, Any]]:
+        """Perform semantic search over a clinic's treatments and consultation fees."""
+        with session_scope(self.session_factory) as session:
+            repo = TreatmentRepository(session)
+            return repo.search_semantic(
+                business_id=business_id,
+                query=query,
+                category=category,
+                practitioner_type=practitioner_type,
+                max_budget=max_budget,
+                limit=limit,
+            )
+
+    def get_treatment(self, business_id: str, treatment_id: str) -> Optional[Dict[str, Any]]:
+        """Fetch a single treatment record with tenant verification."""
+        with session_scope(self.session_factory) as session:
+            repo = TreatmentRepository(session)
+            item = repo.get(treatment_id, business_id=business_id)
+            return item.to_dict() if item else None
+
+    def update_treatment(
+        self,
+        business_id: str,
+        treatment_id: str,
+        updates: Dict[str, Any],
+    ) -> Optional[Dict[str, Any]]:
+        """Update an existing treatment record."""
+        self.invalidate_profile_cache(business_id)
+        with session_scope(self.session_factory) as session:
+            repo = TreatmentRepository(session)
+            updated = repo.update(treatment_id, business_id, updates)
+            return updated.to_dict() if updated else None
+
+    def delete_treatment(self, business_id: str, treatment_id: str) -> bool:
+        """Delete a treatment record."""
+        self.invalidate_profile_cache(business_id)
+        with session_scope(self.session_factory) as session:
+            repo = TreatmentRepository(session)
+            return repo.delete(treatment_id, business_id=business_id)
+
 
     # -------------------------------------------------------------------------
     # Hotel Floor & Property Front-Desk Management (OYO-Style PMS)

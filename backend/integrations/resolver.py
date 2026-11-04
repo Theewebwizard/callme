@@ -253,6 +253,15 @@ def resolve_tool_adapter(
             credentials=credentials,
         )
 
+    if tool_id == "query_treatment_pricing":
+        return registry.create_adapter(
+            provider_id="builtin_clinic_treatments",
+            business_id=business_id,
+            tool_id=tool_id,
+            configuration=configuration,
+            credentials=credentials,
+        )
+
     if tool_id == "answer_faq":
         return registry.create_adapter(
             provider_id="builtin_knowledge_base",

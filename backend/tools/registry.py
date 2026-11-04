@@ -22,6 +22,7 @@ from backend.tools.definitions import (
     CreateRoomBookingInput,
     QueryMenuPricingInput,
     QueryRoomPricingInput,
+    QueryTreatmentPricingInput,
 )
 from backend.tools.implementations.information import handle_answer_faq
 from backend.tools.implementations.dining import (
@@ -34,6 +35,7 @@ from backend.tools.implementations.healthcare import (
     handle_check_appointment_availability,
     handle_create_appointment,
     format_appointment_summary,
+    handle_query_treatment_pricing,
 )
 from backend.tools.implementations.communication import (
     handle_take_message,
@@ -52,7 +54,7 @@ logger = logging.getLogger(__name__)
 VALID_EXECUTION_MODES: Set[str] = {"mock", "live", "unavailable"}
 
 # Tools that possess verified live integrations in this repository
-LIVE_VERIFIED_TOOLS: Set[str] = {"answer_faq", "take_message", "query_menu_pricing", "query_room_pricing"}
+LIVE_VERIFIED_TOOLS: Set[str] = {"answer_faq", "take_message", "query_menu_pricing", "query_room_pricing", "query_treatment_pricing"}
 
 
 class ToolRegistry:
@@ -415,6 +417,26 @@ def build_default_tool_registry() -> ToolRegistry:
             is_implemented=True,
             execution_mode=ToolExecutionMode.MOCK,
             handler=handle_query_room_pricing,
+        )
+    )
+
+
+
+    # 4b. Query Treatment & Consultation Pricing (Clinic & Medical only)
+    registry.register(
+        ToolDefinition(
+            id="query_treatment_pricing",
+            name="Query Treatment & Consultation Pricing",
+            description="Answers caller inquiries regarding clinical treatment procedures, consultation fees, specialist doctors, procedure durations, and patient preparation guidelines.",
+            category=ToolCategory.HEALTHCARE,
+            icon="🩺",
+            allowed_industries=["Clinic", "Doctor", "Healthcare & Services", "Hospital", "Dental", "Medical"],
+            allowed_canonical_industries=["clinic"],
+            input_schema=QueryTreatmentPricingInput,
+            requires_confirmation=False,
+            is_implemented=True,
+            execution_mode=ToolExecutionMode.MOCK,
+            handler=handle_query_treatment_pricing,
         )
     )
 

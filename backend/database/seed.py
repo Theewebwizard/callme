@@ -31,6 +31,7 @@ from backend.database.repositories import (
     ResourceRepository,
     MenuItemRepository,
     RoomTypeRepository,
+    TreatmentRepository,
 )
 from backend.database.seed_data import INITIAL_BUSINESSES, INITIAL_TOOLS, MOCK_CALL_HISTORY
 
@@ -113,6 +114,14 @@ def _get_default_tool_metadata(tool_id: str, business_data: Dict[str, Any]) -> D
                 "show_amenities": True,
             },
         }
+    elif tool_id == "query_treatment_pricing":
+        return {
+            "selected_option_id": "builtin_clinic_treatments",
+            "configuration": {
+                "currency": "INR",
+                "show_preparation_instructions": True,
+            },
+        }
     elif tool_id in ("check_room_availability", "create_room_booking"):
         return {
             "selected_option_id": "builtin_booking",
@@ -180,6 +189,7 @@ def seed_database(
         res_repo = ResourceRepository(sess)
         menu_repo = MenuItemRepository(sess)
         room_repo = RoomTypeRepository(sess)
+        treatment_repo = TreatmentRepository(sess)
 
         for b_id, b_data in INITIAL_BUSINESSES.items():
             biz = biz_repo.get(b_id)
@@ -245,6 +255,12 @@ def seed_database(
             if not existing_rooms and b_data.get("room_types"):
                 room_repo.bulk_create(b_id, b_data["room_types"])
                 logger.info("Seeded %d room types for tenant %s", len(b_data["room_types"]), b_id)
+
+            # 3d. Seed Medical Treatments for this business if not yet seeded (Clinic domain)
+            existing_treatments = treatment_repo.list_for_business(b_id, only_available=False)
+            if not existing_treatments and b_data.get("treatments"):
+                treatment_repo.bulk_create(b_id, b_data["treatments"])
+                logger.info("Seeded %d treatments for tenant %s", len(b_data["treatments"]), b_id)
 
             # 4. Seed Reservable Resources for this business if not yet seeded
             existing_resources = res_repo.list_resources(b_id)
