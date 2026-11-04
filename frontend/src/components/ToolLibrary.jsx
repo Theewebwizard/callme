@@ -928,6 +928,32 @@ export default function ToolLibrary({ business }) {
       )}
 
       {/* =========================================================================
+         TAB: HOTEL ROOM TYPES & RATE CARD STORE
+         ========================================================================= */}
+      {activeTab === 'rooms' && domainConfig.hasRooms && (
+        <div className="card" style={{ padding: '1.5rem', background: 'var(--bg-card)', border: '1px solid var(--border-medium)' }}>
+          <div style={{ marginBottom: '1.25rem' }}>
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Bed size={20} color="var(--sky-400, #38bdf8)" /> Hotel Room Types, Rates & Amenities Store
+            </h2>
+            <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', margin: 0 }}>
+              Upload and manage your room tiers, tariffs, bed configurations, and amenities for <strong style={{ color: 'var(--text-primary)' }}>{business.name}</strong>.
+            </p>
+          </div>
+
+          <RoomManagerView
+            business={business}
+            isEmbedded={true}
+            defaultTab="rooms"
+            onRoomsUpdated={() => {
+              loadData();
+              api.getRooms(business.id).then((r) => r?.items && setRoomCount(r.items.length)).catch(() => {});
+            }}
+          />
+        </div>
+      )}
+
+      {/* =========================================================================
          TAB 2: RESOURCE INVENTORY & BOOKINGS (FIRST-PARTY ENGINE)
          ========================================================================= */}
       {activeTab === 'resources' && (
