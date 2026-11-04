@@ -894,6 +894,17 @@ export default function ToolLibrary({ business }) {
                                   <span>Rooms</span>
                                 </button>
                               )}
+                              {t.id === 'query_treatment_pricing' && domainConfig.hasTreatments && (
+                                <button
+                                  type="button"
+                                  className="cap-menu-btn"
+                                  onClick={() => setTreatmentModalOpen(true)}
+                                  title="Upload and manage clinic treatments and fee card"
+                                >
+                                  <Stethoscope size={12} />
+                                  <span>Treatments</span>
+                                </button>
+                              )}
                               <button
                                 type="button"
                                 className="btn-secondary"

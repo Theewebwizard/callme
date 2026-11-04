@@ -42,6 +42,69 @@ const COMMON_PRACTITIONERS = [
   'General Physician',
 ];
 
+const SAMPLE_CLINIC_TREATMENTS = [
+  {
+    name: 'General Consultation',
+    category: 'Consultation',
+    base_fee: 500,
+    fee_range_max: 800,
+    currency: 'INR',
+    duration_minutes: 20,
+    practitioner_type: 'General Physician',
+    description: 'Comprehensive health checkup, vital evaluation, symptom review, and diagnosis.',
+    preparation_instructions: 'Bring previous medical history, prescription slips, and recent lab reports.',
+    is_available: true,
+  },
+  {
+    name: 'Specialist Consultation',
+    category: 'Consultation',
+    base_fee: 1000,
+    fee_range_max: 1500,
+    currency: 'INR',
+    duration_minutes: 30,
+    practitioner_type: 'Medical Specialist',
+    description: 'Detailed specialist assessment and diagnostic evaluation.',
+    preparation_instructions: 'Carry all relevant diagnostic imaging and prior test results.',
+    is_available: true,
+  },
+  {
+    name: 'Routine Health Screening & Vitals',
+    category: 'Preventative Care',
+    base_fee: 1200,
+    fee_range_max: 2000,
+    currency: 'INR',
+    duration_minutes: 45,
+    practitioner_type: 'Medical Officer',
+    description: 'Blood pressure, glucose screen, BMI assessment, ECG, and general physician consult.',
+    preparation_instructions: 'Fasting 8-10 hours recommended for blood sugar check.',
+    is_available: true,
+  },
+  {
+    name: 'Minor Wound Dressing & Suture Care',
+    category: 'Minor Procedures',
+    base_fee: 800,
+    fee_range_max: 1500,
+    currency: 'INR',
+    duration_minutes: 30,
+    practitioner_type: 'Duty Doctor / Surgeon',
+    description: 'Antiseptic debridement, sterile dressing change, and wound assessment.',
+    preparation_instructions: 'Keep the wound clean and dry prior to arrival.',
+    is_available: true,
+  },
+  {
+    name: 'ECG & Cardiac Rhythm Check',
+    category: 'Diagnostics',
+    base_fee: 600,
+    fee_range_max: 900,
+    currency: 'INR',
+    duration_minutes: 20,
+    practitioner_type: 'Cardiologist / Physician',
+    description: '12-lead Electrocardiogram (ECG) with physician review.',
+    preparation_instructions: 'Wear loose-fitting upper clothing. Avoid caffeine 2 hours prior.',
+    is_available: true,
+  },
+];
+
 export function TreatmentManagerView({
   business,
   isEmbedded = false,
@@ -276,6 +339,21 @@ export function TreatmentManagerView({
     }
   };
 
+  // 5. Load Standard Clinic Procedures
+  const handleLoadSampleTreatments = async () => {
+    setSaving(true);
+    try {
+      await api.uploadTreatments(business.id, SAMPLE_CLINIC_TREATMENTS, true);
+      notifySuccess('Loaded standard clinic procedures!');
+      await loadTreatments();
+      if (onTreatmentsUpdated) onTreatmentsUpdated();
+    } catch (err) {
+      notifyError('Failed to load sample treatments: ' + (err.message || 'Server error'));
+    } finally {
+      setSaving(false);
+    }
+  };
+
   // Filtered treatment list
   const filteredTreatments = treatments.filter((item) => {
     const matchesCat = categoryFilter === 'All' || item.category === categoryFilter;
@@ -291,28 +369,30 @@ export function TreatmentManagerView({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-      {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.75rem' }}>
-        <div>
-          <h2 style={{ fontSize: '1.25rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}>
-            <Stethoscope size={20} color="var(--primary, #3b82f6)" />
-            Clinic Treatments, Services & Fee Store
-          </h2>
-          <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', margin: '0.25rem 0 0 0' }}>
-            Authoritative clinical procedures, consultation charges, doctor specializations, and patient preparation notes.
-          </p>
-        </div>
+      {/* Header (modal mode only) */}
+      {!isEmbedded && (
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.75rem' }}>
+          <div>
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}>
+              <Stethoscope size={20} color="var(--primary, #3b82f6)" />
+              Clinic Treatments, Services & Fee Store
+            </h2>
+            <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', margin: '0.25rem 0 0 0' }}>
+              Authoritative clinical procedures, consultation charges, doctor specializations, and patient preparation notes.
+            </p>
+          </div>
 
-        {onClose && (
-          <button
-            onClick={onClose}
-            className="btn btn-secondary"
-            style={{ padding: '0.35rem 0.65rem', borderRadius: '6px' }}
-          >
-            <X size={16} />
-          </button>
-        )}
-      </div>
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="btn btn-secondary"
+              style={{ padding: '0.35rem 0.65rem', borderRadius: '6px' }}
+            >
+              <X size={16} />
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Feedback Banner */}
       {feedback && (
@@ -488,13 +568,21 @@ export function TreatmentManagerView({
               <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', maxWidth: '420px', margin: '0 auto 1.25rem auto' }}>
                 Upload your clinic service rate sheet, paste procedure charges, or add consultation fees so your AI receptionist can provide instant pricing answers.
               </p>
-              <div style={{ display: 'flex', justifyContent: 'center', gap: '0.75rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
                 <button
-                  onClick={() => setActiveTab('paste')}
+                  onClick={handleLoadSampleTreatments}
+                  disabled={saving}
                   className="btn btn-primary"
                   style={{ fontSize: '0.85rem' }}
                 >
-                  <Sparkles size={14} style={{ marginRight: '0.35rem' }} /> Paste Rate Sheet
+                  <Sparkles size={14} style={{ marginRight: '0.35rem' }} /> Load Standard Clinic Procedures
+                </button>
+                <button
+                  onClick={() => setActiveTab('paste')}
+                  className="btn btn-secondary"
+                  style={{ fontSize: '0.85rem' }}
+                >
+                  Paste Rate Sheet
                 </button>
                 <button
                   onClick={() => setActiveTab('add')}
