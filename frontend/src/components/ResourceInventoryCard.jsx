@@ -320,6 +320,11 @@ export default function ResourceInventoryCard({
                       <span style={{ fontSize: '0.74rem', color: 'var(--text-tertiary)', fontFamily: 'var(--font-mono)' }}>
                         👥 Capacity: {res.capacity} (Party: {res.min_party_size}–{res.max_party_size})
                       </span>
+                      {res.metadata?.available_days && Array.isArray(res.metadata.available_days) && (
+                        <span style={{ fontSize: '0.72rem', color: '#38bdf8', background: 'rgba(56, 189, 248, 0.1)', padding: '2px 7px', borderRadius: '4px', border: '1px solid rgba(56, 189, 248, 0.25)', fontWeight: 600 }}>
+                          📅 Working: {res.metadata.available_days.join(' • ')}
+                        </span>
+                      )}
                     </div>
                   </div>
 

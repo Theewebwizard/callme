@@ -79,11 +79,15 @@ class ResourceRepository(BaseRepository):
         if not resource:
             return None
 
+        updates_copy = dict(updates)
+        if "metadata" in updates_copy and "metadata_json" not in updates_copy:
+            updates_copy["metadata_json"] = updates_copy.pop("metadata")
+
         allowed_fields = {
             "name", "capacity", "min_party_size", "max_party_size",
             "section", "is_active", "metadata_json", "resource_type"
         }
-        for field, val in updates.items():
+        for field, val in updates_copy.items():
             if field in allowed_fields:
                 setattr(resource, field, val)
 

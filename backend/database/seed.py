@@ -47,11 +47,11 @@ DOMAIN_RESERVABLE_RESOURCES: Dict[str, List[Dict[str, Any]]] = {
         {"name": "Table 5 (VIP Dining Room)", "capacity": 10, "min_party_size": 6, "max_party_size": 12, "resource_type": "table", "section": "VIP Lounge"},
     ],
     "biz_apex_dental": [
-        {"name": "Dental Suite 1 (Consultation)", "capacity": 1, "min_party_size": 1, "max_party_size": 2, "resource_type": "clinic_room", "section": "1st Floor"},
-        {"name": "Dental Suite 2 (Procedures & Scaling)", "capacity": 1, "min_party_size": 1, "max_party_size": 2, "resource_type": "procedure_room", "section": "1st Floor"},
-        {"name": "Dental Surgery Suite (Orthodontics & Implants)", "capacity": 1, "min_party_size": 1, "max_party_size": 2, "resource_type": "procedure_room", "section": "2nd Floor"},
-        {"name": "Dr. Sharma (Senior Orthodontist)", "capacity": 1, "min_party_size": 1, "max_party_size": 1, "resource_type": "practitioner", "section": "Specialists"},
-        {"name": "Dr. Ananya Rao (Pediatric Dental Specialist)", "capacity": 1, "min_party_size": 1, "max_party_size": 1, "resource_type": "practitioner", "section": "Specialists"},
+        {"name": "Dental Suite 1 (Consultation)", "capacity": 1, "min_party_size": 1, "max_party_size": 2, "resource_type": "clinic_room", "section": "1st Floor", "metadata_json": {"available_days": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"], "slot_duration_minutes": 30}},
+        {"name": "Dental Suite 2 (Procedures & Scaling)", "capacity": 1, "min_party_size": 1, "max_party_size": 2, "resource_type": "procedure_room", "section": "1st Floor", "metadata_json": {"available_days": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"], "slot_duration_minutes": 30}},
+        {"name": "Dental Surgery Suite (Orthodontics & Implants)", "capacity": 1, "min_party_size": 1, "max_party_size": 2, "resource_type": "procedure_room", "section": "2nd Floor", "metadata_json": {"available_days": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"], "slot_duration_minutes": 30}},
+        {"name": "Dr. Sharma (Senior Orthodontist)", "capacity": 1, "min_party_size": 1, "max_party_size": 1, "resource_type": "practitioner", "section": "Specialists", "metadata_json": {"available_days": ["Mon", "Wed", "Fri", "Sat"], "slot_duration_minutes": 30, "specialization": "Senior Orthodontist", "working_hours": "09:00 - 18:00"}},
+        {"name": "Dr. Ananya Rao (Pediatric Dental Specialist)", "capacity": 1, "min_party_size": 1, "max_party_size": 1, "resource_type": "practitioner", "section": "Specialists", "metadata_json": {"available_days": ["Tue", "Thu", "Fri", "Sat"], "slot_duration_minutes": 30, "specialization": "Pediatric Dental Specialist", "working_hours": "10:00 - 19:00"}},
     ],
     "biz_grand_hotel": [
         {"name": "Room 101 - Deluxe King (Garden View)", "capacity": 2, "min_party_size": 1, "max_party_size": 3, "resource_type": "room", "section": "East Wing"},
@@ -274,6 +274,7 @@ def seed_database(
                         max_party_size=r.get("max_party_size", 4),
                         resource_type=r.get("resource_type", "table"),
                         section=r.get("section"),
+                        metadata_json=r.get("metadata_json") or {},
                     )
                     stats["resources_created"] += 1
                 logger.info("Seeded %d reservable resources for tenant %s", len(DOMAIN_RESERVABLE_RESOURCES[b_id]), b_id)

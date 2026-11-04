@@ -18,14 +18,53 @@ import {
   User,
   FileText,
   MapPin,
+  Stethoscope,
+  ShieldAlert,
+  Sliders,
 } from 'lucide-react';
 import { api } from '../api';
 import { getDomainForBusiness } from '../domain/businessDomainRegistry';
 
+const WEEKDAYS = [
+  { key: 'Mon', label: 'Monday' },
+  { key: 'Tue', label: 'Tuesday' },
+  { key: 'Wed', label: 'Wednesday' },
+  { key: 'Thu', label: 'Thursday' },
+  { key: 'Fri', label: 'Friday' },
+  { key: 'Sat', label: 'Saturday' },
+  { key: 'Sun', label: 'Sunday' },
+];
+
 /**
- * Interactive Visual Booking Calendar & Timeline Grid
- * Allows receptionists to view occupied nights and reserved tables,
- * inspect guest reservation details, and create first-party bookings.
+ * Compute the Monday date for any given date string YYYY-MM-DD.
+ * Ensures week views consistently start on Monday and end on Sunday.
+ */
+function getMondayDate(dStr) {
+  const base = new Date(dStr + 'T00:00:00');
+  const day = base.getDay(); // 0 is Sunday, 1 is Monday...
+  const diff = day === 0 ? -6 : 1 - day;
+  const monday = new Date(base);
+  monday.setDate(base.getDate() + diff);
+  return monday;
+}
+
+/**
+ * Add minutes to HH:MM time string, returning HH:MM.
+ */
+function addMinutesToTime(timeStr, minutesToAdd) {
+  if (!timeStr || !timeStr.includes(':')) return '10:30';
+  const [h, m] = timeStr.split(':').map((v) => parseInt(v, 10));
+  const total = h * 60 + (m || 0) + minutesToAdd;
+  const endH = Math.floor(total / 60) % 24;
+  const endM = total % 60;
+  return `${endH.toString().padStart(2, '0')}:${endM.toString().padStart(2, '0')}`;
+}
+
+/**
+ * Interactive Visual Booking & Doctor Appointment Calendar
+ * - Multi-Day Weekly Grid (Monday to Sunday)
+ * - 30-Minute Consultation Slot Basis for Healthcare / Clinic
+ * - Doctor Working Days Scheduling & Visual Blocking
  */
 export default function BookingCalendarView({
   business,
@@ -38,56 +77,112 @@ export default function BookingCalendarView({
   const isClinic = effectiveDomain.key === 'clinic';
   const isHotel = effectiveDomain.key === 'hotel';
   const isRestaurant = effectiveDomain.key === 'restaurant';
-  const [viewMode, setViewMode] = useState('timeline'); // 'timeline' (multi-day), 'day' (hourly), 'list'
+
+  const [viewMode, setViewMode] = useState('timeline'); // 'timeline' (Mon-Sun), 'day' (slots), 'list'
   const [selectedDate, setSelectedDate] = useState(() => {
     const today = new Date();
     return today.toISOString().slice(0, 10);
   });
-  const [filterType, setFilterType] = useState('all'); // 'all', 'table', 'room', 'clinic_room'
+  const [filterType, setFilterType] = useState('all');
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [isNewModalOpen, setIsNewModalOpen] = useState(false);
   const [cancellingId, setCancellingId] = useState(null);
   const [feedback, setFeedback] = useState(null);
+  const [savingScheduleId, setSavingScheduleId] = useState(null);
 
   // New Booking Form State
   const [newBooking, setNewBooking] = useState({
     customer_name: '',
     customer_phone: '',
     resource_id: '',
-    resource_type: 'table',
+    resource_type: 'practitioner',
     start_date: new Date().toISOString().slice(0, 10),
-    start_time: '19:00',
+    start_time: '10:00',
     end_date: new Date().toISOString().slice(0, 10),
-    end_time: '21:00',
-    party_size: 2,
+    end_time: '10:30',
+    duration_minutes: 30,
+    party_size: 1,
     special_requests: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Filtered resources
+  // Helper: Retrieve doctor/resource available days
+  const getResourceAvailableDays = (res) => {
+    if (res?.metadata?.available_days && Array.isArray(res.metadata.available_days) && res.metadata.available_days.length > 0) {
+      return res.metadata.available_days;
+    }
+    const name = (res?.name || '').toLowerCase();
+    if (name.includes('sharma') || name.includes('orthodont')) {
+      return ['Mon', 'Wed', 'Fri', 'Sat'];
+    }
+    if (name.includes('ananya') || name.includes('pediatric')) {
+      return ['Tue', 'Thu', 'Fri', 'Sat'];
+    }
+    if (res?.resource_type === 'practitioner') {
+      return ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+    }
+    return ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  };
+
+  // Helper: Check if resource is available on a specific day
+  const isResourceAvailableOnDay = (res, dayStrOrDate) => {
+    const availDays = getResourceAvailableDays(res);
+    let dayShort = '';
+    if (typeof dayStrOrDate === 'string') {
+      if (dayStrOrDate.includes('-')) {
+        const d = new Date(dayStrOrDate + 'T00:00:00');
+        dayShort = d.toLocaleDateString('en-US', { weekday: 'short' });
+      } else {
+        dayShort = dayStrOrDate.slice(0, 3);
+      }
+    } else if (dayStrOrDate instanceof Date) {
+      dayShort = dayStrOrDate.toLocaleDateString('en-US', { weekday: 'short' });
+    }
+    return availDays.some((d) => d.toLowerCase() === dayShort.toLowerCase());
+  };
+
+  // Doctors / Practitioners list for schedule management
+  const doctorsList = useMemo(() => {
+    return resources.filter((r) => r.resource_type === 'practitioner' || (isClinic && r.resource_type !== 'room'));
+  }, [resources, isClinic]);
+
+  // Filtered resources based on UI category dropdown
   const filteredResources = useMemo(() => {
     if (filterType === 'all') return resources;
     return resources.filter((r) => r.resource_type === filterType);
   }, [resources, filterType]);
 
-  // Generate 7 days for the timeline view starting from selectedDate
+  // Generate 7 days for the timeline view starting strictly from MONDAY to SUNDAY
   const timelineDays = useMemo(() => {
     const days = [];
-    const base = new Date(selectedDate + 'T00:00:00');
+    const monday = getMondayDate(selectedDate);
     for (let i = 0; i < 7; i++) {
-      const d = new Date(base);
-      d.setDate(base.getDate() + i);
+      const d = new Date(monday);
+      d.setDate(monday.getDate() + i);
       const iso = d.toISOString().slice(0, 10);
-      const dayName = d.toLocaleDateString('en-US', { weekday: 'short' });
+      const dayName = d.toLocaleDateString('en-US', { weekday: 'short' }); // Mon, Tue, Wed, Thu, Fri, Sat, Sun
+      const fullDayName = d.toLocaleDateString('en-US', { weekday: 'long' });
       const monthDay = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
       const isToday = iso === new Date().toISOString().slice(0, 10);
-      days.push({ date: iso, dayName, monthDay, isToday, rawDate: d });
+      days.push({ date: iso, dayName, fullDayName, monthDay, isToday, rawDate: d });
     }
     return days;
   }, [selectedDate]);
 
-  // Hourly slots for Day View (from 09:00 to 22:00)
-  const hourlySlots = useMemo(() => {
+  // 30-Minute Interval Slots for Clinic Appointments (09:00 to 19:30)
+  const clinicSlots = useMemo(() => {
+    const slots = [];
+    for (let hour = 9; hour <= 19; hour++) {
+      slots.push(`${hour.toString().padStart(2, '0')}:00`);
+      if (hour < 19) {
+        slots.push(`${hour.toString().padStart(2, '0')}:30`);
+      }
+    }
+    return slots;
+  }, []);
+
+  // Standard 1-Hour Slots for Hospitality & Dining (09:00 to 22:00)
+  const standardHourlySlots = useMemo(() => {
     const slots = [];
     for (let hour = 9; hour <= 22; hour++) {
       slots.push(`${hour.toString().padStart(2, '0')}:00`);
@@ -95,7 +190,9 @@ export default function BookingCalendarView({
     return slots;
   }, []);
 
-  // Quick Date Navigation Helpers
+  const activeDaySlots = isClinic ? clinicSlots : standardHourlySlots;
+
+  // Quick Date Navigation Helpers (Shift by 1 full week Monday-Sunday)
   const handlePrev = () => {
     const d = new Date(selectedDate + 'T00:00:00');
     if (viewMode === 'timeline') {
@@ -124,11 +221,9 @@ export default function BookingCalendarView({
   const getReservationsForResourceAndDate = (resourceId, dateStr) => {
     return reservations.filter((b) => {
       if (b.status === 'cancelled') return false;
-      // Match by resource_id or resource_name
       const resMatch = b.resource_id === resourceId;
       if (!resMatch && b.resource_id) return false;
 
-      // Check date range
       const bStart = (b.start_time || '').slice(0, 10);
       const bEnd = (b.end_time || '').slice(0, 10);
       if (bStart && bEnd && bStart <= dateStr && dateStr <= bEnd) {
@@ -138,9 +233,13 @@ export default function BookingCalendarView({
     });
   };
 
-  // Helper: Find reservations for an hourly slot in Day View
-  const getReservationsForResourceAndHour = (resourceId, dateStr, hourStr) => {
-    const slotHour = parseInt(hourStr.split(':')[0], 10);
+  // Helper: Find reservations for a 30-min or 1-hour slot in Day View
+  const getReservationsForResourceAndSlot = (resourceId, dateStr, slotStr) => {
+    const [slotH, slotM] = slotStr.split(':').map((v) => parseInt(v, 10));
+    const slotTotalMins = slotH * 60 + (slotM || 0);
+    const slotStep = isClinic ? 30 : 60;
+    const slotEndMins = slotTotalMins + slotStep;
+
     return reservations.filter((b) => {
       if (b.status === 'cancelled') return false;
       if (b.resource_id && b.resource_id !== resourceId) return false;
@@ -151,25 +250,65 @@ export default function BookingCalendarView({
       const timePart = (b.start_time || '').includes('T')
         ? b.start_time.split('T')[1]
         : b.start_time.split(' ')[1] || '00:00';
-      const bStartHour = parseInt(timePart.split(':')[0], 10);
+      const [startH, startM] = timePart.split(':').map((v) => parseInt(v, 10));
+      const bStartTotal = startH * 60 + (startM || 0);
 
       const endTimePart = (b.end_time || '').includes('T')
         ? b.end_time.split('T')[1]
         : b.end_time.split(' ')[1] || '23:59';
-      const bEndHour = parseInt(endTimePart.split(':')[0], 10);
+      const [endH, endM] = endTimePart.split(':').map((v) => parseInt(v, 10));
+      const bEndTotal = endH * 60 + (endM || 0);
 
-      return slotHour >= bStartHour && slotHour < (bEndHour || bStartHour + 1);
+      return bStartTotal < slotEndMins && bEndTotal > slotTotalMins;
     });
   };
 
-  // Open Quick Booking Modal with defaults
+  // Toggle Doctor Available Working Days on the fly
+  const handleToggleDoctorDay = async (doctor, dayKey) => {
+    setSavingScheduleId(doctor.id);
+    const currentDays = getResourceAvailableDays(doctor);
+    const exists = currentDays.some((d) => d.toLowerCase() === dayKey.toLowerCase());
+    let newDays;
+    if (exists) {
+      if (currentDays.length <= 1) {
+        setFeedback({ type: 'error', text: `${doctor.name} must have at least one scheduled working day.` });
+        setSavingScheduleId(null);
+        return;
+      }
+      newDays = currentDays.filter((d) => d.toLowerCase() !== dayKey.toLowerCase());
+    } else {
+      const order = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+      const rawList = [...currentDays, dayKey];
+      newDays = order.filter((d) => rawList.some((r) => r.toLowerCase() === d.toLowerCase()));
+    }
+
+    try {
+      await api.updateResource(business.id, doctor.id, {
+        metadata: {
+          ...(doctor.metadata || {}),
+          available_days: newDays,
+          slot_duration_minutes: 30,
+        },
+      });
+      setFeedback({
+        type: 'success',
+        text: `Updated ${doctor.name}'s schedule: ${newDays.join(', ')}. Blocked days updated on calendar!`,
+      });
+      if (onRefresh) onRefresh();
+    } catch (err) {
+      setFeedback({ type: 'error', text: `Failed to update doctor schedule: ${err.message}` });
+    } finally {
+      setSavingScheduleId(null);
+    }
+  };
+
+  // Open Quick Booking Modal with 30-min slot defaults
   const handleOpenNewModal = (resource = null, date = null, hour = null) => {
     const targetResource = resource || (filteredResources.length > 0 ? filteredResources[0] : null);
     const targetDate = date || selectedDate;
-    const startH = hour ? hour : (targetResource?.resource_type === 'room' ? '15:00' : '19:00');
-    const endH = hour
-      ? `${(parseInt(hour.split(':')[0], 10) + 1).toString().padStart(2, '0')}:00`
-      : (targetResource?.resource_type === 'room' ? '11:00' : '21:00');
+    const durMins = isClinic ? 30 : 60;
+    const startH = hour ? hour : (isClinic ? '10:00' : targetResource?.resource_type === 'room' ? '15:00' : '19:00');
+    const endH = isClinic ? addMinutesToTime(startH, durMins) : hour ? addMinutesToTime(hour, 60) : '21:00';
 
     let nextDay = targetDate;
     if (targetResource?.resource_type === 'room') {
@@ -182,28 +321,36 @@ export default function BookingCalendarView({
       customer_name: '',
       customer_phone: '',
       resource_id: targetResource ? targetResource.id : '',
-      resource_type: targetResource ? targetResource.resource_type : 'table',
+      resource_type: targetResource ? targetResource.resource_type : (isClinic ? 'practitioner' : 'table'),
       start_date: targetDate,
       start_time: startH,
       end_date: targetResource?.resource_type === 'room' ? nextDay : targetDate,
       end_time: endH,
-      party_size: targetResource ? Math.max(1, targetResource.min_party_size) : 2,
+      duration_minutes: durMins,
+      party_size: isClinic ? 1 : targetResource ? Math.max(1, targetResource.min_party_size) : 2,
       special_requests: '',
     });
     setIsNewModalOpen(true);
   };
 
-  // Handle Form Submit for New Reservation
+  // Handle Form Submit for New Reservation / Doctor Appointment
   const handleCreateReservation = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
     setFeedback(null);
 
     try {
+      const selectedRes = resources.find((r) => r.id === newBooking.resource_id);
+
+      // Validate that doctor is available on the selected date
+      if (selectedRes && !isResourceAvailableOnDay(selectedRes, newBooking.start_date)) {
+        const avail = getResourceAvailableDays(selectedRes);
+        const dayName = new Date(newBooking.start_date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long' });
+        throw new Error(`${selectedRes.name} is off on ${dayName}s. Scheduled working days: ${avail.join(', ')}.`);
+      }
+
       const startIso = `${newBooking.start_date}T${newBooking.start_time}:00`;
       const endIso = `${newBooking.end_date}T${newBooking.end_time}:00`;
-
-      const selectedRes = resources.find((r) => r.id === newBooking.resource_id);
 
       await api.createReservation(business.id, {
         customer_name: newBooking.customer_name,
@@ -218,13 +365,18 @@ export default function BookingCalendarView({
         status: 'confirmed',
       });
 
-      setFeedback({ type: 'success', text: `Reservation confirmed for ${newBooking.customer_name}!` });
+      setFeedback({
+        type: 'success',
+        text: isClinic
+          ? `Appointment confirmed for ${newBooking.customer_name} with ${selectedRes?.name || 'Doctor'} on ${newBooking.start_date} at ${newBooking.start_time}!`
+          : `Reservation confirmed for ${newBooking.customer_name}!`,
+      });
       setIsNewModalOpen(false);
       if (onRefresh) onRefresh();
-      setTimeout(() => setFeedback(null), 4000);
+      setTimeout(() => setFeedback(null), 5000);
     } catch (err) {
       console.error('Reservation creation failed:', err);
-      setFeedback({ type: 'error', text: `Failed to create booking: ${err.message}` });
+      setFeedback({ type: 'error', text: `Failed to create appointment: ${err.message}` });
     } finally {
       setIsSubmitting(false);
     }
@@ -252,6 +404,11 @@ export default function BookingCalendarView({
   const activeBookingsCount = useMemo(() => {
     return reservations.filter((b) => b.status !== 'cancelled').length;
   }, [reservations]);
+
+  // Selected doctor object in modal for dynamic validation
+  const currentModalDoctor = resources.find((r) => r.id === newBooking.resource_id);
+  const isDoctorOffOnBookingDate = currentModalDoctor && !isResourceAvailableOnDay(currentModalDoctor, newBooking.start_date);
+  const currentBookingDayName = new Date(newBooking.start_date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long' });
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', width: '100%' }}>
@@ -302,16 +459,27 @@ export default function BookingCalendarView({
         >
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <div style={{ width: '30px', height: '30px', borderRadius: 'var(--radius-sm)', background: 'rgba(16, 185, 129, 0.1)', color: 'var(--color-emerald)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <CalendarIcon size={16} />
+              <div
+                style={{
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: 'var(--radius-sm)',
+                  background: isClinic ? 'rgba(59, 130, 246, 0.12)' : 'rgba(16, 185, 129, 0.1)',
+                  color: isClinic ? 'var(--primary, #3b82f6)' : 'var(--color-emerald)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                {isClinic ? <Stethoscope size={18} /> : <CalendarIcon size={16} />}
               </div>
               <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.02em' }}>
-                {effectiveDomain.resourceConfig?.calendarTitle || 'Interactive Booking Calendar & Timeline'}
+                {isClinic ? '🩺 Doctor Appointments & Consultation Calendar (Monday – Sunday)' : (effectiveDomain.resourceConfig?.calendarTitle || 'Interactive Booking Calendar')}
               </h3>
             </div>
             <p style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)', marginTop: '3px', margin: 0 }}>
               {isClinic
-                ? 'Live appointment schedule for consultation suites and doctors. Inspect booked patient slots, treatment procedures, and clinical availability.'
+                ? 'Weekly patient appointment schedule from Monday to Sunday. Doctor off-days are blocked automatically; appointments are booked in 30-minute intervals.'
                 : isHotel
                 ? 'Live occupancy grid for rooms and suites. Inspect occupied nights, check-ins, and guest stays.'
                 : 'Live table reservation timeline. Inspect reserved seatings, party sizes, and dining schedules.'}
@@ -334,7 +502,7 @@ export default function BookingCalendarView({
                 fontWeight: 600,
               }}
             >
-              <span>Total Resources:</span>
+              <span>{isClinic ? 'Doctors & Suites:' : 'Total Resources:'}</span>
               <strong style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-mono)' }}>{resources.length}</strong>
             </div>
 
@@ -369,7 +537,7 @@ export default function BookingCalendarView({
                 fontWeight: 600,
               }}
             >
-              <Plus size={15} /> New Booking
+              <Plus size={15} /> {isClinic ? 'Schedule 30m Consult' : 'New Booking'}
             </button>
           </div>
         </div>
@@ -392,7 +560,7 @@ export default function BookingCalendarView({
               type="button"
               className="btn-secondary"
               onClick={handlePrev}
-              title="Previous Range"
+              title="Previous Week (Monday - Sunday)"
               style={{ padding: '0.35rem 0.55rem' }}
             >
               <ChevronLeft size={15} />
@@ -404,14 +572,14 @@ export default function BookingCalendarView({
               onClick={handleToday}
               style={{ padding: '0.35rem 0.75rem', fontSize: '0.78rem', fontWeight: 600 }}
             >
-              Today
+              Current Week
             </button>
 
             <button
               type="button"
               className="btn-secondary"
               onClick={handleNext}
-              title="Next Range"
+              title="Next Week (Monday - Sunday)"
               style={{ padding: '0.35rem 0.55rem' }}
             >
               <ChevronRight size={15} />
@@ -427,7 +595,7 @@ export default function BookingCalendarView({
 
             <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-primary)', marginLeft: '4px' }}>
               {viewMode === 'timeline'
-                ? `${timelineDays[0]?.monthDay} — ${timelineDays[6]?.monthDay}, ${new Date(selectedDate).getFullYear()}`
+                ? `Week: ${timelineDays[0]?.dayName}, ${timelineDays[0]?.monthDay} — ${timelineDays[6]?.dayName}, ${timelineDays[6]?.monthDay}, ${new Date(timelineDays[0]?.date).getFullYear()}`
                 : new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', {
                     weekday: 'long',
                     month: 'short',
@@ -448,12 +616,12 @@ export default function BookingCalendarView({
                 onChange={(e) => setFilterType(e.target.value)}
                 style={{ padding: '0.3rem 0.6rem', fontSize: '0.78rem', width: 'auto' }}
               >
-                <option value="all">All {effectiveDomain.resourceConfig?.shortTitle || 'Resources'} ({resources.length})</option>
+                <option value="all">All {isClinic ? 'Medical Resources' : effectiveDomain.resourceConfig?.shortTitle || 'Resources'} ({resources.length})</option>
                 {isClinic ? (
                   <>
+                    <option value="practitioner">👨‍⚕️ Doctors & Specialists</option>
                     <option value="clinic_room">🩺 Consultation Suites</option>
                     <option value="procedure_room">🔬 Dental & Procedure Bays</option>
-                    <option value="practitioner">👨‍⚕️ Doctors & Specialists</option>
                     <option value="therapy_room">🧘 Therapy & Recovery Rooms</option>
                   </>
                 ) : isHotel ? (
@@ -500,10 +668,9 @@ export default function BookingCalendarView({
                   background: viewMode === 'timeline' ? 'rgba(255, 255, 255, 0.08)' : 'transparent',
                   color: viewMode === 'timeline' ? 'var(--text-primary)' : 'var(--text-tertiary)',
                   boxShadow: viewMode === 'timeline' ? 'var(--shadow-sm)' : 'none',
-                  transition: 'all 0.15s ease',
                 }}
               >
-                <Grid size={12} /> Multi-Day
+                <Grid size={12} /> {isClinic ? 'Mon–Sun Week' : 'Multi-Day'}
               </button>
 
               <button
@@ -522,10 +689,9 @@ export default function BookingCalendarView({
                   background: viewMode === 'day' ? 'rgba(255, 255, 255, 0.08)' : 'transparent',
                   color: viewMode === 'day' ? 'var(--text-primary)' : 'var(--text-tertiary)',
                   boxShadow: viewMode === 'day' ? 'var(--shadow-sm)' : 'none',
-                  transition: 'all 0.15s ease',
                 }}
               >
-                <Clock size={12} /> Day Slots
+                <Clock size={12} /> {isClinic ? '30m Day Slots' : 'Day Slots'}
               </button>
 
               <button
@@ -544,7 +710,6 @@ export default function BookingCalendarView({
                   background: viewMode === 'list' ? 'rgba(255, 255, 255, 0.08)' : 'transparent',
                   color: viewMode === 'list' ? 'var(--text-primary)' : 'var(--text-tertiary)',
                   boxShadow: viewMode === 'list' ? 'var(--shadow-sm)' : 'none',
-                  transition: 'all 0.15s ease',
                 }}
               >
                 <ListIcon size={12} /> List View
@@ -564,10 +729,92 @@ export default function BookingCalendarView({
             )}
           </div>
         </div>
+
+        {/* Doctor Working Days & Clinic Hours Banner (Interactive Schedule Customizer) */}
+        {isClinic && doctorsList.length > 0 && (
+          <div
+            style={{
+              marginTop: '0.25rem',
+              padding: '0.85rem 1rem',
+              background: 'rgba(59, 130, 246, 0.04)',
+              border: '1px solid rgba(59, 130, 246, 0.18)',
+              borderRadius: 'var(--radius-sm)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0.65rem',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
+              <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Stethoscope size={15} color="var(--primary, #3b82f6)" />
+                Doctor Available Working Days & Schedule
+              </div>
+              <span style={{ fontSize: '0.72rem', color: 'var(--text-tertiary)' }}>
+                Days off are blocked automatically on the calendar. Click day pills to toggle doctor working schedule.
+              </span>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '0.75rem' }}>
+              {doctorsList.map((doc) => {
+                const avail = getResourceAvailableDays(doc);
+                const isSaving = savingScheduleId === doc.id;
+                return (
+                  <div
+                    key={doc.id}
+                    style={{
+                      background: 'var(--bg-card)',
+                      border: '1px solid var(--border-medium)',
+                      padding: '0.65rem 0.85rem',
+                      borderRadius: '6px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '0.45rem',
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <strong style={{ fontSize: '0.82rem', color: 'var(--text-primary)' }}>{doc.name}</strong>
+                      <span style={{ fontSize: '0.68rem', color: 'var(--color-emerald)', fontWeight: 600 }}>
+                        {isSaving ? 'Saving...' : `${avail.length} days/week`}
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                      {WEEKDAYS.map((w) => {
+                        const isActive = avail.some((d) => d.toLowerCase() === w.key.toLowerCase());
+                        return (
+                          <button
+                            key={w.key}
+                            type="button"
+                            disabled={isSaving}
+                            onClick={() => handleToggleDoctorDay(doc, w.key)}
+                            style={{
+                              padding: '2px 7px',
+                              fontSize: '0.7rem',
+                              fontWeight: 700,
+                              borderRadius: '4px',
+                              cursor: isSaving ? 'wait' : 'pointer',
+                              border: isActive ? '1px solid rgba(16, 185, 129, 0.4)' : '1px solid var(--border-medium)',
+                              background: isActive ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255, 255, 255, 0.02)',
+                              color: isActive ? 'var(--color-emerald)' : 'var(--text-tertiary)',
+                              transition: 'all 0.15s ease',
+                            }}
+                            title={`Click to ${isActive ? 'block' : 'enable'} ${w.label} for ${doc.name}`}
+                          >
+                            {w.key}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* =========================================================================
-         VIEW 1: MULTI-DAY / NIGHTS TIMELINE GRID
+         VIEW 1: MONDAY TO SUNDAY WEEKLY TIMELINE GRID (WITH BLOCKED DOCTOR DAYS)
          ========================================================================= */}
       {viewMode === 'timeline' && (
         <div
@@ -608,7 +855,7 @@ export default function BookingCalendarView({
                       borderRight: '1px solid var(--border-medium)',
                     }}
                   >
-                    RESOURCE (ROOM / TABLE)
+                    {isClinic ? 'DOCTOR / CLINIC SUITE' : 'RESOURCE (ROOM / TABLE)'}
                   </th>
                   {timelineDays.map((td) => (
                     <th
@@ -739,16 +986,76 @@ export default function BookingCalendarView({
                           </span>
                         )}
                         <span style={{ fontSize: '0.72rem', color: 'var(--text-tertiary)', fontFamily: 'var(--font-mono)' }}>
-                          • {res.min_party_size}–{res.max_party_size} pax
+                          • {isClinic ? '30m Slots' : `${res.min_party_size}–${res.max_party_size} pax`}
                         </span>
                       </div>
                     </td>
 
-                    {/* Timeline Day Columns */}
+                    {/* Timeline Day Columns (Mon through Sun) */}
                     {timelineDays.map((td) => {
+                      const isAvailable = isResourceAvailableOnDay(res, td.rawDate);
                       const dayBookings = getReservationsForResourceAndDate(res.id, td.date);
                       const isOccupied = dayBookings.length > 0;
 
+                      // BLOCKED DAY: Doctor is off on this weekday
+                      if (!isAvailable) {
+                        const docDays = getResourceAvailableDays(res);
+                        return (
+                          <td
+                            key={td.date}
+                            onClick={() => {
+                              setFeedback({
+                                type: 'error',
+                                text: `${res.name} does not take appointments on ${td.dayName}s. Scheduled working days: ${docDays.join(', ')}.`,
+                              });
+                            }}
+                            style={{
+                              padding: '0.45rem',
+                              borderRight: '1px solid var(--border-medium)',
+                              verticalAlign: 'middle',
+                              background: 'repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.012), rgba(255, 255, 255, 0.012) 8px, rgba(0, 0, 0, 0.28) 8px, rgba(0, 0, 0, 0.28) 16px)',
+                              position: 'relative',
+                              minHeight: '60px',
+                              cursor: 'not-allowed',
+                            }}
+                            title={`${res.name} is not available on ${td.dayName}s`}
+                          >
+                            <div
+                              style={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                opacity: 0.65,
+                                userSelect: 'none',
+                                gap: '2px',
+                              }}
+                            >
+                              <span
+                                style={{
+                                  fontSize: '0.64rem',
+                                  fontWeight: 700,
+                                  background: 'rgba(239, 68, 68, 0.12)',
+                                  color: '#f87171',
+                                  border: '1px solid rgba(239, 68, 68, 0.25)',
+                                  padding: '2px 6px',
+                                  borderRadius: '4px',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '3px',
+                                }}
+                              >
+                                🔒 Day Off
+                              </span>
+                              <span style={{ fontSize: '0.60rem', color: 'var(--text-tertiary)' }}>
+                                Not Available
+                              </span>
+                            </div>
+                          </td>
+                        );
+                      }
+
+                      // AVAILABLE DAY: Render appointments or +30m slot
                       return (
                         <td
                           key={td.date}
@@ -789,11 +1096,13 @@ export default function BookingCalendarView({
                                     textOverflow: 'ellipsis',
                                     whiteSpace: 'nowrap',
                                   }}
-                                  title={`Guest: ${b.customer_name} (${b.party_size} guests)\nClick to inspect details`}
+                                  title={`Patient: ${b.customer_name}
+Time: ${b.start_time?.slice(11, 16)} - ${b.end_time?.slice(11, 16)}
+Click to inspect details`}
                                 >
                                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                     <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{b.customer_name}</span>
-                                    <span style={{ fontSize: '0.66rem', opacity: 0.85, fontFamily: 'var(--font-mono)' }}>{b.party_size}p</span>
+                                    <span style={{ fontSize: '0.64rem', opacity: 0.85, fontFamily: 'var(--font-mono)' }}>30m</span>
                                   </div>
                                   <div style={{ fontSize: '0.66rem', opacity: 0.8, marginTop: '2px', fontFamily: 'var(--font-mono)' }}>
                                     {b.start_time?.includes('T') ? b.start_time.split('T')[1].slice(0, 5) : ''}
@@ -815,9 +1124,9 @@ export default function BookingCalendarView({
                                 color: 'var(--text-tertiary)',
                               }}
                               className="calendar-empty-slot"
-                              title={`Empty slot: Click to book ${res.name} on ${td.date}`}
+                              title={`Empty slot: Click to book 30m consult with ${res.name} on ${td.date}`}
                             >
-                              <span style={{ fontSize: '0.68rem', opacity: 0.5 }}>+ Reserve</span>
+                              <span style={{ fontSize: '0.68rem', opacity: 0.55 }}>+ 30m Slot</span>
                             </div>
                           )}
                         </td>
@@ -832,7 +1141,7 @@ export default function BookingCalendarView({
       )}
 
       {/* =========================================================================
-         VIEW 2: SINGLE-DAY HOURLY SLOTS SCHEDULE
+         VIEW 2: 30-MINUTE INTERVAL DAY SLOTS SCHEDULE (CLINIC PARITY)
          ========================================================================= */}
       {viewMode === 'day' && (
         <div
@@ -869,115 +1178,136 @@ export default function BookingCalendarView({
                       borderRight: '1px solid var(--border-medium)',
                     }}
                   >
-                    RESOURCE
+                    {isClinic ? 'DOCTOR / SUITE' : 'RESOURCE'}
                   </th>
-                  {hourlySlots.map((hour) => (
+                  {activeDaySlots.map((slot) => (
                     <th
-                      key={hour}
+                      key={slot}
                       style={{
-                        padding: '0.65rem 0.4rem',
-                        fontSize: '0.74rem',
+                        padding: '0.65rem 0.35rem',
+                        fontSize: '0.72rem',
                         textAlign: 'center',
                         color: 'var(--text-secondary)',
                         borderRight: '1px solid var(--border-medium)',
-                        minWidth: '65px',
+                        minWidth: isClinic ? '58px' : '65px',
                         fontWeight: 600,
                         fontFamily: 'var(--font-mono)',
                       }}
                     >
-                      {hour}
+                      {slot}
                     </th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {filteredResources.map((res, idx) => (
-                  <tr
-                    key={res.id}
-                    style={{
-                      borderBottom: '1px solid var(--border-medium)',
-                      background: idx % 2 === 0 ? 'transparent' : 'rgba(255, 255, 255, 0.015)',
-                    }}
-                  >
-                    <td
+                {filteredResources.map((res, idx) => {
+                  const isAvailableToday = isResourceAvailableOnDay(res, selectedDate);
+                  const selectedDateWeekday = new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long' });
+
+                  return (
+                    <tr
+                      key={res.id}
                       style={{
-                        padding: '0.75rem 1rem',
-                        borderRight: '1px solid var(--border-medium)',
-                        verticalAlign: 'top',
+                        borderBottom: '1px solid var(--border-medium)',
+                        background: idx % 2 === 0 ? 'transparent' : 'rgba(255, 255, 255, 0.015)',
                       }}
                     >
-                      <div style={{ fontWeight: 600, fontSize: '0.86rem', color: 'var(--text-primary)' }}>
-                        {res.name}
-                      </div>
-                      <div style={{ fontSize: '0.72rem', color: 'var(--text-tertiary)', marginTop: '2px' }}>
-                        {res.section || 'General'} • {res.capacity} seats
-                      </div>
-                    </td>
+                      <td
+                        style={{
+                          padding: '0.75rem 1rem',
+                          borderRight: '1px solid var(--border-medium)',
+                          verticalAlign: 'top',
+                        }}
+                      >
+                        <div style={{ fontWeight: 600, fontSize: '0.86rem', color: 'var(--text-primary)' }}>
+                          {res.name}
+                        </div>
+                        <div style={{ fontSize: '0.72rem', color: 'var(--text-tertiary)', marginTop: '2px' }}>
+                          {res.section || 'General'} • {isClinic ? '30m Slots' : `${res.capacity} seats`}
+                        </div>
+                      </td>
 
-                    {hourlySlots.map((hour) => {
-                      const hourBookings = getReservationsForResourceAndHour(res.id, selectedDate, hour);
-                      const isOccupied = hourBookings.length > 0;
-
-                      return (
+                      {/* If doctor is off today, render blocked banner across columns */}
+                      {!isAvailableToday ? (
                         <td
-                          key={hour}
+                          colSpan={activeDaySlots.length}
                           style={{
-                            padding: '0.35rem',
-                            borderRight: '1px solid var(--border-medium)',
-                            verticalAlign: 'top',
-                            minHeight: '48px',
+                            padding: '0.85rem',
+                            textAlign: 'center',
+                            background: 'repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.012), rgba(255, 255, 255, 0.012) 8px, rgba(0, 0, 0, 0.28) 8px, rgba(0, 0, 0, 0.28) 16px)',
                           }}
                         >
-                          {isOccupied ? (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                              {hourBookings.map((b) => (
-                                <div
-                                  key={b.id}
-                                  onClick={() => setSelectedBooking(b)}
-                                  style={{
-                                    padding: '4px 6px',
-                                    borderRadius: '4px',
-                                    background: 'rgba(16, 185, 129, 0.12)',
-                                    border: '1px solid rgba(16, 185, 129, 0.3)',
-                                    color: 'var(--color-emerald)',
-                                    fontSize: '0.68rem',
-                                    fontWeight: 600,
-                                    cursor: 'pointer',
-                                    overflow: 'hidden',
-                                    textOverflow: 'ellipsis',
-                                    whiteSpace: 'nowrap',
-                                  }}
-                                  title={`${b.customer_name} (${b.party_size} guests)`}
-                                >
-                                  {b.customer_name}
-                                </div>
-                              ))}
-                            </div>
-                          ) : (
-                            <div
-                              onClick={() => handleOpenNewModal(res, selectedDate, hour)}
-                              style={{
-                                height: '100%',
-                                minHeight: '36px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                cursor: 'pointer',
-                                borderRadius: '4px',
-                                color: 'var(--text-tertiary)',
-                                fontSize: '0.65rem',
-                              }}
-                              className="calendar-empty-slot"
-                              title={`Empty: Click to reserve at ${hour}`}
-                            >
-                              +
-                            </div>
-                          )}
+                          <span style={{ fontSize: '0.78rem', color: '#f87171', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                            🔒 {res.name} is off on {selectedDateWeekday}s (Scheduled working days: {getResourceAvailableDays(res).join(', ')})
+                          </span>
                         </td>
-                      );
-                    })}
-                  </tr>
-                ))}
+                      ) : (
+                        activeDaySlots.map((slot) => {
+                          const slotBookings = getReservationsForResourceAndSlot(res.id, selectedDate, slot);
+                          const isOccupied = slotBookings.length > 0;
+
+                          return (
+                            <td
+                              key={slot}
+                              style={{
+                                padding: '0.35rem',
+                                borderRight: '1px solid var(--border-medium)',
+                                verticalAlign: 'top',
+                                minHeight: '48px',
+                              }}
+                            >
+                              {isOccupied ? (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                                  {slotBookings.map((b) => (
+                                    <div
+                                      key={b.id}
+                                      onClick={() => setSelectedBooking(b)}
+                                      style={{
+                                        padding: '4px 6px',
+                                        borderRadius: '4px',
+                                        background: 'rgba(16, 185, 129, 0.12)',
+                                        border: '1px solid rgba(16, 185, 129, 0.3)',
+                                        color: 'var(--color-emerald)',
+                                        fontSize: '0.68rem',
+                                        fontWeight: 600,
+                                        cursor: 'pointer',
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis',
+                                        whiteSpace: 'nowrap',
+                                      }}
+                                      title={`${b.customer_name} (30 mins)`}
+                                    >
+                                      {b.customer_name}
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : (
+                                <div
+                                  onClick={() => handleOpenNewModal(res, selectedDate, slot)}
+                                  style={{
+                                    height: '100%',
+                                    minHeight: '36px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    cursor: 'pointer',
+                                    borderRadius: '4px',
+                                    color: 'var(--text-tertiary)',
+                                    fontSize: '0.65rem',
+                                  }}
+                                  className="calendar-empty-slot"
+                                  title={`Available: Click to book 30m appointment at ${slot}`}
+                                >
+                                  +
+                                </div>
+                              )}
+                            </td>
+                          );
+                        })
+                      )}
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           )}
@@ -985,121 +1315,85 @@ export default function BookingCalendarView({
       )}
 
       {/* =========================================================================
-         VIEW 3: DETAILED TABULAR / AGENDA VIEW
+         VIEW 3: LIST VIEW OF UPCOMING BOOKINGS / APPOINTMENTS
          ========================================================================= */}
       {viewMode === 'list' && (
-        <div
-          className="card"
-          style={{
-            padding: 0,
-            overflowX: 'auto',
-          }}
-        >
+        <div className="card" style={{ padding: 0 }}>
           {reservations.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '3.5rem', color: 'var(--text-tertiary)' }}>
-              No active reservations committed to the database.
+              No bookings or patient appointments committed yet.
             </div>
           ) : (
-            <table className="modern-table">
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
               <thead>
-                <tr>
-                  <th>GUEST</th>
-                  <th>PHONE</th>
-                  <th>RESOURCE</th>
-                  <th>START TIME</th>
-                  <th>END TIME</th>
-                  <th>GUESTS</th>
-                  <th>STATUS</th>
-                  <th style={{ textAlign: 'right' }}>ACTIONS</th>
+                <tr style={{ background: 'var(--bg-surface-elevated)', borderBottom: '1px solid var(--border-medium)' }}>
+                  <th style={{ padding: '0.85rem 1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-tertiary)', textTransform: 'uppercase' }}>
+                    {isClinic ? 'PATIENT NAME' : 'GUEST / CUSTOMER'}
+                  </th>
+                  <th style={{ padding: '0.85rem 1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-tertiary)', textTransform: 'uppercase' }}>
+                    CONTACT PHONE
+                  </th>
+                  <th style={{ padding: '0.85rem 1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-tertiary)', textTransform: 'uppercase' }}>
+                    {isClinic ? 'DOCTOR / SUITE' : 'ASSIGNED RESOURCE'}
+                  </th>
+                  <th style={{ padding: '0.85rem 1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-tertiary)', textTransform: 'uppercase' }}>
+                    START TIME
+                  </th>
+                  <th style={{ padding: '0.85rem 1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-tertiary)', textTransform: 'uppercase' }}>
+                    STATUS
+                  </th>
+                  <th style={{ padding: '0.85rem 1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-tertiary)', textTransform: 'uppercase', textAlign: 'right' }}>
+                    ACTIONS
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {reservations.map((b) => (
-                  <tr key={b.id}>
-                    <td>
-                      <strong style={{ color: 'var(--text-primary)' }}>{b.customer_name}</strong>
+                  <tr key={b.id} style={{ borderBottom: '1px solid var(--border-medium)' }}>
+                    <td style={{ padding: '0.75rem 1rem', fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.85rem' }}>
+                      {b.customer_name}
                     </td>
-                    <td>
-                      <code style={{ fontFamily: 'var(--font-mono)', fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
-                        {b.customer_phone}
-                      </code>
+                    <td style={{ padding: '0.75rem 1rem', fontFamily: 'var(--font-mono)', fontSize: '0.82rem', color: 'var(--color-mint)' }}>
+                      {b.customer_phone}
                     </td>
-                    <td>
-                      <span style={{
-                        background: 'rgba(255, 255, 255, 0.04)',
-                        border: '1px solid var(--border-medium)',
-                        padding: '2px 7px',
-                        borderRadius: '4px',
-                        fontSize: '0.75rem',
-                        color: 'var(--text-primary)',
-                      }}>
-                        {b.resource_name || b.resource_id || 'Auto-Assigned'}
-                      </span>
+                    <td style={{ padding: '0.75rem 1rem', fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
+                      {b.resource_name || b.resource_id || 'Standard Inventory'}
                     </td>
-                    <td style={{ fontFamily: 'var(--font-mono)', fontSize: '0.76rem', color: 'var(--text-secondary)' }}>
+                    <td style={{ padding: '0.75rem 1rem', fontFamily: 'var(--font-mono)', fontSize: '0.82rem', color: 'var(--text-primary)' }}>
                       {b.start_time?.replace('T', ' ').slice(0, 16)}
                     </td>
-                    <td style={{ fontFamily: 'var(--font-mono)', fontSize: '0.76rem', color: 'var(--text-secondary)' }}>
-                      {b.end_time?.replace('T', ' ').slice(0, 16)}
-                    </td>
-                    <td style={{ fontFamily: 'var(--font-mono)', fontSize: '0.76rem', color: 'var(--text-primary)' }}>
-                      {b.party_size}
-                    </td>
-                    <td>
+                    <td style={{ padding: '0.75rem 1rem' }}>
                       <span
                         style={{
                           fontSize: '0.72rem',
-                          padding: '2px 8px',
+                          padding: '3px 8px',
                           borderRadius: 'var(--radius-full)',
                           fontWeight: 700,
-                          background:
-                            b.status === 'confirmed'
-                              ? 'rgba(16, 185, 129, 0.1)'
-                              : b.status === 'cancelled'
-                              ? 'rgba(244, 63, 94, 0.1)'
-                              : 'rgba(245, 158, 11, 0.1)',
-                          color:
-                            b.status === 'confirmed'
-                              ? 'var(--color-emerald)'
-                              : b.status === 'cancelled'
-                              ? 'var(--color-rose)'
-                              : 'var(--color-amber)',
-                          border: `1px solid ${
-                            b.status === 'confirmed'
-                              ? 'rgba(16, 185, 129, 0.25)'
-                              : b.status === 'cancelled'
-                              ? 'rgba(244, 63, 94, 0.25)'
-                              : 'rgba(245, 158, 11, 0.25)'
-                          }`,
+                          background: b.status === 'confirmed' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(244, 63, 94, 0.1)',
+                          color: b.status === 'confirmed' ? 'var(--color-emerald)' : 'var(--color-rose)',
+                          border: `1px solid ${b.status === 'confirmed' ? 'rgba(16, 185, 129, 0.25)' : 'rgba(244, 63, 94, 0.25)'}`,
                         }}
                       >
-                        {b.status}
+                        {b.status.toUpperCase()}
                       </span>
                     </td>
-                    <td style={{ textAlign: 'right' }}>
-                      <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
+                    <td style={{ padding: '0.75rem 1rem', textAlign: 'right' }}>
+                      <div style={{ display: 'inline-flex', gap: '0.5rem' }}>
                         <button
                           type="button"
                           className="btn-secondary"
                           onClick={() => setSelectedBooking(b)}
-                          style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem' }}
+                          style={{ padding: '0.25rem 0.55rem', fontSize: '0.74rem' }}
                         >
                           Details
                         </button>
                         {b.status !== 'cancelled' && (
                           <button
                             type="button"
+                            className="btn-secondary"
                             onClick={() => handleCancelBooking(b.id, b.customer_phone)}
                             disabled={cancellingId === b.id}
-                            style={{
-                              padding: '0.3rem 0.6rem',
-                              fontSize: '0.75rem',
-                              background: 'rgba(244, 63, 94, 0.08)',
-                              border: '1px solid rgba(244, 63, 94, 0.25)',
-                              borderRadius: 'var(--radius-sm)',
-                              color: 'var(--color-rose)',
-                              cursor: 'pointer',
-                            }}
+                            style={{ padding: '0.25rem 0.55rem', fontSize: '0.74rem', color: 'var(--color-rose)' }}
                           >
                             Cancel
                           </button>
@@ -1115,7 +1409,7 @@ export default function BookingCalendarView({
       )}
 
       {/* =========================================================================
-         MODAL 1: RESERVATION DETAILS & INSPECTION MODAL (Obsidian Sheet)
+         MODAL 1: INSPECT RESERVATION DETAILS (Obsidian Sheet)
          ========================================================================= */}
       {selectedBooking && (
         <div className="modal-backdrop" onClick={() => setSelectedBooking(null)}>
@@ -1134,9 +1428,9 @@ export default function BookingCalendarView({
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <CheckCircle2 size={18} color="var(--color-emerald)" />
+                <FileText size={18} color="var(--color-emerald)" />
                 <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-                  Reservation Telemetry
+                  {isClinic ? 'Patient Appointment Details' : 'Reservation Details'}
                 </h3>
               </div>
               <button
@@ -1151,7 +1445,7 @@ export default function BookingCalendarView({
             <div style={{ padding: '1.25rem 1.4rem', display: 'flex', flexDirection: 'column', gap: '0.75rem', fontSize: '0.84rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <User size={15} color="var(--text-tertiary)" />
-                <span style={{ color: 'var(--text-tertiary)', width: '95px' }}>Guest Name:</span>
+                <span style={{ color: 'var(--text-tertiary)', width: '95px' }}>{isClinic ? 'Patient Name:' : 'Guest Name:'}</span>
                 <strong style={{ color: 'var(--text-primary)' }}>{selectedBooking.customer_name}</strong>
               </div>
 
@@ -1162,14 +1456,8 @@ export default function BookingCalendarView({
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Users size={15} color="var(--text-tertiary)" />
-                <span style={{ color: 'var(--text-tertiary)', width: '95px' }}>Party Size:</span>
-                <strong style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-mono)' }}>{selectedBooking.party_size} guests</strong>
-              </div>
-
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <MapPin size={15} color="var(--text-tertiary)" />
-                <span style={{ color: 'var(--text-tertiary)', width: '95px' }}>Assigned To:</span>
+                <span style={{ color: 'var(--text-tertiary)', width: '95px' }}>{isClinic ? 'Doctor / Suite:' : 'Assigned To:'}</span>
                 <strong style={{ color: 'var(--text-primary)' }}>
                   {selectedBooking.resource_name || selectedBooking.resource_id || 'Standard Inventory'}
                 </strong>
@@ -1194,7 +1482,7 @@ export default function BookingCalendarView({
               {selectedBooking.special_requests && (
                 <div style={{ marginTop: '0.5rem', padding: '0.75rem', background: 'var(--bg-surface-elevated)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-medium)' }}>
                   <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '2px' }}>
-                    SPECIAL REQUESTS / NOTES:
+                    {isClinic ? 'CONSULTATION NOTES / SYMPTOMS:' : 'SPECIAL REQUESTS / NOTES:'}
                   </div>
                   <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>
                     {selectedBooking.special_requests}
@@ -1246,7 +1534,7 @@ export default function BookingCalendarView({
                       cursor: 'pointer',
                     }}
                   >
-                    <Trash2 size={13} /> Cancel Reservation
+                    <Trash2 size={13} /> Cancel Appointment
                   </button>
                 )}
               </div>
@@ -1256,7 +1544,7 @@ export default function BookingCalendarView({
       )}
 
       {/* =========================================================================
-         MODAL 2: QUICK NEW RESERVATION MODAL (Obsidian Sheet)
+         MODAL 2: 30-MINUTE CONSULTATION / NEW RESERVATION MODAL
          ========================================================================= */}
       {isNewModalOpen && (
         <div className="modal-backdrop" onClick={() => setIsNewModalOpen(false)}>
@@ -1277,7 +1565,7 @@ export default function BookingCalendarView({
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Plus size={18} color="var(--color-emerald)" />
                 <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-                  {isClinic ? 'Schedule Patient Appointment / Consultation' : isHotel ? 'New Room Reservation' : 'New Table Reservation'}
+                  {isClinic ? '🩺 Schedule Patient Consultation (30m Slot)' : isHotel ? 'New Room Reservation' : 'New Table Reservation'}
                 </h3>
               </div>
               <button
@@ -1290,13 +1578,36 @@ export default function BookingCalendarView({
             </div>
 
             <form onSubmit={handleCreateReservation} style={{ padding: '1.25rem 1.4rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              {/* Doctor Off-Day Alert Banner */}
+              {isClinic && isDoctorOffOnBookingDate && (
+                <div
+                  style={{
+                    background: 'rgba(239, 68, 68, 0.12)',
+                    border: '1px solid rgba(239, 68, 68, 0.3)',
+                    color: '#f87171',
+                    padding: '0.65rem 0.85rem',
+                    borderRadius: '6px',
+                    fontSize: '0.8rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                  }}
+                >
+                  <AlertCircle size={16} style={{ flexShrink: 0 }} />
+                  <span>
+                    <strong>{currentModalDoctor?.name}</strong> does not take appointments on {currentBookingDayName}s.
+                    Available days: <strong>{getResourceAvailableDays(currentModalDoctor).join(', ')}</strong>.
+                  </span>
+                </div>
+              )}
+
               <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div className="form-group">
                   <label className="form-label">{isClinic ? 'Patient Full Name *' : isHotel ? 'Guest Full Name *' : 'Customer Name *'}</label>
                   <input
                     type="text"
                     className="form-input"
-                    placeholder="e.g. Robert Vance"
+                    placeholder={isClinic ? 'e.g. Priya Sharma' : 'e.g. Robert Vance'}
                     value={newBooking.customer_name}
                     onChange={(e) => setNewBooking((prev) => ({ ...prev, customer_name: e.target.value }))}
                     required
@@ -1308,7 +1619,7 @@ export default function BookingCalendarView({
                   <input
                     type="text"
                     className="form-input"
-                    placeholder="e.g. +14155552671"
+                    placeholder="e.g. +91 98765 43210"
                     value={newBooking.customer_phone}
                     onChange={(e) => setNewBooking((prev) => ({ ...prev, customer_phone: e.target.value }))}
                     required
@@ -1316,100 +1627,141 @@ export default function BookingCalendarView({
                 </div>
               </div>
 
-              <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: '1.4fr 0.6fr', gap: '1rem' }}>
+              {/* Resource / Doctor Selection */}
+              <div className="form-group">
+                <label className="form-label">{isClinic ? 'Assign Doctor / Specialist *' : 'Assign Resource *'}</label>
+                <select
+                  className="form-input"
+                  value={newBooking.resource_id}
+                  onChange={(e) => {
+                    const sel = resources.find((r) => r.id === e.target.value);
+                    setNewBooking((prev) => ({
+                      ...prev,
+                      resource_id: e.target.value,
+                      resource_type: sel ? sel.resource_type : prev.resource_type,
+                    }));
+                  }}
+                  required
+                >
+                  <option value="">{isClinic ? '-- Select Doctor or Consultation Suite --' : isHotel ? '-- Choose Room / Suite --' : '-- Choose Dining Table --'}</option>
+                  {resources.map((r) => {
+                    const days = getResourceAvailableDays(r);
+                    return (
+                      <option key={r.id} value={r.id}>
+                        {r.name} {isClinic ? `(${days.join('•')})` : `(${r.resource_type} • fits ${r.max_party_size})`}
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+
+              {/* Date & 30-Minute Slot Duration */}
+              <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: isClinic ? '1.2fr 1fr 1fr' : '1fr 1fr', gap: '0.75rem' }}>
                 <div className="form-group">
-                  <label className="form-label">Assign Resource *</label>
-                  <select
+                  <label className="form-label">{isClinic ? 'Consultation Date *' : 'Start Date'}</label>
+                  <input
+                    type="date"
                     className="form-input"
-                    value={newBooking.resource_id}
+                    value={newBooking.start_date}
                     onChange={(e) => {
-                      const sel = resources.find((r) => r.id === e.target.value);
+                      const newDate = e.target.value;
                       setNewBooking((prev) => ({
                         ...prev,
-                        resource_id: e.target.value,
-                        resource_type: sel ? sel.resource_type : prev.resource_type,
+                        start_date: newDate,
+                        end_date: prev.resource_type === 'room' ? prev.end_date : newDate,
                       }));
                     }}
                     required
-                  >
-                    <option value="">{isClinic ? '-- Choose Doctor or Consultation Suite --' : isHotel ? '-- Choose Room / Suite --' : '-- Choose Dining Table --'}</option>
-                    {resources.map((r) => (
-                      <option key={r.id} value={r.id}>
-                        {r.name} ({r.resource_type} • fits {r.max_party_size})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Party Size</label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="50"
-                    className="form-input"
-                    value={newBooking.party_size}
-                    onChange={(e) => setNewBooking((prev) => ({ ...prev, party_size: e.target.value }))}
-                    required
                   />
                 </div>
-              </div>
 
-              {/* Start & End Date/Time */}
-              <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div className="form-group">
-                  <label className="form-label">
-                    {newBooking.resource_type === 'room' ? 'Check-in Date' : 'Start Date & Time'}
-                  </label>
-                  <div style={{ display: 'flex', gap: '6px' }}>
-                    <input
-                      type="date"
+                  <label className="form-label">{isClinic ? 'Start Slot (30m) *' : 'Start Time *'}</label>
+                  {isClinic ? (
+                    <select
                       className="form-input"
-                      value={newBooking.start_date}
-                      onChange={(e) => setNewBooking((prev) => ({ ...prev, start_date: e.target.value }))}
+                      value={newBooking.start_time}
+                      onChange={(e) => {
+                        const newStart = e.target.value;
+                        const newEnd = addMinutesToTime(newStart, newBooking.duration_minutes || 30);
+                        setNewBooking((prev) => ({ ...prev, start_time: newStart, end_time: newEnd }));
+                      }}
                       required
-                    />
+                    >
+                      {clinicSlots.map((s) => (
+                        <option key={s} value={s}>{s}</option>
+                      ))}
+                    </select>
+                  ) : (
                     <input
                       type="time"
                       className="form-input"
                       value={newBooking.start_time}
                       onChange={(e) => setNewBooking((prev) => ({ ...prev, start_time: e.target.value }))}
                       required
-                      style={{ width: '100px' }}
                     />
-                  </div>
+                  )}
                 </div>
 
-                <div className="form-group">
-                  <label className="form-label">
-                    {newBooking.resource_type === 'room' ? 'Check-out Date' : 'End Date & Time'}
-                  </label>
-                  <div style={{ display: 'flex', gap: '6px' }}>
-                    <input
-                      type="date"
+                {isClinic ? (
+                  <div className="form-group">
+                    <label className="form-label">Consult Duration</label>
+                    <select
                       className="form-input"
-                      value={newBooking.end_date}
-                      onChange={(e) => setNewBooking((prev) => ({ ...prev, end_date: e.target.value }))}
-                      required
-                    />
+                      value={newBooking.duration_minutes}
+                      onChange={(e) => {
+                        const dur = parseInt(e.target.value, 10);
+                        const newEnd = addMinutesToTime(newBooking.start_time, dur);
+                        setNewBooking((prev) => ({ ...prev, duration_minutes: dur, end_time: newEnd }));
+                      }}
+                    >
+                      <option value={30}>30 mins (Standard)</option>
+                      <option value={45}>45 mins (Comprehensive)</option>
+                      <option value={60}>60 mins (Specialist)</option>
+                    </select>
+                  </div>
+                ) : (
+                  <div className="form-group">
+                    <label className="form-label">End Time</label>
                     <input
                       type="time"
                       className="form-input"
                       value={newBooking.end_time}
                       onChange={(e) => setNewBooking((prev) => ({ ...prev, end_time: e.target.value }))}
                       required
-                      style={{ width: '100px' }}
                     />
                   </div>
-                </div>
+                )}
               </div>
 
+              {/* Slot Summary Confirmation for Clinic */}
+              {isClinic && (
+                <div
+                  style={{
+                    padding: '0.5rem 0.75rem',
+                    background: 'var(--bg-surface-elevated)',
+                    border: '1px solid var(--border-medium)',
+                    borderRadius: '6px',
+                    fontSize: '0.78rem',
+                    color: 'var(--text-secondary)',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                  }}
+                >
+                  <span>Calculated Consultation Window:</span>
+                  <strong style={{ color: 'var(--color-emerald)', fontFamily: 'var(--font-mono)' }}>
+                    {newBooking.start_time} — {newBooking.end_time} ({newBooking.duration_minutes}m)
+                  </strong>
+                </div>
+              )}
+
               <div className="form-group">
-                <label className="form-label">Special Requests / Preferences</label>
+                <label className="form-label">{isClinic ? 'Consultation Notes / Patient Symptoms' : 'Special Requests / Preferences'}</label>
                 <input
                   type="text"
                   className="form-input"
-                  placeholder="e.g. Quiet ocean view, anniversary flowers, window booth"
+                  placeholder={isClinic ? 'e.g. Toothache, Scaling & Polishing, Orthodontic braces follow-up' : 'e.g. Window booth, quiet table, ocean view'}
                   value={newBooking.special_requests}
                   onChange={(e) => setNewBooking((prev) => ({ ...prev, special_requests: e.target.value }))}
                 />
@@ -1427,10 +1779,16 @@ export default function BookingCalendarView({
                 <button
                   type="submit"
                   className="btn-primary"
-                  disabled={isSubmitting}
-                  style={{ flex: 2, justifyContent: 'center' }}
+                  disabled={isSubmitting || (isClinic && isDoctorOffOnBookingDate)}
+                  style={{ flex: 2, justifyContent: 'center', opacity: (isClinic && isDoctorOffOnBookingDate) ? 0.5 : 1 }}
                 >
-                  {isSubmitting ? 'Confirming...' : 'Confirm & Save Booking'}
+                  {isSubmitting
+                    ? 'Confirming...'
+                    : (isClinic && isDoctorOffOnBookingDate)
+                    ? 'Doctor Unavailable on This Day'
+                    : isClinic
+                    ? 'Confirm 30m Appointment'
+                    : 'Confirm & Save Booking'}
                 </button>
               </div>
             </form>

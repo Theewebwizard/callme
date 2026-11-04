@@ -246,6 +246,18 @@ class ResourceCreateRequest(BaseModel):
     section: Optional[str] = Field(None, max_length=100, description="Location area, e.g. Patio or 1st Floor")
 
 
+class ResourceUpdateRequest(BaseModel):
+    """Payload to update an existing reservable resource or doctor schedule."""
+    name: Optional[str] = Field(None, min_length=1, max_length=100)
+    capacity: Optional[int] = Field(None, ge=1, le=50)
+    min_party_size: Optional[int] = Field(None, ge=1, le=50)
+    max_party_size: Optional[int] = Field(None, ge=1, le=50)
+    resource_type: Optional[str] = Field(None)
+    section: Optional[str] = Field(None, max_length=100)
+    is_active: Optional[bool] = Field(None)
+    metadata: Optional[Dict[str, Any]] = Field(None)
+
+
 class ResourceResponse(BaseModel):
     """Reservable resource data."""
     id: str
@@ -257,6 +269,7 @@ class ResourceResponse(BaseModel):
     resource_type: str
     section: Optional[str] = None
     is_active: bool = True
+    metadata: Optional[Dict[str, Any]] = Field(default_factory=dict)
     created_at: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)

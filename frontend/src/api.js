@@ -294,6 +294,11 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(data),
     }),
+  updateResource: (businessId, resourceId, data) =>
+    request(`/businesses/${businessId}/resources/${resourceId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
   deleteResource: (businessId, resourceId) =>
     request(`/businesses/${businessId}/resources/${resourceId}`, { method: 'DELETE' }),
   listReservations: (businessId, status = null) => {

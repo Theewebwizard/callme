@@ -76,6 +76,22 @@ class ReservationRepository(BaseRepository):
         if not candidates:
             return []
 
+        # Filter out resources that are not scheduled to work on the requested weekday
+        weekday_short = start_time.strftime("%a").lower()  # 'mon', 'tue', ...
+        weekday_full = start_time.strftime("%A").lower()   # 'monday', 'tuesday', ...
+        avail_day_candidates = []
+        for c in candidates:
+            meta = c.metadata_json or {}
+            avail_days = meta.get("available_days")
+            if avail_days and isinstance(avail_days, list):
+                avail_set = {str(d).strip().lower() for d in avail_days}
+                if weekday_short not in avail_set and weekday_full not in avail_set:
+                    continue
+            avail_day_candidates.append(c)
+        candidates = avail_day_candidates
+        if not candidates:
+            return []
+
         candidate_ids = [c.id for c in candidates]
         now = utcnow()
 

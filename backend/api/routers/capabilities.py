@@ -13,6 +13,7 @@ from backend.api.schemas import (
     StartSetupRequest,
     SaveStepRequest,
     ResourceCreateRequest,
+    ResourceUpdateRequest,
     ResourceResponse,
     ReservationCreateRequest,
     ReservationResponse,
@@ -256,6 +257,25 @@ def create_resource(
     return ResourceResponse.model_validate(created)
 
 
+@router.put("/resources/{resource_id}", response_model=ResourceResponse)
+def update_resource(
+    business_id: str,
+    resource_id: str,
+    req: ResourceUpdateRequest,
+) -> ResourceResponse:
+    """Update an existing reservable resource or doctor schedule."""
+    _verify_tenant(business_id)
+    db_service = get_database_service()
+    update_data = {k: v for k, v in req.model_dump().items() if v is not None}
+    updated = db_service.update_resource(business_id, resource_id, update_data)
+    if not updated:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Resource '{resource_id}' not found.",
+        )
+    return ResourceResponse.model_validate(updated)
+
+
 @router.delete("/resources/{resource_id}")
 def delete_resource(
     business_id: str,
