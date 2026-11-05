@@ -55,11 +55,14 @@ KNOWN_TECHNICAL_TERMS: Set[str] = {
     "query_treatment_pricing",
 }
 
+_tools_regex_str = "|".join(re.escape(t) for t in sorted(KNOWN_TECHNICAL_TERMS, key=len, reverse=True))
+
 ROBOTIC_STEP_PATTERNS = [
     re.compile(r"(?i)\bstep\s*\d+[\s\.:\-]+"),
-    re.compile(r"(?i)\b(?:i will now|now i am going to|let me|i am going to|i'm going to)\s+(?:use|call|execute|invoke|run)\s+(?:the\s+)?(?:[a-z_]+)\s*(?:tool|function)?[\.\s]*"),
-    re.compile(r"(?i)\b(?:calling|executing|invoking)\s+(?:tool|function)?\s*[a-z_]+[\.\s]*"),
-    re.compile(r"(?i)\b(?:using\s+(?:the\s+)?[a-z_]+\s*(?:tool|function)?)\b"),
+    re.compile(r"(?i)\b(?:i will now|now i am going to|let me|i am going to|i'm going to)\s+(?:use|call|execute|invoke|run)\s+(?:the\s+)?(?:" + _tools_regex_str + r"|tool|function)\b[\.\s]*"),
+    re.compile(r"(?i)\b(?:calling|executing|invoking)\s+(?:the\s+)?(?:tool|function|api)\b[\.\s]*"),
+    re.compile(r"(?i)\b(?:calling|executing|invoking)\s+(?:the\s+)?(?:" + _tools_regex_str + r")\b[\.\s]*"),
+    re.compile(r"(?i)\b(?:using\s+(?:the\s+)?(?:" + _tools_regex_str + r")\s*(?:tool|function)?)\b"),
     re.compile(r"(?i)\b(?:executing tool|calling tool|invoking tool|calling function|tool call)\b"),
 ]
 
@@ -185,7 +188,10 @@ def sanitize_customer_facing_text(
     for tool_name, friendly_phrase in tool_replacements.items():
         clean = re.sub(r"\b" + re.escape(tool_name) + r"\b", friendly_phrase, clean, flags=re.IGNORECASE)
 
-    clean = re.sub(r"\s+", " ", clean).strip()
+    # Normalize horizontal whitespace while preserving clean line breaks
+    lines = [re.sub(r"[ \t]+", " ", line).strip() for line in clean.splitlines()]
+    clean = "\n".join(lines).strip()
+    clean = re.sub(r"\n{3,}", "\n\n", clean)
 
     if not clean or len(clean) < 3:
         return get_contextual_filler_phrase(fallback_tool_id, language) if fallback_tool_id else ""
@@ -504,7 +510,8 @@ def _is_prior_action_confirmed(
     proposal_cues = [
         "prepared your", "action:", "details:", "confirm or cancel",
         "confirm this", "confirm for you", "shall i go ahead",
-        "would you like me to confirm", "booking details", "appointment details"
+        "would you like me to confirm", "booking details", "appointment details",
+        "कन्फर्म", "तैयार कर ली", "जानकारी:", "विवरण:", "पुष्टि", "कन्फर्म कर दूँ"
     ]
     had_proposal = any(cue in prev_assistant_content.lower() for cue in proposal_cues)
     if not had_proposal:

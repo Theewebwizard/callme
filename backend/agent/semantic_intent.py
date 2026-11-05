@@ -354,7 +354,8 @@ def is_action_confirmed_semantically(
     # Safety Rule 3: Deterministic confirmation markers
     confirmations = [
         "confirm", "proceed", "go ahead", "book it", "please do", "do it",
-        "yes", "yeah", "yep", "sure", "okay", "ok", "haan", "haanji", "kardo", "theek hai", "bilkul"
+        "yes", "yeah", "yep", "sure", "okay", "ok", "haan", "haanji", "kardo", "theek hai", "bilkul",
+        "हाँ", "हाँजी", "कन्फर्म", "कर दो", "कर दीजिए", "ठीक है", "बिल्कुल", "बुक कर दो", "बुक कर दीजिए"
     ]
     if any(c in lower for c in confirmations):
         return True
