@@ -120,3 +120,4 @@ class AgentState(TypedDict, total=False):
     tools_called: Optional[List[str]]
     workflow_status: Optional[str]
     budget: Optional[Dict[str, Any]]
+    filler_phrase: Optional[str]

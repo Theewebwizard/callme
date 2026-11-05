@@ -143,6 +143,7 @@ class VoiceTurnResult(BaseModel):
     audio_url: Optional[str] = Field(None, description="URL or reference to synthesized voice audio")
     tool_calls_executed: List[str] = Field(default_factory=list, description="IDs of tools executed")
     pending_action: Optional[Dict[str, Any]] = Field(None, description="Pending confirmation action if any")
+    filler_phrase: Optional[str] = Field(None, description="Polite progress filler phrase emitted when tools run")
     llm_duration_ms: Optional[float] = Field(None, description="Execution latency of LangGraph LLM generation in milliseconds")
     session_status: str = Field(SessionStatus.ACTIVE.value, description="Current session state")
     should_terminate: bool = Field(False, description="Flag indicating if call should terminate")

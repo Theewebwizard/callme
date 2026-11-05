@@ -1,3 +1,35 @@
+
+function getPhoneLoadingFillerPhrase(userText, industry) {
+  if (!userText) return 'Please give me just a moment while I proceed with your request...';
+  const isHindi = /[\u0900-\u097F]/.test(userText) || /\b(namaste|kya|hai|hain|chahiye|table|booking|samay|kal|aaj|parson|shukrawar|somwar|aap|kijiye|madad|bhaiya|ji)\b/i.test(userText);
+  const ind = (industry || '').toLowerCase();
+  const lower = userText.toLowerCase();
+
+  if (isHindi) {
+    if (lower.includes('table') || lower.includes('booking') || lower.includes('book') || ind.includes('restaurant') || ind.includes('dining')) {
+      return 'कृपया एक क्षण रुकिए, मैं आपके लिए उपलब्ध टेबल चेक कर रहा हूँ...';
+    }
+    if (lower.includes('doctor') || lower.includes('appointment') || lower.includes('clinic') || ind.includes('clinic')) {
+      return 'कृपया एक क्षण रुकिए, मैं डॉक्टर साहब का समय चेक कर रहा हूँ...';
+    }
+    if (lower.includes('room') || lower.includes('hotel') || ind.includes('hotel')) {
+      return 'कृपया एक क्षण रुकिए, मैं कमरों की उपलब्धता चेक कर रहा हूँ...';
+    }
+    return 'कृपया एक क्षण रुकिए, मैं आपके अनुरोध पर काम कर रहा हूँ...';
+  } else {
+    if (lower.includes('table') || lower.includes('book') || ind.includes('restaurant') || ind.includes('dining')) {
+      return 'Please give me just a moment while I check our available tables for you...';
+    }
+    if (lower.includes('doctor') || lower.includes('appointment') || lower.includes('clinic') || ind.includes('clinic')) {
+      return "Please give me a moment while I check the doctor's appointment slots...";
+    }
+    if (lower.includes('room') || lower.includes('hotel') || ind.includes('hotel')) {
+      return 'Please give me just a moment while I check room availability for you...';
+    }
+    return 'Please give me just a moment while I proceed with your request...';
+  }
+}
+
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Phone,
@@ -150,6 +182,7 @@ export default function WebPhone({ business }) {
   const [textInput, setTextInput] = useState('');
   const [errorMsg, setErrorMsg] = useState(null);
   const [isTurnLoading, setIsTurnLoading] = useState(false);
+  const [currentTurnFiller, setCurrentTurnFiller] = useState('');
 
   const [speechLang, setSpeechLang] = useState(() => {
     try {
@@ -374,6 +407,7 @@ export default function WebPhone({ business }) {
   const executeSendTurn = async (textToSend) => {
     if (!textToSend || !callActiveRef.current || isTurnInFlightRef.current) return;
     isTurnInFlightRef.current = true;
+    setCurrentTurnFiller(getPhoneLoadingFillerPhrase(textToSend, business?.industry));
     setIsTurnLoading(true);
     setCallStatus('thinking');
     stopRecognition();
@@ -677,7 +711,7 @@ export default function WebPhone({ business }) {
                 : isListening
                 ? 'Listening to Microphone...'
                 : isTurnLoading
-                ? 'Reasoning & Fetching Data...'
+                ? (currentTurnFiller || 'Please give me just a moment...')
                 : callActive
                 ? 'Voice Link Active • 24kHz HD Audio'
                 : 'Acoustic Standby'}

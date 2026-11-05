@@ -394,21 +394,25 @@ class BuiltinClinicAdapter(ReservationAdapterInterface):
         """Query available clinical doctors/practitioners from database inventory."""
         db_service = get_database_service()
         # Look for practitioner first, fall back to any active resource
+        r_type = resource_type or "practitioner"
         available_rooms = db_service.find_available_resources(
             business_id=self.business_id,
             start_time=start_time,
             end_time=end_time,
             party_size=party_size,
-            resource_type=resource_type or "practitioner",
+            resource_type=r_type,
         )
-        if not available_rooms and resource_type == "practitioner":
-            available_rooms = db_service.find_available_resources(
-                business_id=self.business_id,
-                start_time=start_time,
-                end_time=end_time,
-                party_size=party_size,
-                resource_type="clinic_room",
-            )
+        if not available_rooms and r_type == "practitioner":
+            for fallback in ["clinic_room", "room"]:
+                available_rooms = db_service.find_available_resources(
+                    business_id=self.business_id,
+                    start_time=start_time,
+                    end_time=end_time,
+                    party_size=party_size,
+                    resource_type=fallback,
+                )
+                if available_rooms:
+                    break
 
         return {
             "available": len(available_rooms) > 0,
@@ -434,6 +438,14 @@ class BuiltinClinicAdapter(ReservationAdapterInterface):
     ) -> Dict[str, Any]:
         """Commit clinical appointment to database."""
         db_service = get_database_service()
+        r_type = resource_type or "practitioner"
+        existing_res = db_service.list_resources(self.business_id, resource_type=r_type)
+        if not existing_res:
+            for fallback in ["clinic_room", "room"]:
+                if db_service.list_resources(self.business_id, resource_type=fallback):
+                    r_type = fallback
+                    break
+
         booking = db_service.create_reservation_atomic(
             business_id=self.business_id,
             customer_name=customer_name,
@@ -441,7 +453,7 @@ class BuiltinClinicAdapter(ReservationAdapterInterface):
             party_size=party_size,
             start_time=start_time,
             end_time=end_dt if (end_dt := end_time) else None,
-            resource_type=resource_type or "practitioner",
+            resource_type=r_type,
             special_requests=special_requests,
             idempotency_key=idempotency_key,
         )

@@ -210,6 +210,7 @@ class PlaygroundMessageResponse(BaseModel):
     success: bool
     pending_action: Optional[Dict[str, Any]] = None
     error: Optional[str] = None
+    filler_phrase: Optional[str] = None
 
 
 class ActionConfirmResponse(BaseModel):

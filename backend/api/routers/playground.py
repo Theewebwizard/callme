@@ -84,6 +84,7 @@ def send_playground_message(
     if pending_action:
         db_service.save_pending_action(business_id, pending_action)
 
+    filler_phrase = workflow_result.get("filler_phrase")
     return PlaygroundMessageResponse(
         business_id=business_id,
         role="assistant",
@@ -91,4 +92,5 @@ def send_playground_message(
         success=workflow_success,
         pending_action=pending_action,
         error=error_msg,
+        filler_phrase=filler_phrase,
     )

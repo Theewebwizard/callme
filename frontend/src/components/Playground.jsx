@@ -1,3 +1,35 @@
+
+function getLoadingFillerPhrase(userText, industry) {
+  if (!userText) return 'Please give me just a moment while I proceed with your request...';
+  const isHindi = /[\u0900-\u097F]/.test(userText) || /\b(namaste|kya|hai|hain|chahiye|table|booking|samay|kal|aaj|parson|shukrawar|somwar|aap|kijiye|madad|bhaiya|ji)\b/i.test(userText);
+  const ind = (industry || '').toLowerCase();
+  const lower = userText.toLowerCase();
+
+  if (isHindi) {
+    if (lower.includes('table') || lower.includes('booking') || lower.includes('book') || ind.includes('restaurant') || ind.includes('dining')) {
+      return 'कृपया एक क्षण रुकिए, मैं आपके लिए उपलब्ध टेबल चेक कर रहा हूँ...';
+    }
+    if (lower.includes('doctor') || lower.includes('appointment') || lower.includes('clinic') || ind.includes('clinic')) {
+      return 'कृपया एक क्षण रुकिए, मैं डॉक्टर साहब का समय चेक कर रहा हूँ...';
+    }
+    if (lower.includes('room') || lower.includes('hotel') || ind.includes('hotel')) {
+      return 'कृपया एक क्षण रुकिए, मैं कमरों की उपलब्धता चेक कर रहा हूँ...';
+    }
+    return 'कृपया एक क्षण रुकिए, मैं आपके अनुरोध पर काम कर रहा हूँ...';
+  } else {
+    if (lower.includes('table') || lower.includes('book') || ind.includes('restaurant') || ind.includes('dining')) {
+      return 'Please give me just a moment while I check our available tables for you...';
+    }
+    if (lower.includes('doctor') || lower.includes('appointment') || lower.includes('clinic') || ind.includes('clinic')) {
+      return "Please give me a moment while I check the doctor's appointment slots...";
+    }
+    if (lower.includes('room') || lower.includes('hotel') || ind.includes('hotel')) {
+      return 'Please give me just a moment while I check room availability for you...';
+    }
+    return 'Please give me just a moment while I proceed with your request...';
+  }
+}
+
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Send,
@@ -27,6 +59,7 @@ export default function Playground({ business }) {
   const [pendingAction, setPendingAction] = useState(null);
   const [actionFeedback, setActionFeedback] = useState(null);
   const [executingAction, setExecutingAction] = useState(false);
+  const [currentFiller, setCurrentFiller] = useState('');
   const chatBottomRef = useRef(null);
 
   // Suggested Prompts adapted to business industry
@@ -112,6 +145,7 @@ export default function Playground({ business }) {
 
     setMessages((prev) => [...prev, userMsg]);
     setInputText('');
+    setCurrentFiller(getLoadingFillerPhrase(text.trim(), business?.industry));
     setLoading(true);
     setActionFeedback(null);
 
@@ -365,11 +399,26 @@ export default function Playground({ business }) {
               );
             })}
 
-            {/* Response Synthesizing Indicator */}
+            {/* Response Synthesizing Indicator with Professional Caller Filler */}
             {loading && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', alignSelf: 'flex-start', color: 'var(--mint-400)', fontSize: '0.78rem' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.65rem',
+                  alignSelf: 'flex-start',
+                  color: 'var(--mint-400)',
+                  fontSize: '0.78rem',
+                  background: 'color-mix(in oklab, var(--mint-400) 8%, var(--bg-surface-elevated))',
+                  padding: '0.45rem 0.85rem',
+                  borderRadius: 'var(--radius-sm)',
+                  border: '1px solid color-mix(in oklab, var(--mint-400) 25%, transparent)',
+                }}
+              >
                 <Bot size={14} className="animate-pulse" />
-                <span style={{ fontFamily: 'var(--font-mono)' }}>AI Receptionist is synthesizing response...</span>
+                <span style={{ fontFamily: 'var(--font-sans)', fontWeight: 500 }}>
+                  {currentFiller || 'Please give me just a moment while I proceed with your request...'}
+                </span>
                 <Loader2 size={12} className="animate-spin" />
               </div>
             )}

@@ -231,13 +231,26 @@ class ToolRegistry:
             )
 
         if exec_mode == "live":
-            tool_cfg = business_config.get("tool_configs", {}).get(tool.id, {})
-            is_capability_ready = (
-                isinstance(tool_cfg, dict)
-                and tool_cfg.get("status") == "ready"
-                and tool_cfg.get("is_enabled") is True
-            )
-            if tool.id not in LIVE_VERIFIED_TOOLS and not is_capability_ready:
+            tool_configs = business_config.get("tool_configs") or {}
+            tool_cfg = tool_configs.get(tool.id)
+            if tool_cfg is not None:
+                is_capability_ready = (
+                    isinstance(tool_cfg, dict)
+                    and tool_cfg.get("status") == "ready"
+                    and tool_cfg.get("is_enabled") is True
+                )
+                if not is_capability_ready:
+                    status_val = tool_cfg.get("status") if isinstance(tool_cfg, dict) else "unconfigured"
+                    return ToolExecutionResult(
+                        tool_id=tool_id,
+                        status=ToolExecutionStatus.UNAVAILABLE,
+                        success=False,
+                        is_business_accepted=False,
+                        mode=ToolExecutionMode.UNAVAILABLE,
+                        error_code="LIVE_INTEGRATION_NOT_CONFIGURED",
+                        message=f"Tool '{tool_id}' capability is not ready (status: {status_val}).",
+                    )
+            elif tool.id not in LIVE_VERIFIED_TOOLS:
                 return ToolExecutionResult(
                     tool_id=tool_id,
                     status=ToolExecutionStatus.UNAVAILABLE,

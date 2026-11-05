@@ -5,9 +5,10 @@ and two-phase confirmation guards.
 """
 
 import json
+import re
 import logging
 import uuid
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, Set
 from pydantic import ValidationError
 
 from backend.config import get_settings
@@ -38,6 +39,159 @@ from backend.tools.base import (
 from backend.tools.registry import ToolRegistry, get_tool_registry
 
 logger = logging.getLogger(__name__)
+
+KNOWN_TECHNICAL_TERMS: Set[str] = {
+    "check_table_availability",
+    "create_table_booking",
+    "check_appointment_availability",
+    "create_appointment",
+    "check_room_availability",
+    "create_room_booking",
+    "take_message",
+    "transfer_call",
+    "answer_faq",
+    "query_menu_pricing",
+    "query_room_pricing",
+    "query_treatment_pricing",
+}
+
+ROBOTIC_STEP_PATTERNS = [
+    re.compile(r"(?i)\bstep\s*\d+[\s\.:\-]+"),
+    re.compile(r"(?i)\b(?:i will now|now i am going to|let me|i am going to|i'm going to)\s+(?:use|call|execute|invoke|run)\s+(?:the\s+)?(?:[a-z_]+)\s*(?:tool|function)?[\.\s]*"),
+    re.compile(r"(?i)\b(?:calling|executing|invoking)\s+(?:tool|function)?\s*[a-z_]+[\.\s]*"),
+    re.compile(r"(?i)\b(?:using\s+(?:the\s+)?[a-z_]+\s*(?:tool|function)?)\b"),
+    re.compile(r"(?i)\b(?:executing tool|calling tool|invoking tool|calling function|tool call)\b"),
+]
+
+CONTEXTUAL_FILLER_PHRASES: Dict[str, Dict[str, str]] = {
+    "check_table_availability": {
+        "en": "Please give me just a moment while I check our available tables for you.",
+        "hi": "कृपया एक क्षण रुकिए, मैं आपके लिए उपलब्ध टेबल चेक कर रहा हूँ।",
+    },
+    "create_table_booking": {
+        "en": "Please give me a moment while I proceed with your table reservation.",
+        "hi": "कृपया एक पल प्रतीक्षा करें, मैं आपकी टेबल बुकिंग दर्ज कर रहा हूँ।",
+    },
+    "check_appointment_availability": {
+        "en": "Please give me a moment while I check the doctor's available appointment slots.",
+        "hi": "कृपया एक क्षण रुकिए, मैं डॉक्टर साहब के उपलब्ध समय की जाँच कर रहा हूँ।",
+    },
+    "create_appointment": {
+        "en": "Please give me a moment while I schedule your doctor appointment.",
+        "hi": "कृपया एक पल प्रतीक्षा करें, मैं आपका अपॉइंटमेंट दर्ज कर रहा हूँ।",
+    },
+    "check_room_availability": {
+        "en": "Please give me just a moment while I check room availability for those dates.",
+        "hi": "कृपया एक क्षण रुकिए, मैं उन तारीखों के लिए कमरों की उपलब्धता चेक कर रहा हूँ।",
+    },
+    "create_room_booking": {
+        "en": "Please give me a moment while I process your room reservation.",
+        "hi": "कृपया एक पल प्रतीक्षा करें, मैं आपकी रूम बुकिंग दर्ज कर रहा हूँ।",
+    },
+    "take_message": {
+        "en": "Please give me a moment while I note down your message for our team.",
+        "hi": "कृपया एक क्षण रुकिए, मैं आपका संदेश हमारे सहकर्मियों के लिए नोट कर रहा हूँ।",
+    },
+    "transfer_call": {
+        "en": "Please hold on for just a moment while I connect you to our staff.",
+        "hi": "कृपया एक क्षण लाइन पर बने रहें, मैं आपकी कॉल हमारे सहकर्मी से जोड़ रहा हूँ।",
+    },
+    "answer_faq": {
+        "en": "Please give me just a moment to look into that for you.",
+        "hi": "कृपया एक क्षण रुकिए, मैं इसकी जानकारी देख रहा हूँ।",
+    },
+    "query_menu_pricing": {
+        "en": "Please give me a moment while I check our menu details and pricing for you.",
+        "hi": "कृपया एक क्षण रुकिए, मैं मेनू और कीमतों की जानकारी देख रहा हूँ।",
+    },
+    "query_room_pricing": {
+        "en": "Please give me a moment while I look up our room rates for you.",
+        "hi": "कृपया एक क्षण रुकिए, मैं कमरों के किरायों की जानकारी देख रहा हूँ।",
+    },
+    "query_treatment_pricing": {
+        "en": "Please give me a moment while I check our consultation fees and treatment charges.",
+        "hi": "कृपया एक क्षण रुकिए, मैं परामर्श शुल्क और उपचार की जानकारी देख रहा हूँ।",
+    },
+    "_default": {
+        "en": "Please give me just a moment while I proceed with your request.",
+        "hi": "कृपया एक क्षण रुकिए, मैं आपके अनुरोध पर काम कर रहा हूँ।",
+    },
+}
+
+def get_contextual_filler_phrase(tool_id: Optional[str], language: str = "en") -> str:
+    """Retrieve natural, polite filler phrase tailored to the active tool and language."""
+    lang_key = "hi" if language == "hi" else "en"
+    tool_map = CONTEXTUAL_FILLER_PHRASES.get(tool_id or "_default", CONTEXTUAL_FILLER_PHRASES["_default"])
+    return tool_map.get(lang_key, tool_map.get("en", "Please give me just a moment while I check that for you."))
+
+def has_tool_leakage(text: Optional[str]) -> bool:
+    """Detect if string contains internal tool names or robotic step commentary."""
+    if not text or not isinstance(text, str):
+        return False
+    lower = text.lower()
+    for term in KNOWN_TECHNICAL_TERMS:
+        if term in lower:
+            return True
+    for pat in ROBOTIC_STEP_PATTERNS:
+        if pat.search(text):
+            return True
+    return False
+
+def sanitize_customer_facing_text(
+    text: Optional[str],
+    fallback_tool_id: Optional[str] = None,
+    language: str = "en",
+) -> str:
+    """
+    Ensure all customer-facing text is devoid of robotic step narration, internal tool names,
+    or implementation details. If the entire text was purely internal chatter, provides a natural
+    conversational phrase or contextual filler.
+    """
+    if not text or not isinstance(text, str):
+        return get_contextual_filler_phrase(fallback_tool_id, language) if fallback_tool_id else ""
+
+    clean = text.strip()
+    if not clean:
+        return get_contextual_filler_phrase(fallback_tool_id, language) if fallback_tool_id else ""
+
+    tool_replacements = {
+        "check_table_availability": "table availability",
+        "create_table_booking": "table reservation",
+        "check_appointment_availability": "appointment availability",
+        "create_appointment": "appointment scheduling",
+        "check_room_availability": "room availability",
+        "create_room_booking": "room reservation",
+        "take_message": "message",
+        "transfer_call": "transfer",
+        "answer_faq": "information lookup",
+        "query_menu_pricing": "menu details",
+        "query_room_pricing": "room rates",
+        "query_treatment_pricing": "treatment pricing",
+    }
+
+    # If the text is solely robotic narration (e.g. "I will now call check_table_availability..."):
+    lower_clean = clean.lower()
+    is_pure_chatter = (
+        lower_clean.startswith(("i will now", "now i will", "step 1", "calling ", "executing ", "let me use"))
+        and any(t in lower_clean for t in KNOWN_TECHNICAL_TERMS)
+    )
+    if is_pure_chatter:
+        return get_contextual_filler_phrase(fallback_tool_id, language)
+
+    # Clean step prefixes and tool labels
+    for pat in ROBOTIC_STEP_PATTERNS:
+        clean = pat.sub("", clean)
+
+    for tool_name, friendly_phrase in tool_replacements.items():
+        clean = re.sub(r"\b" + re.escape(tool_name) + r"\b", friendly_phrase, clean, flags=re.IGNORECASE)
+
+    clean = re.sub(r"\s+", " ", clean).strip()
+
+    if not clean or len(clean) < 3:
+        return get_contextual_filler_phrase(fallback_tool_id, language) if fallback_tool_id else ""
+
+    return clean
+
 
 
 def _format_pending_action_summary(
@@ -268,9 +422,30 @@ def call_llm_node(
     )
 
     if llm_resp.success:
+        response_content = llm_resp.content
+        filler_phrase = None
+
+        # Determine caller language from latest user turn
+        caller_lang = "en"
+        for m in reversed(messages):
+            if isinstance(m, dict) and m.get("role") == "user":
+                caller_lang = detect_language(m.get("content", ""))
+                break
+
+        if llm_resp.tool_calls:
+            first_tool = llm_resp.tool_calls[0].get("function", {}).get("name")
+            filler_phrase = get_contextual_filler_phrase(first_tool, caller_lang)
+            if not response_content or has_tool_leakage(response_content):
+                response_content = filler_phrase
+            else:
+                response_content = sanitize_customer_facing_text(response_content, first_tool, caller_lang)
+        elif response_content:
+            response_content = sanitize_customer_facing_text(response_content, language=caller_lang)
+
         return {
             "latest_tool_calls": llm_resp.tool_calls,
-            "response_content": llm_resp.content,
+            "response_content": response_content,
+            "filler_phrase": filler_phrase,
             "iteration_count": iter_count,
             "success": True,
             "error": None,
@@ -533,6 +708,7 @@ def execute_tools_node(
         "messages": messages,
         "latest_tool_calls": None,
         "tools_called": tools_called,
+        "filler_phrase": state.get("filler_phrase"),
         "work_completed": True,
         "success": True,
         "error": None,
@@ -565,6 +741,10 @@ def finalize_response_node(state: AgentState) -> Dict[str, Any]:
     tools_called = state.get("tools_called") or []
     should_terminate = state.get("should_terminate", False)
     followup_intent = state.get("followup_intent")
+    filler_phrase = state.get("filler_phrase")
+
+    # Clean and sanitize customer-facing text against robotic jargon or leaked tool names
+    response_content = sanitize_customer_facing_text(response_content)
 
     # If work/tools were executed or completed, verify if follow-up question is present
     if (work_completed or len(tools_called) > 0) and response_content and not should_terminate:
@@ -585,6 +765,7 @@ def finalize_response_node(state: AgentState) -> Dict[str, Any]:
     return {
         "success": True,
         "response_content": response_content,
+        "filler_phrase": filler_phrase,
         "pending_action": state.get("pending_action"),
         "tools_called": tools_called,
         "work_completed": work_completed or len(tools_called) > 0,

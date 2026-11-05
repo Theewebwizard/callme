@@ -12,6 +12,9 @@ from pydantic import BaseModel, Field, ConfigDict, field_validator
 def _validate_calendar_date(v: str, field_name: str = "date") -> str:
     """Validate that the string is a genuine calendar-valid date in YYYY-MM-DD format."""
     clean = v.strip() if isinstance(v, str) else v
+    if isinstance(clean, str):
+        from backend.tools.base import normalize_booking_date
+        clean = normalize_booking_date(clean)
     if not isinstance(clean, str) or not re.match(r"^\d{4}-\d{2}-\d{2}$", clean):
         raise ValueError(f"{field_name} must be in YYYY-MM-DD format.")
     try:
@@ -84,7 +87,7 @@ class CheckTableAvailabilityInput(BaseModel):
         description="Number of dining guests (1 to 20).",
     )
 
-    @field_validator("date")
+    @field_validator("date", mode="before")
     @classmethod
     def check_date(cls, v: str) -> str:
         return _validate_calendar_date(v, "date")
@@ -149,7 +152,7 @@ class CreateTableBookingInput(BaseModel):
     def check_phone(cls, v: str) -> str:
         return _validate_phone_number(v, "customer_phone")
 
-    @field_validator("date")
+    @field_validator("date", mode="before")
     @classmethod
     def check_date(cls, v: str) -> str:
         return _validate_calendar_date(v, "date")
@@ -194,7 +197,7 @@ class CheckAppointmentAvailabilityInput(BaseModel):
     def clean_dept(cls, v: Any) -> Any:
         return v.strip() if isinstance(v, str) else v
 
-    @field_validator("preferred_date")
+    @field_validator("preferred_date", mode="before")
     @classmethod
     def check_date(cls, v: str) -> str:
         return _validate_calendar_date(v, "preferred_date")
@@ -259,7 +262,7 @@ class CreateAppointmentInput(BaseModel):
     def check_phone(cls, v: str) -> str:
         return _validate_phone_number(v, "patient_phone")
 
-    @field_validator("appointment_date")
+    @field_validator("appointment_date", mode="before")
     @classmethod
     def check_date(cls, v: str) -> str:
         return _validate_calendar_date(v, "appointment_date")
@@ -372,12 +375,12 @@ class CheckRoomAvailabilityInput(BaseModel):
         description="Total number of adult/child guests staying in the room.",
     )
 
-    @field_validator("check_in_date")
+    @field_validator("check_in_date", mode="before")
     @classmethod
     def check_in(cls, v: str) -> str:
         return _validate_calendar_date(v, "check_in_date")
 
-    @field_validator("check_out_date")
+    @field_validator("check_out_date", mode="before")
     @classmethod
     def check_out(cls, v: str) -> str:
         return _validate_calendar_date(v, "check_out_date")
@@ -437,12 +440,12 @@ class CreateRoomBookingInput(BaseModel):
         description="Idempotency key to prevent accidental duplicate booking submissions.",
     )
 
-    @field_validator("check_in_date")
+    @field_validator("check_in_date", mode="before")
     @classmethod
     def check_in(cls, v: str) -> str:
         return _validate_calendar_date(v, "check_in_date")
 
-    @field_validator("check_out_date")
+    @field_validator("check_out_date", mode="before")
     @classmethod
     def check_out(cls, v: str) -> str:
         return _validate_calendar_date(v, "check_out_date")

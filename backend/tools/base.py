@@ -3,8 +3,11 @@ Base models, enums, and execution result schemas for the modular tool registry.
 """
 
 import re
+import zoneinfo
+from datetime import datetime, date, timedelta
 from enum import Enum
 from typing import Dict, Any, Optional, Type, Callable, List, Set
+import dateutil.parser
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -163,6 +166,65 @@ def normalize_industry_name(industry: Optional[str]) -> Optional[str]:
     clean = re.sub(r"[^\w\s&/]", " ", industry).strip().lower()
     clean = re.sub(r"\s+", " ", clean)
     return INDUSTRY_NORMALIZATION_MAP.get(clean)
+
+
+def normalize_booking_date(date_str: str, tz_name: str = "Asia/Kolkata") -> str:
+    """
+    Deterministically normalize any user or LLM provided booking/appointment date string.
+    - Anchors dates without explicit year (e.g. '29 November', '29 Nov', '11-29') to the current calendar year.
+    - Corrects hallucinated past years (e.g. 2023, 2024, 2025) to the current calendar year.
+    - If a date in the current year has already passed relative to today, advances to next year.
+    - Resolves relative terms like 'today', 'tomorrow', 'day after tomorrow', 'aaj', 'kal', 'parson'.
+    - Returns standardized 'YYYY-MM-DD' ISO date string.
+    """
+    if not date_str or not isinstance(date_str, str):
+        return date_str
+
+    clean = date_str.strip()
+    if not clean:
+        return clean
+
+    try:
+        try:
+            local_tz = zoneinfo.ZoneInfo(tz_name)
+        except Exception:
+            local_tz = zoneinfo.ZoneInfo("Asia/Kolkata")
+        today = datetime.now(local_tz).date()
+
+        lower = clean.lower()
+
+        # Handle relative terms in English and Hindi
+        if lower in {"today", "aaj", "आज"}:
+            return today.isoformat()
+        if lower in {"tomorrow", "kal", "कल"}:
+            return (today + timedelta(days=1)).isoformat()
+        if lower in {"day after tomorrow", "parson", "परसों"}:
+            return (today + timedelta(days=2)).isoformat()
+
+        # Check if caller or model supplied an explicit 4-digit year
+        has_explicit_year = bool(re.search(r"\b(19|20)\d{2}\b", clean))
+
+        # Default anchor is current year
+        default_dt = datetime(today.year, 1, 1)
+        parsed_dt = dateutil.parser.parse(clean, default=default_dt, dayfirst=True)
+        y, m, d = parsed_dt.year, parsed_dt.month, parsed_dt.day
+
+        # If no explicit year was supplied, or if the year is in the past (e.g. LLM training cutoff hallucination):
+        if not has_explicit_year or y < today.year:
+            target_year = today.year
+            try:
+                candidate = date(target_year, m, d)
+            except ValueError:
+                candidate = date(target_year, m, 28)
+
+            if candidate < today:
+                target_year += 1
+            return date(target_year, m, d).isoformat()
+
+        return date(y, m, d).isoformat()
+    except Exception:
+        return clean
+
 
 
 class ToolDefinition(BaseModel):

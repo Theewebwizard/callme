@@ -121,6 +121,7 @@ class VoiceTurnOrchestrator:
             response_content: str = ""
             pending_action: Optional[Dict[str, Any]] = None
             tools_called: List[str] = []
+            filler_phrase: Optional[str] = None
             should_terminate = False
             llm_duration_ms: Optional[float] = None
 
@@ -147,6 +148,7 @@ class VoiceTurnOrchestrator:
                     response_content = workflow_result.get("response_content") or ""
                 pending_action = workflow_result.get("pending_action")
                 tools_called = workflow_result.get("tools_called") or []
+                filler_phrase = workflow_result.get("filler_phrase")
                 should_terminate = bool(workflow_result.get("should_terminate", False))
 
             except Exception as e:
@@ -215,6 +217,7 @@ class VoiceTurnOrchestrator:
                 audio_payload=audio_payload,
                 tool_calls_executed=tools_called,
                 pending_action=pending_action,
+                filler_phrase=filler_phrase,
                 llm_duration_ms=llm_duration_ms,
                 session_status=session_status,
                 should_terminate=should_terminate,

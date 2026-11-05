@@ -265,6 +265,7 @@ async def process_web_turn(
         "audio_mime": audio_mime or "audio/wav",
         "tool_calls": turn_result.tool_calls_executed,
         "tool_used": tool_used,
+        "filler_phrase": getattr(turn_result, "filler_phrase", None),
         "should_terminate": turn_result.should_terminate,
     }
 

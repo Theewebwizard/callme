@@ -5,11 +5,13 @@ and business-aware prompt construction.
 """
 
 from dataclasses import dataclass
+from datetime import datetime
 import json
 import logging
 import random
 import time
 from typing import List, Dict, Any, Optional
+import zoneinfo
 import groq
 from groq import Groq
 from backend.config import get_settings
@@ -70,6 +72,17 @@ def build_business_system_instruction(
     greeting = business.get("greeting_message", "")
     transfer_rules = business.get("transfer_instructions", "Transfer to human staff upon request.")
 
+    # Dynamic Calendar & Real-Time Clock Anchor
+    try:
+        local_tz = zoneinfo.ZoneInfo(tz)
+    except Exception:
+        local_tz = zoneinfo.ZoneInfo("Asia/Kolkata")
+    now_local = datetime.now(local_tz)
+    today_str = now_local.strftime("%Y-%m-%d")
+    day_of_week = now_local.strftime("%A")
+    current_year = now_local.year
+    current_time_str = now_local.strftime("%H:%M")
+
     # Format FAQ knowledge base
     faqs = business.get("faqs", [])
     faq_text = ""
@@ -100,6 +113,16 @@ def build_business_system_instruction(
     prompt = f"""You are the professional AI Receptionist for {biz_name}, a {industry} business.
 Your role is to assist callers courteously, accurately, and concisely, keeping responses natural for telephone conversation.
 
+[CURRENT CALENDAR & REAL-TIME CLOCK CONTEXT]
+- Today's Date: {today_str} ({day_of_week})
+- Current Time: {current_time_str} ({tz})
+- Current Calendar Year: {current_year}
+- STRICT DATE ANCHORING RULES:
+  1. Whenever a caller specifies a date without an explicit year (such as "29 November", "tomorrow", "this Friday", "next Tuesday", "29 Nov", "November 29th"):
+     - You MUST anchor the date to the current calendar year ({current_year}).
+     - If the date in {current_year} has already passed relative to today ({today_str}), you must use the upcoming calendar year ({current_year + 1}).
+  2. NEVER use outdated years (e.g. 2023, 2024, 2025) or random years. All bookings, availability inquiries, and appointments must be anchored to {current_year} or {current_year + 1}.
+
 [BUSINESS PROFILE]
 - Name: {biz_name}
 - Industry: {industry}
@@ -117,6 +140,19 @@ Your role is to assist callers courteously, accurately, and concisely, keeping r
 
 [TENANT TOOLS IN SYSTEM]
 {tools_text}
+
+[CUSTOMER-FACING SPOKEN VOICE & TELEPHONY RULES]
+1. ZERO INTERNAL TECHNICAL JARGON (STRICT FORBIDDEN LIST):
+   - You are a warm, courteous phone receptionist speaking directly with a customer on a telephone call.
+   - You MUST NEVER speak or mention internal tool names, function names, parameter names, or technical backend terms to the caller.
+   - Specifically NEVER say any of the following: "check_table_availability", "create_table_booking", "check_appointment_availability", "create_appointment", "check_room_availability", "create_room_booking", "take_message", "transfer_call", "answer_faq", "tool", "function", "API", "schema", "JSON", "database", "backend", "system".
+2. ZERO INTERNAL TASK STEP NARRATION:
+   - You MUST NEVER narrate internal task steps, reasoning, or debugging steps (e.g. NEVER say "Step 1: checking database", "Now calling the booking function", "Parameters are validated").
+   - The caller should ONLY hear natural, courteous, human-facing conversational sentences (e.g. "We have a table available at 8:00 PM for 2 guests. Would you like me to reserve it for you?").
+3. RESPECTFUL FILLER & PROGRESS ACKNOWLEDGMENT:
+   - When initiating a lookup or booking that requires a tool, maintain caller rapport with a polite, professional reassurance phrase in the caller's language.
+   - English: "Please give me just a moment while I check our available tables for you." / "Please give me a moment while I proceed with your reservation."
+   - Hindi: "कृपया एक क्षण रुकिए, मैं आपके लिए टेबल चेक कर रहा हूँ।" / "कृपया एक पल प्रतीक्षा करें, मैं आपकी बुकिंग प्रोसेस कर रहा हूँ।"
 
 [OPERATIONAL BOUNDARIES & SAFETY RULES]
 1. TRUTHFULNESS: Only state facts, hours, and policies present in the profile above. Never invent prices, availability, menu items, or medical advice not explicitly provided. If information is missing, politely inform the caller and advise calling {phone}.
