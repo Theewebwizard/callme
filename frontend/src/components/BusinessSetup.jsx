@@ -27,7 +27,6 @@ const INDUSTRY_OPTIONS = [
   'Restaurant',
   'Hotel / Hospitality',
   'Clinic / Medical',
-  'Salon / Spa',
 ];
 
 const TIMEZONE_OPTIONS = ['Asia/Kolkata', 'UTC', 'America/New_York', 'Europe/London', 'Asia/Dubai'];

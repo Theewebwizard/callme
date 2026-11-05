@@ -20,7 +20,6 @@ const INDUSTRY_OPTIONS = [
   'Restaurant',
   'Hotel / Hospitality',
   'Clinic / Medical',
-  'Salon / Spa',
 ];
 
 const PRE_EXISTING_TOOLS = [

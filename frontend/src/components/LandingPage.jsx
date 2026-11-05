@@ -99,23 +99,6 @@ export const INDUSTRY_PREVIEWS = [
     tools: ['query_doctor_schedule', 'book_consultation', 'safety_triage_transfer'],
     outcome: 'Consultation Slotted & Triage Transferred',
   },
-  {
-    id: 'Salon',
-    title: 'Salon & Wellness',
-    businessName: 'Aura Luxury Spa & Salon',
-    phone: '+91 22 2640 8812',
-    dialogue: [
-      { speaker: 'caller', text: 'Hi! Can I get an appointment with Priya for a hair spa and styling this Saturday at 11 AM?' },
-      { speaker: 'receptionist', text: 'Hi there! Let me verify Priya’s chair schedule for Saturday morning.' },
-      { speaker: 'tool', text: '⚡ check_stylist_slots(stylist: "Priya", service: "Hair Spa", date: "Saturday", time: "11:00") → Confirmed Open' },
-      { speaker: 'receptionist', text: 'Priya is available at 11:00 AM this Saturday. The treatment takes approximately 75 minutes. Shall I book it?' },
-      { speaker: 'caller', text: 'Yes please!' },
-      { speaker: 'tool', text: '⚡ schedule_service_appointment(stylist: "Priya", service: "Hair Spa", date: "Saturday") → Booked #SL-1904' },
-      { speaker: 'receptionist', text: 'You are all set with Priya for Saturday at 11:00 AM! Looking forward to pampering you.' },
-    ],
-    tools: ['check_stylist_slots', 'schedule_service_appointment', 'service_catalog'],
-    outcome: 'Appointment Booked • Stylist Priya • SMS sent',
-  },
 ];
 
 export default function LandingPage({ onEnterWorkspace, onEnterAdmin }) {
@@ -689,7 +672,6 @@ export default function LandingPage({ onEnterWorkspace, onEnterAdmin }) {
                       <option value="Restaurant">Restaurant</option>
                       <option value="Hotel / Hospitality">Hotel / Hospitality</option>
                       <option value="Clinic / Medical">Clinic / Medical</option>
-                      <option value="Salon / Spa">Salon / Spa</option>
                     </select>
                   </div>
 
