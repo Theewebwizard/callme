@@ -1757,8 +1757,14 @@ class DatabaseService:
                 floors_map[floor_num]["rooms"].append(room_data)
 
             sorted_floors = [floors_map[k] for k in sorted(floors_map.keys())]
+            def _room_sort_key(r):
+                rn = str(r.get("room_number") or "").strip()
+                if rn.isdigit():
+                    return (0, int(rn))
+                return (1, rn)
+
             for f in sorted_floors:
-                f["rooms"].sort(key=lambda x: str(x["room_number"]))
+                f["rooms"].sort(key=_room_sort_key)
 
             total = len(hotel_resources)
             return {
@@ -1775,14 +1781,21 @@ class DatabaseService:
     def bulk_setup_hotel_floors(
         self,
         business_id: str,
-        floors_count: int,
-        rooms_per_floor: int,
+        floors_count: int = 3,
+        rooms_per_floor: int = 4,
         starting_floor: int = 1,
         room_type_id: Optional[str] = None,
         replace_existing: bool = False,
+        floor_number: Optional[int] = None,
+        start_room_number: Optional[int] = None,
+        end_room_number: Optional[int] = None,
     ) -> Dict[str, Any]:
         """
         Bulk generate property floor and room unit layout (OYO Onboarding Parity).
+        Supports:
+        1. Range Mode: explicit start_room_number and end_room_number on floor_number.
+        2. Multi-Floor Mode: generates floors_count x rooms_per_floor. When replace_existing=False,
+           automatically continues numbering after the highest existing room on each floor.
         """
         self.invalidate_profile_cache(business_id)
         with session_scope(self.session_factory) as session:
@@ -1793,18 +1806,124 @@ class DatabaseService:
             rt_name = rt.name if rt else "Deluxe Room"
             bed_type = rt.bed_type if rt else "King Bed"
             capacity = rt.max_occupancy if rt else 2
+            base_price = rt.base_price if rt else None
 
+            # Case A: User provided explicit starting and ending room numbers
+            if start_room_number is not None and end_room_number is not None:
+                start_num = int(start_room_number)
+                end_num = int(end_room_number)
+                if start_num <= 0:
+                    raise ValueError("Starting room number must be a positive integer.")
+                if end_num < start_num:
+                    raise ValueError("Ending room number must be greater than or equal to starting room number.")
+                if (end_num - start_num + 1) > 100:
+                    raise ValueError("Cannot create more than 100 rooms in a single range.")
+
+                if floor_number is not None:
+                    target_floor = int(floor_number)
+                else:
+                    target_floor = 0 if start_num < 100 else (start_num // 100)
+
+                floor_name = (
+                    "Ground Floor" if target_floor == 0
+                    else f"{target_floor}st Floor" if target_floor == 1
+                    else f"{target_floor}nd Floor" if target_floor == 2
+                    else f"{target_floor}rd Floor" if target_floor == 3
+                    else f"{target_floor}th Floor"
+                )
+
+                if replace_existing:
+                    existing = res_repo.list_resources(business_id=business_id)
+                    for r in existing:
+                        m = dict(r.metadata_json or {})
+                        if m.get("floor") == target_floor:
+                            res_repo.delete_resource(business_id, r.id)
+
+                existing = res_repo.list_resources(business_id=business_id)
+                existing_by_num = {}
+                for r in existing:
+                    m = dict(r.metadata_json or {})
+                    rn = str(m.get("room_number") or "").strip()
+                    if rn:
+                        existing_by_num[rn] = r
+
+                for num in range(start_num, end_num + 1):
+                    room_number = str(num)
+                    room_name = f"Room {room_number}"
+                    meta = {
+                        "floor": target_floor,
+                        "floor_name": floor_name,
+                        "room_number": room_number,
+                        "room_type_id": rt.id if rt else None,
+                        "room_type_name": rt_name,
+                        "bed_type": bed_type,
+                        "base_price": base_price,
+                        "housekeeping_status": "clean",
+                    }
+                    if room_number in existing_by_num:
+                        existing_r = existing_by_num[room_number]
+                        merged_meta = {**dict(existing_r.metadata_json or {}), **meta}
+                        res_repo.update_resource(
+                            business_id=business_id,
+                            resource_id=existing_r.id,
+                            updates={
+                                "name": room_name,
+                                "capacity": capacity,
+                                "section": floor_name,
+                                "metadata_json": merged_meta,
+                            },
+                        )
+                    else:
+                        res_repo.create_resource(
+                            business_id=business_id,
+                            resource_type="room",
+                            name=room_name,
+                            capacity=capacity,
+                            min_party_size=1,
+                            max_party_size=capacity,
+                            section=floor_name,
+                            is_active=True,
+                            metadata_json=meta,
+                        )
+
+                return self.get_hotel_floor_layout(business_id)
+
+            # Case B: Multi-floor builder (floors_count & rooms_per_floor)
             if replace_existing:
                 existing = res_repo.list_resources(business_id=business_id)
                 for r in existing:
                     res_repo.delete_resource(business_id, r.id)
 
-            created_count = 0
+            existing = res_repo.list_resources(business_id=business_id)
+            existing_suffixes_by_floor = {}
+            if not replace_existing:
+                for r in existing:
+                    m = dict(r.metadata_json or {})
+                    flr = m.get("floor")
+                    rn = str(m.get("room_number") or "").strip()
+                    if flr is not None and rn.isdigit():
+                        val = int(rn)
+                        suffix = val % 100
+                        existing_suffixes_by_floor.setdefault(int(flr), []).append(suffix)
+
             for f_idx in range(floors_count):
                 floor_num = starting_floor + f_idx
-                floor_name = "Ground Floor" if floor_num == 0 else f"{floor_num}st Floor" if floor_num == 1 else f"{floor_num}nd Floor" if floor_num == 2 else f"{floor_num}rd Floor" if floor_num == 3 else f"{floor_num}th Floor"
+                floor_name = (
+                    "Ground Floor" if floor_num == 0
+                    else f"{floor_num}st Floor" if floor_num == 1
+                    else f"{floor_num}nd Floor" if floor_num == 2
+                    else f"{floor_num}rd Floor" if floor_num == 3
+                    else f"{floor_num}th Floor"
+                )
 
-                for r_idx in range(1, rooms_per_floor + 1):
+                start_idx = 1
+                if not replace_existing:
+                    curr_suffixes = existing_suffixes_by_floor.get(floor_num, [])
+                    if curr_suffixes:
+                        start_idx = max(curr_suffixes) + 1
+
+                for offset in range(rooms_per_floor):
+                    r_idx = start_idx + offset
                     room_number = f"{floor_num}{r_idx:02d}"
                     room_name = f"Room {room_number}"
 
@@ -1815,6 +1934,7 @@ class DatabaseService:
                         "room_type_id": rt.id if rt else None,
                         "room_type_name": rt_name,
                         "bed_type": bed_type,
+                        "base_price": base_price,
                         "housekeeping_status": "clean",
                     }
 
@@ -1829,7 +1949,6 @@ class DatabaseService:
                         is_active=True,
                         metadata_json=meta,
                     )
-                    created_count += 1
 
         return self.get_hotel_floor_layout(business_id)
 

@@ -18,6 +18,8 @@ import {
   Sliders,
   ShieldCheck,
   Building2,
+  Trash2,
+  Hash,
 } from 'lucide-react';
 import { api } from '../api';
 
@@ -39,8 +41,12 @@ export default function HotelFloorGridView({ business, onLayoutUpdated }) {
   const [checkInNotes, setCheckInNotes] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
 
-  // Bulk Setup Modal State
+  // Bulk Setup / Add Rooms Modal State
   const [setupModalOpen, setSetupModalOpen] = useState(false);
+  const [setupTab, setSetupTab] = useState('range'); // 'range' | 'multi_floor'
+  const [targetFloor, setTargetFloor] = useState(1);
+  const [startRoomNumber, setStartRoomNumber] = useState(101);
+  const [endRoomNumber, setEndRoomNumber] = useState(104);
   const [floorsCount, setFloorsCount] = useState(3);
   const [roomsPerFloor, setRoomsPerFloor] = useState(4);
   const [startingFloor, setStartingFloor] = useState(1);
@@ -150,23 +156,121 @@ export default function HotelFloorGridView({ business, onLayoutUpdated }) {
     }
   };
 
+  const openAddRoomsForFloor = (flr) => {
+    setSetupTab('range');
+    const flrNum = flr.floor_number;
+    setTargetFloor(flrNum);
+
+    let maxRoomNum = 0;
+    (flr.rooms || []).forEach((r) => {
+      const num = parseInt(r.room_number, 10);
+      if (!isNaN(num) && num > maxRoomNum) {
+        maxRoomNum = num;
+      }
+    });
+
+    const nextStart = maxRoomNum > 0 ? maxRoomNum + 1 : (flrNum === 0 ? 1 : flrNum * 100 + 1);
+    setStartRoomNumber(nextStart);
+    setEndRoomNumber(nextStart + 3);
+    setSetupModalOpen(true);
+  };
+
+  const openGeneralSetup = () => {
+    if (layout?.floors?.length > 0) {
+      openAddRoomsForFloor(layout.floors[0]);
+    } else {
+      setSetupTab('range');
+      setTargetFloor(1);
+      setStartRoomNumber(101);
+      setEndRoomNumber(104);
+      setSetupModalOpen(true);
+    }
+  };
+
+  const handleTargetFloorChange = (newFloorNum) => {
+    setTargetFloor(newFloorNum);
+    const flr = layout?.floors?.find((f) => f.floor_number === newFloorNum);
+    let maxRoomNum = 0;
+    if (flr && flr.rooms) {
+      flr.rooms.forEach((r) => {
+        const num = parseInt(r.room_number, 10);
+        if (!isNaN(num) && num > maxRoomNum) {
+          maxRoomNum = num;
+        }
+      });
+    }
+    const nextStart = maxRoomNum > 0 ? maxRoomNum + 1 : (newFloorNum === 0 ? 1 : newFloorNum * 100 + 1);
+    setStartRoomNumber(nextStart);
+    setEndRoomNumber(nextStart + 3);
+  };
+
+  const handleDeleteRoom = async (rm) => {
+    if (rm.status === 'occupied') {
+      alert(`Cannot delete Room ${rm.room_number || rm.name} while occupied by a guest. Check out guest first.`);
+      return;
+    }
+    const displayName = rm.room_number ? `Room ${rm.room_number}` : rm.name;
+    if (!window.confirm(`Are you sure you want to delete ${displayName}? This will remove it from the floor layout.`)) {
+      return;
+    }
+    setActionLoading(true);
+    try {
+      await api.deleteHotelRoom(business.id, rm.id);
+      setFeedback({ type: 'success', text: `${displayName} deleted.` });
+      setTimeout(() => setFeedback(null), 3000);
+      await loadData();
+      if (onLayoutUpdated) onLayoutUpdated();
+    } catch (err) {
+      setFeedback({ type: 'error', text: `Failed to delete room: ${err.message}` });
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const handleBulkSetupSubmit = async (e) => {
     e.preventDefault();
     setActionLoading(true);
     try {
-      const updated = await api.bulkSetupHotelFloors(business.id, {
-        floors_count: Number(floorsCount),
-        rooms_per_floor: Number(roomsPerFloor),
-        starting_floor: Number(startingFloor),
-        room_type_id: selectedRoomTypeId || undefined,
-        replace_existing: replaceExisting,
-      });
-      setLayout(updated);
-      setSetupModalOpen(false);
-      setFeedback({
-        type: 'success',
-        text: `Generated ${Number(floorsCount) * Number(roomsPerFloor)} rooms across ${floorsCount} floors!`,
-      });
+      if (setupTab === 'range') {
+        const start = Number(startRoomNumber);
+        const end = Number(endRoomNumber);
+        if (isNaN(start) || start <= 0) {
+          throw new Error('Starting room number must be a positive integer.');
+        }
+        if (isNaN(end) || end < start) {
+          throw new Error('Ending room number must be greater than or equal to starting room number.');
+        }
+        if (end - start + 1 > 100) {
+          throw new Error('Cannot add more than 100 rooms at once.');
+        }
+        const updated = await api.bulkSetupHotelFloors(business.id, {
+          floor_number: Number(targetFloor),
+          start_room_number: start,
+          end_room_number: end,
+          room_type_id: selectedRoomTypeId || undefined,
+          replace_existing: false,
+        });
+        setLayout(updated);
+        setSetupModalOpen(false);
+        setFeedback({
+          type: 'success',
+          text: `Added ${end - start + 1} rooms (${start} – ${end}) successfully!`,
+        });
+      } else {
+        const updated = await api.bulkSetupHotelFloors(business.id, {
+          floors_count: Number(floorsCount),
+          rooms_per_floor: Number(roomsPerFloor),
+          starting_floor: Number(startingFloor),
+          room_type_id: selectedRoomTypeId || undefined,
+          replace_existing: replaceExisting,
+        });
+        setLayout(updated);
+        setSetupModalOpen(false);
+        setFeedback({
+          type: 'success',
+          text: `Generated ${Number(floorsCount) * Number(roomsPerFloor)} rooms across ${floorsCount} floors!`,
+        });
+      }
       setTimeout(() => setFeedback(null), 4000);
       if (onLayoutUpdated) onLayoutUpdated();
     } catch (err) {
@@ -460,10 +564,10 @@ export default function HotelFloorGridView({ business, onLayoutUpdated }) {
           <button
             type="button"
             className="btn-primary"
-            onClick={() => setSetupModalOpen(true)}
+            onClick={openGeneralSetup}
             style={{ fontSize: '0.76rem', padding: '0.35rem 0.85rem' }}
           >
-            <Building2 size={13} /> Bulk Setup Property
+            <Building2 size={13} /> Setup / Add Rooms
           </button>
         </div>
       </div>
@@ -535,6 +639,21 @@ export default function HotelFloorGridView({ business, onLayoutUpdated }) {
                   {flr.rooms.length} Units
                 </span>
               </div>
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => openAddRoomsForFloor(flr)}
+                style={{
+                  fontSize: '0.74rem',
+                  padding: '0.25rem 0.65rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '5px',
+                  fontWeight: 600,
+                }}
+              >
+                <Plus size={12} /> Add Rooms to {flr.floor_name}
+              </button>
             </div>
 
             {/* Room Cards Row */}
@@ -594,7 +713,32 @@ export default function HotelFloorGridView({ business, onLayoutUpdated }) {
                             {rm.room_number || rm.name}
                           </span>
                         </div>
-                        {getStatusBadge(rm.status)}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          {getStatusBadge(rm.status)}
+                          {!isOccupied && (
+                            <button
+                              type="button"
+                              className="btn-icon"
+                              title={`Delete Room ${rm.room_number || rm.name}`}
+                              onClick={() => handleDeleteRoom(rm)}
+                              disabled={actionLoading}
+                              style={{
+                                padding: '3px',
+                                background: 'transparent',
+                                border: 'none',
+                                color: 'var(--text-tertiary)',
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                borderRadius: '4px',
+                              }}
+                              onMouseEnter={(e) => (e.currentTarget.style.color = '#fb7185')}
+                              onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-tertiary)')}
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          )}
+                        </div>
                       </div>
 
                       <div style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '4px' }}>
@@ -853,96 +997,271 @@ export default function HotelFloorGridView({ business, onLayoutUpdated }) {
               </button>
             </div>
 
-            <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginBottom: '1.25rem' }}>
-              Define your building layout like OYO: specify floors, rooms per floor, and room category. Rooms will be auto-numbered (e.g. 101–104, 201–204).
-            </p>
+            {/* Tab switchers */}
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '1.1rem', borderBottom: '1px solid var(--border-medium)', paddingBottom: '0.65rem' }}>
+              <button
+                type="button"
+                className={`btn-secondary ${setupTab === 'range' ? 'active' : ''}`}
+                onClick={() => setSetupTab('range')}
+                style={{
+                  fontSize: '0.78rem',
+                  padding: '0.35rem 0.8rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  background: setupTab === 'range' ? '#ffffff' : 'transparent',
+                  color: setupTab === 'range' ? '#07080a' : 'var(--text-secondary)',
+                  fontWeight: 600,
+                  borderColor: setupTab === 'range' ? '#ffffff' : 'var(--border-medium)',
+                }}
+              >
+                <Hash size={13} /> Add by Number Range (Start & End)
+              </button>
+              <button
+                type="button"
+                className={`btn-secondary ${setupTab === 'multi_floor' ? 'active' : ''}`}
+                onClick={() => setSetupTab('multi_floor')}
+                style={{
+                  fontSize: '0.78rem',
+                  padding: '0.35rem 0.8rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  background: setupTab === 'multi_floor' ? '#ffffff' : 'transparent',
+                  color: setupTab === 'multi_floor' ? '#07080a' : 'var(--text-secondary)',
+                  fontWeight: 600,
+                  borderColor: setupTab === 'multi_floor' ? '#ffffff' : 'var(--border-medium)',
+                }}
+              >
+                <Building2 size={13} /> Multi-Floor Builder
+              </button>
+            </div>
 
             <form onSubmit={handleBulkSetupSubmit}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '0.85rem' }}>
-                <div className="form-group">
-                  <label className="form-label">Number of Floors</label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="15"
-                    className="form-input"
-                    value={floorsCount}
-                    onChange={(e) => setFloorsCount(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Rooms per Floor</label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="30"
-                    className="form-input"
-                    value={roomsPerFloor}
-                    onChange={(e) => setRoomsPerFloor(e.target.value)}
-                    required
-                  />
-                </div>
-              </div>
+              {setupTab === 'range' ? (
+                <>
+                  <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
+                    Choose a floor and specify the exact starting and ending room numbers (e.g. 105 to 110).
+                  </p>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '0.85rem' }}>
-                <div className="form-group">
-                  <label className="form-label">Starting Floor Number</label>
-                  <select
-                    className="form-input"
-                    value={startingFloor}
-                    onChange={(e) => setStartingFloor(Number(e.target.value))}
-                  >
-                    <option value={0}>Ground Floor (001...)</option>
-                    <option value={1}>1st Floor (101...)</option>
-                    <option value={2}>2nd Floor (201...)</option>
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Default Room Tier</label>
-                  <select
-                    className="form-input"
-                    value={selectedRoomTypeId}
-                    onChange={(e) => setSelectedRoomTypeId(e.target.value)}
-                  >
-                    {roomTypes.map((rt) => (
-                      <option key={rt.id} value={rt.id}>
-                        {rt.name}
-                      </option>
-                    ))}
-                    {roomTypes.length === 0 && <option value="">Standard Deluxe Room</option>}
-                  </select>
-                </div>
-              </div>
+                  <div style={{ marginBottom: '0.85rem' }}>
+                    <div className="form-group">
+                      <label className="form-label">Select Floor</label>
+                      <select
+                        className="form-input"
+                        value={targetFloor}
+                        onChange={(e) => handleTargetFloorChange(Number(e.target.value))}
+                      >
+                        <option value={0}>Ground Floor</option>
+                        <option value={1}>1st Floor</option>
+                        <option value={2}>2nd Floor</option>
+                        <option value={3}>3rd Floor</option>
+                        <option value={4}>4th Floor</option>
+                        <option value={5}>5th Floor</option>
+                        <option value={6}>6th Floor</option>
+                        <option value={7}>7th Floor</option>
+                      </select>
+                    </div>
+                  </div>
 
-              <div style={{ marginBottom: '1.25rem', padding: '0.65rem 0.85rem', background: 'var(--bg-surface-elevated)', borderRadius: '6px', border: '1px solid var(--border-medium)' }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
-                  <input
-                    type="checkbox"
-                    checked={replaceExisting}
-                    onChange={(e) => setReplaceExisting(e.target.checked)}
-                  />
-                  <span>Replace existing rooms with this new layout</span>
-                </label>
-              </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '0.85rem' }}>
+                    <div className="form-group">
+                      <label className="form-label">Starting Room Number</label>
+                      <input
+                        type="number"
+                        min="1"
+                        className="form-input"
+                        value={startRoomNumber}
+                        onChange={(e) => setStartRoomNumber(e.target.value)}
+                        placeholder="e.g. 105"
+                        required
+                      />
+                      <span style={{ fontSize: '0.68rem', color: 'var(--text-tertiary)' }}>
+                        First room number in range
+                      </span>
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Ending Room Number</label>
+                      <input
+                        type="number"
+                        min={startRoomNumber || 1}
+                        className="form-input"
+                        value={endRoomNumber}
+                        onChange={(e) => setEndRoomNumber(e.target.value)}
+                        placeholder="e.g. 110"
+                        required
+                      />
+                      <span style={{ fontSize: '0.68rem', color: 'var(--text-tertiary)' }}>
+                        Last room number (inclusive)
+                      </span>
+                    </div>
+                  </div>
 
-              <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                <button
-                  type="button"
-                  className="btn-secondary"
-                  onClick={() => setSetupModalOpen(false)}
-                  disabled={actionLoading}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="btn-primary"
-                  disabled={actionLoading}
-                >
-                  <Building2 size={14} /> {actionLoading ? 'Generating...' : `Generate ${Number(floorsCount) * Number(roomsPerFloor)} Rooms`}
-                </button>
-              </div>
+                  {/* Range Preview Badge */}
+                  {(() => {
+                    const s = Number(startRoomNumber);
+                    const e = Number(endRoomNumber);
+                    if (!isNaN(s) && !isNaN(e) && e >= s && s > 0) {
+                      const count = e - s + 1;
+                      const previewRooms = [];
+                      for (let i = s; i <= Math.min(e, s + 9); i++) {
+                        previewRooms.push(i);
+                      }
+                      return (
+                        <div
+                          style={{
+                            marginBottom: '0.9rem',
+                            padding: '0.65rem 0.85rem',
+                            background: 'rgba(56, 189, 248, 0.08)',
+                            borderRadius: '6px',
+                            border: '1px solid rgba(56, 189, 248, 0.25)',
+                            fontSize: '0.75rem',
+                          }}
+                        >
+                          <div style={{ fontWeight: 700, color: '#38bdf8', marginBottom: '2px' }}>
+                            Will add {count} room{count === 1 ? '' : 's'} to {targetFloor === 0 ? 'Ground Floor' : `${targetFloor}st Floor`}:
+                          </div>
+                          <div style={{ color: 'var(--text-primary)', wordBreak: 'break-all' }}>
+                            {previewRooms.join(', ')}
+                            {count > 10 && ` ... and ${count - 10} more`}
+                          </div>
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
+
+                  <div className="form-group" style={{ marginBottom: '1.25rem' }}>
+                    <label className="form-label">Room Tier (Rate & Bed Configuration)</label>
+                    <select
+                      className="form-input"
+                      value={selectedRoomTypeId}
+                      onChange={(e) => setSelectedRoomTypeId(e.target.value)}
+                    >
+                      {roomTypes.map((rt) => (
+                        <option key={rt.id} value={rt.id}>
+                          {rt.name} {rt.base_price ? `(₹${rt.base_price}/nt)` : ''}
+                        </option>
+                      ))}
+                      {roomTypes.length === 0 && <option value="">Standard Room</option>}
+                    </select>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                    <button
+                      type="button"
+                      className="btn-secondary"
+                      onClick={() => setSetupModalOpen(false)}
+                      disabled={actionLoading}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="btn-primary"
+                      disabled={actionLoading || Number(endRoomNumber) < Number(startRoomNumber)}
+                    >
+                      <Plus size={14} />{' '}
+                      {actionLoading
+                        ? 'Adding...'
+                        : `Add Rooms (${startRoomNumber} – ${endRoomNumber})`}
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginBottom: '1.25rem' }}>
+                    Define multi-floor layout: floors, rooms per floor, and room category. Uncheck "Replace" to safely append new rooms after existing numbers without duplicates.
+                  </p>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '0.85rem' }}>
+                    <div className="form-group">
+                      <label className="form-label">Number of Floors</label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="15"
+                        className="form-input"
+                        value={floorsCount}
+                        onChange={(e) => setFloorsCount(e.target.value)}
+                        required
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Rooms per Floor</label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="30"
+                        className="form-input"
+                        value={roomsPerFloor}
+                        onChange={(e) => setRoomsPerFloor(e.target.value)}
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '0.85rem' }}>
+                    <div className="form-group">
+                      <label className="form-label">Starting Floor Number</label>
+                      <select
+                        className="form-input"
+                        value={startingFloor}
+                        onChange={(e) => setStartingFloor(Number(e.target.value))}
+                      >
+                        <option value={0}>Ground Floor (001...)</option>
+                        <option value={1}>1st Floor (101...)</option>
+                        <option value={2}>2nd Floor (201...)</option>
+                        <option value={3}>3rd Floor (301...)</option>
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Default Room Tier</label>
+                      <select
+                        className="form-input"
+                        value={selectedRoomTypeId}
+                        onChange={(e) => setSelectedRoomTypeId(e.target.value)}
+                      >
+                        {roomTypes.map((rt) => (
+                          <option key={rt.id} value={rt.id}>
+                            {rt.name} {rt.base_price ? `(₹${rt.base_price}/nt)` : ''}
+                          </option>
+                        ))}
+                        {roomTypes.length === 0 && <option value="">Standard Deluxe Room</option>}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div style={{ marginBottom: '1.25rem', padding: '0.65rem 0.85rem', background: 'var(--bg-surface-elevated)', borderRadius: '6px', border: '1px solid var(--border-medium)' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+                      <input
+                        type="checkbox"
+                        checked={replaceExisting}
+                        onChange={(e) => setReplaceExisting(e.target.checked)}
+                      />
+                      <span>Replace existing rooms with this new layout</span>
+                    </label>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                    <button
+                      type="button"
+                      className="btn-secondary"
+                      onClick={() => setSetupModalOpen(false)}
+                      disabled={actionLoading}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="btn-primary"
+                      disabled={actionLoading}
+                    >
+                      <Building2 size={14} /> {actionLoading ? 'Generating...' : `Generate ${Number(floorsCount) * Number(roomsPerFloor)} Rooms`}
+                    </button>
+                  </div>
+                </>
+              )}
             </form>
           </div>
         </div>

@@ -382,6 +382,10 @@ export const api = {
     request(`/businesses/${businessId}/hotel/rooms/${resourceId}/check-out`, {
       method: 'POST',
     }),
+  deleteHotelRoom: (businessId, resourceId) =>
+    request(`/businesses/${businessId}/hotel/rooms/${resourceId}`, {
+      method: 'DELETE',
+    }),
 
   // Clinic Treatments & Fee Store (Healthcare Domain)
   getTreatments: (businessId, category = null) => {
@@ -431,6 +435,7 @@ export const bulkSetupHotelFloors = (businessId, payload) => api.bulkSetupHotelF
 export const updateRoomStatus = (businessId, resourceId, status) => api.updateRoomStatus(businessId, resourceId, status);
 export const hotelCheckIn = (businessId, resourceId, payload) => api.hotelCheckIn(businessId, resourceId, payload);
 export const hotelCheckOut = (businessId, resourceId) => api.hotelCheckOut(businessId, resourceId);
+export const deleteHotelRoom = (businessId, resourceId) => api.deleteHotelRoom(businessId, resourceId);
 
 export const getTreatments = (businessId, category = null) => api.getTreatments(businessId, category);
 export const uploadTreatments = (businessId, items, replace = true) => api.uploadTreatments(businessId, items, replace);

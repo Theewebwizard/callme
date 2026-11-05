@@ -911,11 +911,14 @@ def parse_room_text(
 # =========================================================================
 
 class HotelBulkSetupRequest(BaseModel):
-    floors_count: int = Field(default=3, ge=1, le=20)
-    rooms_per_floor: int = Field(default=4, ge=1, le=50)
-    starting_floor: int = Field(default=1, ge=0, le=10)
+    floors_count: Optional[int] = Field(default=3, ge=1, le=20)
+    rooms_per_floor: Optional[int] = Field(default=4, ge=1, le=50)
+    starting_floor: Optional[int] = Field(default=1, ge=0, le=10)
     room_type_id: Optional[str] = None
     replace_existing: bool = False
+    floor_number: Optional[int] = None
+    start_room_number: Optional[int] = None
+    end_room_number: Optional[int] = None
 
 
 class RoomStatusUpdateRequest(BaseModel):
@@ -948,14 +951,20 @@ def bulk_setup_hotel_floors(
 ) -> Dict[str, Any]:
     """Bulk setup property layout by floors and room numbers (OYO Onboarding Parity)."""
     db_service = get_database_service()
-    return db_service.bulk_setup_hotel_floors(
-        business_id=business_id,
-        floors_count=req.floors_count,
-        rooms_per_floor=req.rooms_per_floor,
-        starting_floor=req.starting_floor,
-        room_type_id=req.room_type_id,
-        replace_existing=req.replace_existing,
-    )
+    try:
+        return db_service.bulk_setup_hotel_floors(
+            business_id=business_id,
+            floors_count=req.floors_count or 3,
+            rooms_per_floor=req.rooms_per_floor or 4,
+            starting_floor=req.starting_floor if req.starting_floor is not None else 1,
+            room_type_id=req.room_type_id,
+            replace_existing=req.replace_existing,
+            floor_number=req.floor_number,
+            start_room_number=req.start_room_number,
+            end_room_number=req.end_room_number,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
 @router.put("/{business_id}/hotel/rooms/{resource_id}/status")
@@ -1018,6 +1027,26 @@ def hotel_check_out(
         )
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+@router.delete("/{business_id}/hotel/rooms/{resource_id}")
+def delete_hotel_room(
+    business_id: str,
+    resource_id: str,
+    principal: AuthenticatedPrincipal = Depends(verify_business_access),
+) -> Dict[str, Any]:
+    """Delete an individual hotel room resource."""
+    db_service = get_database_service()
+    deleted = db_service.delete_resource(business_id, resource_id)
+    if not deleted:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Hotel room '{resource_id}' not found.",
+        )
+    return {
+        "success": True,
+        "message": f"Hotel room '{resource_id}' deleted successfully.",
+    }
 
 # -------------------------------------------------------------
 # Clinic Medical Treatments, Procedures & Fee Store Endpoints
