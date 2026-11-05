@@ -71,6 +71,25 @@ function addMinutesToTime(timeStr, minutes) {
   return `${endH.toString().padStart(2, '0')}:${endM.toString().padStart(2, '0')}`;
 }
 
+const getTodayIso = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const addDaysToIsoString = (isoDateStr, days) => {
+  const base = isoDateStr || getTodayIso();
+  const parts = base.split('-');
+  const year = parseInt(parts[0], 10);
+  const month = parseInt(parts[1], 10);
+  const day = parseInt(parts[2], 10);
+  const d = new Date(Date.UTC(year, month - 1, day));
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+};
+
 export default function RestaurantTableFloorView({
   business,
   resources = [],
@@ -79,10 +98,11 @@ export default function RestaurantTableFloorView({
 }) {
   const [activeTab, setActiveTab] = useState('floor'); // 'floor' | 'timeline' | 'reservations' | 'tables'
   const [selectedSection, setSelectedSection] = useState('All Sections');
-  const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [selectedDate, setSelectedDate] = useState(() => getTodayIso());
   const [searchQuery, setSearchQuery] = useState('');
   const [feedback, setFeedback] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [isNewBookingModalOpen, setIsNewBookingModalOpen] = useState(false);
   const [isAddTableModalOpen, setIsAddTableModalOpen] = useState(false);
   const [cancellingId, setCancellingId] = useState(null);
@@ -93,7 +113,7 @@ export default function RestaurantTableFloorView({
     customer_phone: '',
     party_size: 2,
     resource_id: '',
-    reservation_date: new Date().toISOString().slice(0, 10),
+    reservation_date: getTodayIso(),
     start_time: '19:30',
     duration_minutes: 90,
     special_requests: '',
@@ -286,19 +306,31 @@ export default function RestaurantTableFloorView({
 
   // Date Navigation
   const handlePrevDay = () => {
-    const d = new Date(selectedDate + 'T00:00:00');
-    d.setDate(d.getDate() - 1);
-    setSelectedDate(d.toISOString().slice(0, 10));
+    setSelectedDate((prev) => addDaysToIsoString(prev, -1));
   };
 
   const handleNextDay = () => {
-    const d = new Date(selectedDate + 'T00:00:00');
-    d.setDate(d.getDate() + 1);
-    setSelectedDate(d.toISOString().slice(0, 10));
+    setSelectedDate((prev) => addDaysToIsoString(prev, 1));
   };
 
   const handleToday = () => {
-    setSelectedDate(new Date().toISOString().slice(0, 10));
+    setSelectedDate(getTodayIso());
+  };
+
+  const handleManualRefresh = async () => {
+    if (isRefreshing) return;
+    setIsRefreshing(true);
+    try {
+      if (onRefresh) {
+        await onRefresh();
+      }
+      setFeedback({ type: 'success', text: 'Floor layout and dining reservations refreshed!' });
+      setTimeout(() => setFeedback(null), 3000);
+    } catch (err) {
+      setFeedback({ type: 'error', text: `Failed to refresh: ${err.message}` });
+    } finally {
+      setIsRefreshing(false);
+    }
   };
 
   // Filtered reservations for list view
@@ -605,11 +637,22 @@ export default function RestaurantTableFloorView({
               <button
                 type="button"
                 className="btn-secondary"
-                onClick={onRefresh}
-                title="Refresh floor & bookings"
-                style={{ padding: '0.35rem 0.55rem' }}
+                onClick={handleManualRefresh}
+                disabled={isRefreshing}
+                title="Refresh floor layout and bookings"
+                style={{
+                  padding: '0.3rem 0.65rem',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '5px',
+                  fontSize: '0.76rem',
+                  fontWeight: 600,
+                  cursor: isRefreshing ? 'wait' : 'pointer',
+                  opacity: isRefreshing ? 0.7 : 1,
+                }}
               >
-                <RefreshCw size={13} />
+                <RefreshCw size={13} className={isRefreshing ? 'animate-spin' : ''} />
+                <span>{isRefreshing ? 'Refreshing...' : 'Refresh'}</span>
               </button>
             )}
           </div>

@@ -58,6 +58,25 @@ function addMinutesToTime(timeStr, minutesToAdd) {
   return `${endH.toString().padStart(2, '0')}:${endM.toString().padStart(2, '0')}`;
 }
 
+const getTodayIso = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const addDaysToIsoString = (isoDateStr, days) => {
+  const base = isoDateStr || getTodayIso();
+  const parts = base.split('-');
+  const year = parseInt(parts[0], 10);
+  const month = parseInt(parts[1], 10);
+  const day = parseInt(parts[2], 10);
+  const d = new Date(Date.UTC(year, month - 1, day));
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+};
+
 export default function DoctorAppointmentCalendarView({
   business,
   resources = [],
@@ -65,11 +84,12 @@ export default function DoctorAppointmentCalendarView({
   onRefresh,
 }) {
   const [viewMode, setViewMode] = useState('timeline'); // 'timeline' (Mon-Sun), 'day' (30m slots), 'list', 'doctors'
-  const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [selectedDate, setSelectedDate] = useState(() => getTodayIso());
   const [filterDoctorId, setFilterDoctorId] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [feedback, setFeedback] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [savingScheduleId, setSavingScheduleId] = useState(null);
   const [isNewBookingModalOpen, setIsNewBookingModalOpen] = useState(false);
   const [isAddDoctorModalOpen, setIsAddDoctorModalOpen] = useState(false);
@@ -80,7 +100,7 @@ export default function DoctorAppointmentCalendarView({
     customer_name: '',
     customer_phone: '',
     resource_id: '',
-    start_date: new Date().toISOString().slice(0, 10),
+    start_date: getTodayIso(),
     start_time: '10:00',
     duration_minutes: 30,
     special_requests: '',
@@ -386,19 +406,31 @@ export default function DoctorAppointmentCalendarView({
 
   // Date Navigator
   const handlePrev = () => {
-    const d = new Date(selectedDate + 'T00:00:00');
-    d.setDate(d.getDate() - 7);
-    setSelectedDate(d.toISOString().slice(0, 10));
+    setSelectedDate((prev) => addDaysToIsoString(prev, -7));
   };
 
   const handleNext = () => {
-    const d = new Date(selectedDate + 'T00:00:00');
-    d.setDate(d.getDate() + 7);
-    setSelectedDate(d.toISOString().slice(0, 10));
+    setSelectedDate((prev) => addDaysToIsoString(prev, 7));
   };
 
   const handleToday = () => {
-    setSelectedDate(new Date().toISOString().slice(0, 10));
+    setSelectedDate(getTodayIso());
+  };
+
+  const handleManualRefresh = async () => {
+    if (isRefreshing) return;
+    setIsRefreshing(true);
+    try {
+      if (onRefresh) {
+        await onRefresh();
+      }
+      setFeedback({ type: 'success', text: 'Doctor schedules and clinical appointments refreshed!' });
+      setTimeout(() => setFeedback(null), 3000);
+    } catch (err) {
+      setFeedback({ type: 'error', text: `Failed to refresh: ${err.message}` });
+    } finally {
+      setIsRefreshing(false);
+    }
   };
 
   const currentModalDoctor = doctors.find((d) => d.id === newBooking.resource_id);
@@ -700,11 +732,22 @@ export default function DoctorAppointmentCalendarView({
               <button
                 type="button"
                 className="btn-secondary"
-                onClick={onRefresh}
-                title="Refresh schedule"
-                style={{ padding: '0.35rem 0.55rem' }}
+                onClick={handleManualRefresh}
+                disabled={isRefreshing}
+                title="Refresh schedule & bookings"
+                style={{
+                  padding: '0.3rem 0.65rem',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '5px',
+                  fontSize: '0.76rem',
+                  fontWeight: 600,
+                  cursor: isRefreshing ? 'wait' : 'pointer',
+                  opacity: isRefreshing ? 0.7 : 1,
+                }}
               >
-                <RefreshCw size={13} />
+                <RefreshCw size={13} className={isRefreshing ? 'animate-spin' : ''} />
+                <span>{isRefreshing ? 'Refreshing...' : 'Refresh'}</span>
               </button>
             )}
           </div>

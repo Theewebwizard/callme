@@ -61,6 +61,25 @@ function addMinutesToTime(timeStr, minutesToAdd) {
   return `${endH.toString().padStart(2, '0')}:${endM.toString().padStart(2, '0')}`;
 }
 
+const getTodayIso = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const addDaysToIsoString = (isoDateStr, days) => {
+  const base = isoDateStr || getTodayIso();
+  const parts = base.split('-');
+  const year = parseInt(parts[0], 10);
+  const month = parseInt(parts[1], 10);
+  const day = parseInt(parts[2], 10);
+  const d = new Date(Date.UTC(year, month - 1, day));
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+};
+
 export default function BookingCalendarView({
   business,
   domainConfig = null,
@@ -74,10 +93,7 @@ export default function BookingCalendarView({
   const isRestaurant = effectiveDomain.key === 'restaurant';
 
   const [viewMode, setViewMode] = useState('timeline'); // 'timeline' (Mon-Sun), 'day' (slots), 'list'
-  const [selectedDate, setSelectedDate] = useState(() => {
-    const today = new Date();
-    return today.toISOString().slice(0, 10);
-  });
+  const [selectedDate, setSelectedDate] = useState(() => getTodayIso());
   const [filterType, setFilterType] = useState('all');
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [isNewModalOpen, setIsNewModalOpen] = useState(false);
@@ -202,27 +218,17 @@ export default function BookingCalendarView({
 
   // Week Navigation
   const handlePrev = () => {
-    const d = new Date(selectedDate + 'T00:00:00');
-    if (viewMode === 'timeline') {
-      d.setDate(d.getDate() - 7);
-    } else {
-      d.setDate(d.getDate() - 1);
-    }
-    setSelectedDate(d.toISOString().slice(0, 10));
+    const shift = viewMode === 'timeline' ? -7 : -1;
+    setSelectedDate((prev) => addDaysToIsoString(prev, shift));
   };
 
   const handleNext = () => {
-    const d = new Date(selectedDate + 'T00:00:00');
-    if (viewMode === 'timeline') {
-      d.setDate(d.getDate() + 7);
-    } else {
-      d.setDate(d.getDate() + 1);
-    }
-    setSelectedDate(d.toISOString().slice(0, 10));
+    const shift = viewMode === 'timeline' ? 7 : 1;
+    setSelectedDate((prev) => addDaysToIsoString(prev, shift));
   };
 
   const handleToday = () => {
-    setSelectedDate(new Date().toISOString().slice(0, 10));
+    setSelectedDate(getTodayIso());
   };
 
   // Find reservations for a specific doctor and date

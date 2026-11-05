@@ -1774,6 +1774,15 @@ input:disabled + .slider {
   transform-origin: center;
 }
 
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-spin {
+  animation: spin 0.85s linear infinite;
+}
+
 @keyframes spin-slow {
   to { transform: rotate(360deg); }
 }
