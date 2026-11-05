@@ -429,7 +429,7 @@ def call_llm_node(
 
     if llm_resp.success:
         response_content = llm_resp.content
-        filler_phrase = None
+        filler_phrase = state.get("filler_phrase")
 
         # Determine caller language from latest user turn
         caller_lang = "en"
