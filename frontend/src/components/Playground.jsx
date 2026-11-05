@@ -1,32 +1,32 @@
 
 function getLoadingFillerPhrase(userText, industry) {
-  if (!userText) return 'Please give me just a moment while I proceed with your request...';
+  if (!userText) return 'I am checking on that for you right now, I will get back to you in just a couple of seconds...';
   const isHindi = /[\u0900-\u097F]/.test(userText) || /\b(namaste|kya|hai|hain|chahiye|table|booking|samay|kal|aaj|parson|shukrawar|somwar|aap|kijiye|madad|bhaiya|ji)\b/i.test(userText);
   const ind = (industry || '').toLowerCase();
   const lower = userText.toLowerCase();
 
   if (isHindi) {
     if (lower.includes('table') || lower.includes('booking') || lower.includes('book') || ind.includes('restaurant') || ind.includes('dining')) {
-      return 'कृपया एक क्षण रुकिए, मैं आपके लिए उपलब्ध टेबल चेक कर रहा हूँ...';
+      return 'मैं अभी आपके लिए उपलब्ध टेबल चेक कर रहा हूँ, बस कुछ ही सेकंड में आपको बताता हूँ...';
     }
     if (lower.includes('doctor') || lower.includes('appointment') || lower.includes('clinic') || ind.includes('clinic')) {
-      return 'कृपया एक क्षण रुकिए, मैं डॉक्टर साहब का समय चेक कर रहा हूँ...';
+      return 'मैं अभी डॉक्टर साहब का समय चेक कर रहा हूँ, बस कुछ ही सेकंड में आपको बताता हूँ...';
     }
     if (lower.includes('room') || lower.includes('hotel') || ind.includes('hotel')) {
-      return 'कृपया एक क्षण रुकिए, मैं कमरों की उपलब्धता चेक कर रहा हूँ...';
+      return 'मैं अभी कमरों की उपलब्धता चेक कर रहा हूँ, बस कुछ ही सेकंड में आपको बताता हूँ...';
     }
-    return 'कृपया एक क्षण रुकिए, मैं आपके अनुरोध पर काम कर रहा हूँ...';
+    return 'मैं अभी यह चेक कर रहा हूँ, बस कुछ ही सेकंड में आपको बताता हूँ...';
   } else {
     if (lower.includes('table') || lower.includes('book') || ind.includes('restaurant') || ind.includes('dining')) {
-      return 'Please give me just a moment while I check our available tables for you...';
+      return "I am checking our available tables for you right now, I'll get back to you in just a couple of seconds...";
     }
     if (lower.includes('doctor') || lower.includes('appointment') || lower.includes('clinic') || ind.includes('clinic')) {
-      return "Please give me a moment while I check the doctor's appointment slots...";
+      return "I am checking the doctor's appointment slots for you right now, I'll get back to you in a couple of seconds...";
     }
     if (lower.includes('room') || lower.includes('hotel') || ind.includes('hotel')) {
-      return 'Please give me just a moment while I check room availability for you...';
+      return "I am checking room availability for you right now, I'll get back to you in just a couple of seconds...";
     }
-    return 'Please give me just a moment while I proceed with your request...';
+    return "I am checking on that for you right now, I'll get back to you in just a couple of seconds...";
   }
 }
 

@@ -1,32 +1,45 @@
 
+function isTaskQuery(userText, industry) {
+  if (!userText) return false;
+  const lower = userText.toLowerCase();
+  const taskWords = [
+    'book', 'table', 'reserve', 'reservation', 'appointment', 'doctor', 'dr', 'room', 'rooms', 'hotel',
+    'available', 'availability', 'slot', 'slots', 'timing', 'schedule', 'cancel', 'reschedule',
+    'price', 'pricing', 'menu', 'cost', 'fee', 'charge', 'message', 'transfer', 'check',
+    'टेबल', 'बुक', 'बुकिंग', 'अपॉइंटमेंट', 'डॉक्टर', 'कमरा', 'कमरे', 'होटल', 'तारीख', 'समय',
+    'उपलब्ध', 'खाली', 'फीस', 'चार्ज', 'रद्द', 'संदेश', 'chahiye', 'milega', 'milegi', 'kal', 'aaj', 'parson'
+  ];
+  return taskWords.some((w) => lower.includes(w));
+}
+
 function getPhoneLoadingFillerPhrase(userText, industry) {
-  if (!userText) return 'Please give me just a moment while I proceed with your request...';
+  if (!userText) return 'I am checking on that for you right now, I will get back to you in just a couple of seconds...';
   const isHindi = /[\u0900-\u097F]/.test(userText) || /\b(namaste|kya|hai|hain|chahiye|table|booking|samay|kal|aaj|parson|shukrawar|somwar|aap|kijiye|madad|bhaiya|ji)\b/i.test(userText);
   const ind = (industry || '').toLowerCase();
   const lower = userText.toLowerCase();
 
   if (isHindi) {
     if (lower.includes('table') || lower.includes('booking') || lower.includes('book') || ind.includes('restaurant') || ind.includes('dining')) {
-      return 'कृपया एक क्षण रुकिए, मैं आपके लिए उपलब्ध टेबल चेक कर रहा हूँ...';
+      return 'मैं अभी आपके लिए उपलब्ध टेबल चेक कर रहा हूँ, बस कुछ ही सेकंड में आपको बताता हूँ...';
     }
     if (lower.includes('doctor') || lower.includes('appointment') || lower.includes('clinic') || ind.includes('clinic')) {
-      return 'कृपया एक क्षण रुकिए, मैं डॉक्टर साहब का समय चेक कर रहा हूँ...';
+      return 'मैं अभी डॉक्टर साहब का समय चेक कर रहा हूँ, बस कुछ ही सेकंड में आपको बताता हूँ...';
     }
     if (lower.includes('room') || lower.includes('hotel') || ind.includes('hotel')) {
-      return 'कृपया एक क्षण रुकिए, मैं कमरों की उपलब्धता चेक कर रहा हूँ...';
+      return 'मैं अभी कमरों की उपलब्धता चेक कर रहा हूँ, बस कुछ ही सेकंड में आपको बताता हूँ...';
     }
-    return 'कृपया एक क्षण रुकिए, मैं आपके अनुरोध पर काम कर रहा हूँ...';
+    return 'मैं अभी यह चेक कर रहा हूँ, बस कुछ ही सेकंड में आपको बताता हूँ...';
   } else {
     if (lower.includes('table') || lower.includes('book') || ind.includes('restaurant') || ind.includes('dining')) {
-      return 'Please give me just a moment while I check our available tables for you...';
+      return "I am checking our available tables for you right now, I'll get back to you in just a couple of seconds...";
     }
     if (lower.includes('doctor') || lower.includes('appointment') || lower.includes('clinic') || ind.includes('clinic')) {
-      return "Please give me a moment while I check the doctor's appointment slots...";
+      return "I am checking the doctor's appointment slots for you right now, I'll get back to you in a couple of seconds...";
     }
     if (lower.includes('room') || lower.includes('hotel') || ind.includes('hotel')) {
-      return 'Please give me just a moment while I check room availability for you...';
+      return "I am checking room availability for you right now, I'll get back to you in just a couple of seconds...";
     }
-    return 'Please give me just a moment while I proceed with your request...';
+    return "I am checking on that for you right now, I'll get back to you in just a couple of seconds...";
   }
 }
 
@@ -204,6 +217,7 @@ export default function WebPhone({ business }) {
   const handsFreeRef = useRef(true);
   const speechLangRef = useRef(speechLang);
   const isTurnInFlightRef = useRef(false);
+  const isFillerSpeakingRef = useRef(false);
   const silenceTimerRef = useRef(null);
   const accumulatedSpeechRef = useRef('');
   const timerRef = useRef(null);
@@ -282,6 +296,7 @@ export default function WebPhone({ business }) {
   };
 
   const stopAllAudio = () => {
+    isFillerSpeakingRef.current = false;
     if (cooloffTimerRef.current) { clearTimeout(cooloffTimerRef.current); cooloffTimerRef.current = null; }
     if (currentAudioRef.current) {
       try {
@@ -332,6 +347,48 @@ export default function WebPhone({ business }) {
     audio.onended = onAudioComplete;
     audio.onerror = () => speakFallback(fallbackText);
     audio.play().catch(() => speakFallback(fallbackText));
+  };
+
+  const speakImmediateFiller = (phrase) => {
+    if (!phrase || !callActiveRef.current) return;
+    try {
+      if (window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+        const clean = phrase.replace(/\.\.\.$/, '');
+        const utter = new SpeechSynthesisUtterance(clean);
+        utter.rate = 1.05;
+        const isHindi = /[\u0900-\u097F]/.test(clean) || (speechLangRef.current || '').startsWith('hi');
+        utter.lang = isHindi ? 'hi-IN' : 'en-IN';
+
+        isFillerSpeakingRef.current = true;
+        isSpeakingRef.current = true;
+        setIsSpeaking(true);
+        setCallStatus('speaking');
+
+        utter.onend = () => {
+          isFillerSpeakingRef.current = false;
+          if (!currentAudioRef.current) {
+            isSpeakingRef.current = false;
+            setIsSpeaking(false);
+            if (callActiveRef.current && isTurnInFlightRef.current) {
+              setCallStatus('thinking');
+            }
+          }
+        };
+        utter.onerror = () => {
+          isFillerSpeakingRef.current = false;
+          if (!currentAudioRef.current) {
+            isSpeakingRef.current = false;
+            setIsSpeaking(false);
+          }
+        };
+
+        window.speechSynthesis.speak(utter);
+      }
+    } catch (e) {
+      console.warn('speakImmediateFiller failed:', e);
+      isFillerSpeakingRef.current = false;
+    }
   };
 
   const startSpeechListening = () => {
@@ -407,10 +464,16 @@ export default function WebPhone({ business }) {
   const executeSendTurn = async (textToSend) => {
     if (!textToSend || !callActiveRef.current || isTurnInFlightRef.current) return;
     isTurnInFlightRef.current = true;
-    setCurrentTurnFiller(getPhoneLoadingFillerPhrase(textToSend, business?.industry));
+    const fillerPhrase = getPhoneLoadingFillerPhrase(textToSend, business?.industry);
+    setCurrentTurnFiller(fillerPhrase);
     setIsTurnLoading(true);
     setCallStatus('thinking');
     stopRecognition();
+
+    // If caller inquiry involves checking availability, booking, or performing a task, speak reassuring progress phrase immediately
+    if (isTaskQuery(textToSend, business?.industry)) {
+      speakImmediateFiller(fillerPhrase);
+    }
 
     const turnId = ++currentTurnIdRef.current;
     setTranscript((prev) => [
@@ -434,16 +497,43 @@ export default function WebPhone({ business }) {
         },
       ]);
 
-      setCallStatus('speaking');
-      playAudio(resp.audio_base64, resp.audio_mime, aiText, () => {
-        isTurnInFlightRef.current = false;
-        setIsTurnLoading(false);
-        if (callActiveRef.current && handsFreeRef.current && !isMicMutedRef.current) {
-          startSpeechListening();
-        } else if (callActiveRef.current) {
-          setCallStatus('active');
-        }
-      });
+      const proceedToPlayAnswer = () => {
+        if (!callActiveRef.current) return;
+        setCallStatus('speaking');
+        playAudio(resp.audio_base64, resp.audio_mime, aiText, () => {
+          isTurnInFlightRef.current = false;
+          setIsTurnLoading(false);
+          if (callActiveRef.current && handsFreeRef.current && !isMicMutedRef.current) {
+            startSpeechListening();
+          } else if (callActiveRef.current) {
+            setCallStatus('active');
+          }
+        });
+      };
+
+      if (isFillerSpeakingRef.current && window.speechSynthesis && window.speechSynthesis.speaking) {
+        // Wait gracefully for the brief filler to finish speaking, or timeout after 1.2s max
+        let resolved = false;
+        const maxWaitTimer = setTimeout(() => {
+          if (!resolved) {
+            resolved = true;
+            proceedToPlayAnswer();
+          }
+        }, 1200);
+
+        const pollInterval = setInterval(() => {
+          if (!window.speechSynthesis.speaking) {
+            clearInterval(pollInterval);
+            clearTimeout(maxWaitTimer);
+            if (!resolved) {
+              resolved = true;
+              proceedToPlayAnswer();
+            }
+          }
+        }, 60);
+      } else {
+        proceedToPlayAnswer();
+      }
     } catch (err) {
       isTurnInFlightRef.current = false;
       setIsTurnLoading(false);

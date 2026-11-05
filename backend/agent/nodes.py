@@ -68,56 +68,56 @@ ROBOTIC_STEP_PATTERNS = [
 
 CONTEXTUAL_FILLER_PHRASES: Dict[str, Dict[str, str]] = {
     "check_table_availability": {
-        "en": "Please give me just a moment while I check our available tables for you.",
-        "hi": "कृपया एक क्षण रुकिए, मैं आपके लिए उपलब्ध टेबल चेक कर रहा हूँ।",
+        "en": "I am checking our available tables for you right now, I'll get back to you in just a couple of seconds.",
+        "hi": "मैं अभी आपके लिए उपलब्ध टेबल चेक कर रहा हूँ, बस कुछ ही सेकंड में आपको बताता हूँ।",
     },
     "create_table_booking": {
-        "en": "Please give me a moment while I proceed with your table reservation.",
-        "hi": "कृपया एक पल प्रतीक्षा करें, मैं आपकी टेबल बुकिंग दर्ज कर रहा हूँ।",
+        "en": "I am reserving your table right now, please give me a couple of seconds.",
+        "hi": "मैं अभी आपकी टेबल बुक कर रहा हूँ, कृपया बस कुछ सेकंड रुकिए।",
     },
     "check_appointment_availability": {
-        "en": "Please give me a moment while I check the doctor's available appointment slots.",
-        "hi": "कृपया एक क्षण रुकिए, मैं डॉक्टर साहब के उपलब्ध समय की जाँच कर रहा हूँ।",
+        "en": "I am checking the doctor's appointment slots for you right now, I'll get back to you in a couple of seconds.",
+        "hi": "मैं अभी डॉक्टर साहब का समय चेक कर रहा हूँ, बस कुछ ही सेकंड में आपको बताता हूँ।",
     },
     "create_appointment": {
-        "en": "Please give me a moment while I schedule your doctor appointment.",
-        "hi": "कृपया एक पल प्रतीक्षा करें, मैं आपका अपॉइंटमेंट दर्ज कर रहा हूँ।",
+        "en": "I am scheduling your doctor appointment right now, please give me a couple of seconds.",
+        "hi": "मैं अभी डॉक्टर साहब के पास आपकी अपॉइंटमेंट बुक कर रहा हूँ, बस कुछ सेकंड रुकिए।",
     },
     "check_room_availability": {
-        "en": "Please give me just a moment while I check room availability for those dates.",
-        "hi": "कृपया एक क्षण रुकिए, मैं उन तारीखों के लिए कमरों की उपलब्धता चेक कर रहा हूँ।",
+        "en": "I am checking room availability for you right now, I'll get back to you in just a couple of seconds.",
+        "hi": "मैं अभी कमरों की उपलब्धता चेक कर रहा हूँ, बस कुछ ही सेकंड में आपको बताता हूँ।",
     },
     "create_room_booking": {
-        "en": "Please give me a moment while I process your room reservation.",
-        "hi": "कृपया एक पल प्रतीक्षा करें, मैं आपकी रूम बुकिंग दर्ज कर रहा हूँ।",
+        "en": "I am processing your room reservation right now, please give me a couple of seconds.",
+        "hi": "मैं अभी आपकी रूम बुकिंग दर्ज कर रहा हूँ, बस कुछ सेकंड रुकिए।",
     },
     "take_message": {
-        "en": "Please give me a moment while I note down your message for our team.",
-        "hi": "कृपया एक क्षण रुकिए, मैं आपका संदेश हमारे सहकर्मियों के लिए नोट कर रहा हूँ।",
+        "en": "I am noting down your message for our team right now, give me just a couple of seconds.",
+        "hi": "मैं अभी आपका संदेश नोट कर रहा हूँ, बस कुछ ही सेकंड रुकिए।",
     },
     "transfer_call": {
-        "en": "Please hold on for just a moment while I connect you to our staff.",
-        "hi": "कृपया एक क्षण लाइन पर बने रहें, मैं आपकी कॉल हमारे सहकर्मी से जोड़ रहा हूँ।",
+        "en": "I am connecting you to our staff right now, please hold on for a couple of seconds.",
+        "hi": "मैं अभी आपकी कॉल हमारे सहकर्मी से जोड़ रहा हूँ, कृपया कुछ सेकंड लाइन पर बने रहें।",
     },
     "answer_faq": {
-        "en": "Please give me just a moment to look into that for you.",
-        "hi": "कृपया एक क्षण रुकिए, मैं इसकी जानकारी देख रहा हूँ।",
+        "en": "I am checking that information for you right now, I'll get back to you in just a couple of seconds.",
+        "hi": "मैं अभी इसकी जानकारी चेक कर रहा हूँ, बस कुछ ही सेकंड में आपको बताता हूँ।",
     },
     "query_menu_pricing": {
-        "en": "Please give me a moment while I check our menu details and pricing for you.",
-        "hi": "कृपया एक क्षण रुकिए, मैं मेनू और कीमतों की जानकारी देख रहा हूँ।",
+        "en": "I am checking our menu and pricing details right now, I'll get back to you in a couple of seconds.",
+        "hi": "मैं अभी मेनू और कीमतों की जानकारी देख रहा हूँ, बस कुछ ही सेकंड में आपको बताता हूँ।",
     },
     "query_room_pricing": {
-        "en": "Please give me a moment while I look up our room rates for you.",
-        "hi": "कृपया एक क्षण रुकिए, मैं कमरों के किरायों की जानकारी देख रहा हूँ।",
+        "en": "I am looking up our room rates right now, I'll get back to you in a couple of seconds.",
+        "hi": "मैं अभी कमरों के किरायों की जानकारी देख रहा हूँ, बस कुछ ही सेकंड में आपको बताता हूँ।",
     },
     "query_treatment_pricing": {
-        "en": "Please give me a moment while I check our consultation fees and treatment charges.",
-        "hi": "कृपया एक क्षण रुकिए, मैं परामर्श शुल्क और उपचार की जानकारी देख रहा हूँ।",
+        "en": "I am checking our consultation fees and charges right now, I'll get back to you in a couple of seconds.",
+        "hi": "मैं अभी परामर्श शुल्क और उपचार की जानकारी देख रहा हूँ, बस कुछ ही सेकंड में आपको बताता हूँ।",
     },
     "_default": {
-        "en": "Please give me just a moment while I proceed with your request.",
-        "hi": "कृपया एक क्षण रुकिए, मैं आपके अनुरोध पर काम कर रहा हूँ।",
+        "en": "I am checking that for you right now, I will get back to you in just a couple of seconds.",
+        "hi": "मैं अभी यह चेक कर रहा हूँ, बस कुछ ही सेकंड में आपको बताता हूँ।",
     },
 }
 

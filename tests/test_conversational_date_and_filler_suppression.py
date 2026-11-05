@@ -142,12 +142,12 @@ def test_sanitize_customer_facing_text():
     chatter = "I will now call check_table_availability with party_size=2."
     sanitized = sanitize_customer_facing_text(chatter, fallback_tool_id="check_table_availability", language="en")
     assert "check_table_availability" not in sanitized
-    assert "Please give me just a moment while I check our available tables for you." in sanitized
+    assert "checking our available tables" in sanitized
 
     # In Hindi
     sanitized_hi = sanitize_customer_facing_text(chatter, fallback_tool_id="check_table_availability", language="hi")
     assert "check_table_availability" not in sanitized_hi
-    assert "कृपया एक क्षण रुकिए" in sanitized_hi
+    assert "टेबल चेक कर रहा हूँ" in sanitized_hi
 
     # Step narration in otherwise helpful sentence gets cleaned
     step_msg = "Step 1: We have checked and your table for 4 guests is available at 8:00 PM."
@@ -182,8 +182,8 @@ def test_contextual_filler_phrases_english_and_hindi():
         assert tool_id not in hi_phrase
 
         # Polite verbal etiquette
-        assert "Please" in en_phrase or "moment" in en_phrase or "hold" in en_phrase
-        assert "कृपया" in hi_phrase or "क्षण" in hi_phrase or "पल" in hi_phrase
+        assert "seconds" in en_phrase or "Please" in en_phrase or "moment" in en_phrase or "hold" in en_phrase
+        assert "सेकंड" in hi_phrase or "कृपया" in hi_phrase or "क्षण" in hi_phrase or "पल" in hi_phrase
 
 
 def test_system_prompt_calendar_anchor_and_speech_rules():
@@ -241,7 +241,7 @@ def test_call_llm_node_sanitizes_tool_calls_and_provides_filler():
     assert result["success"] is True
     # Robotic chatter must be replaced with polite filler
     assert "check_table_availability" not in result["response_content"]
-    assert "Please give me just a moment while I check our available tables for you." in result["response_content"]
+    assert "checking our available tables" in result["response_content"]
     assert result["filler_phrase"] is not None
 
 
@@ -276,5 +276,5 @@ def test_call_llm_node_hindi_caller_receives_hindi_filler():
     assert result["success"] is True
     # Hindi caller receives polite Hindi filler
     assert "check_table_availability" not in result["response_content"]
-    assert "कृपया एक क्षण रुकिए" in result["response_content"]
+    assert "टेबल चेक कर रहा हूँ" in result["response_content"]
     assert "टेबल" in result["response_content"]
