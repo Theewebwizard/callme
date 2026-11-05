@@ -199,10 +199,11 @@ export default function ToolLibrary({ business }) {
     const isCurrentlyEnabled = Boolean(enabledMap[toolId]);
     const newEnabled = !isCurrentlyEnabled;
 
-    const nextMap = {
-      ...enabledMap,
-      [toolId]: newEnabled,
-    };
+    // Filter to only tools that belong to this business catalog
+    const nextMap = {};
+    tools.forEach((t) => {
+      nextMap[t.id] = t.id === toolId ? newEnabled : Boolean(enabledMap[t.id]);
+    });
 
     setEnabledMap(nextMap);
     setSavedEnabledMap(nextMap);
@@ -227,6 +228,9 @@ export default function ToolLibrary({ business }) {
     try {
       setSavingTools(true);
       await api.updateTools(business.id, nextMap);
+      if (!newEnabled) {
+        await api.deactivateCapability(business.id, toolId).catch(() => {});
+      }
       setFeedback({
         type: 'success',
         text: `Tool "${toolDisplayName}" ${newEnabled ? 'enabled' : 'disabled'} successfully!`,
@@ -260,8 +264,13 @@ export default function ToolLibrary({ business }) {
     setSavingTools(true);
     setFeedback(null);
     try {
-      await api.updateTools(business.id, enabledMap);
-      setSavedEnabledMap(enabledMap);
+      const filteredMap = {};
+      tools.forEach((t) => {
+        filteredMap[t.id] = Boolean(enabledMap[t.id]);
+      });
+      await api.updateTools(business.id, filteredMap);
+      setSavedEnabledMap(filteredMap);
+      setEnabledMap(filteredMap);
       setFeedback({ type: 'success', text: 'Tool enablement preferences updated successfully!' });
       setTimeout(() => setFeedback(null), 4000);
     } catch (err) {
