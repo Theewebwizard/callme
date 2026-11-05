@@ -36,14 +36,29 @@ const WEEKDAYS = [
   { key: 'Sun', label: 'Sunday' },
 ];
 
+const formatLocalDate = (d) => {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const getTodayIso = () => {
+  return formatLocalDate(new Date());
+};
+
 /**
  * Compute the Monday date for any given date string YYYY-MM-DD.
  * Ensures week views consistently start on Monday and end on Sunday.
  */
 function getMondayDate(dStr) {
-  const base = new Date(dStr + 'T00:00:00');
-  const day = base.getDay(); // 0 is Sunday, 1 is Monday...
-  const diff = day === 0 ? -6 : 1 - day;
+  const parts = (dStr || getTodayIso()).split('-');
+  const year = parseInt(parts[0], 10);
+  const month = parseInt(parts[1], 10) - 1;
+  const day = parseInt(parts[2], 10);
+  const base = new Date(year, month, day, 0, 0, 0, 0);
+  const dayOfWeek = base.getDay(); // 0 is Sunday, 1 is Monday...
+  const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
   const monday = new Date(base);
   monday.setDate(base.getDate() + diff);
   return monday;
@@ -58,23 +73,15 @@ function addMinutesToTime(timeStr, minutesToAdd) {
   return `${endH.toString().padStart(2, '0')}:${endM.toString().padStart(2, '0')}`;
 }
 
-const getTodayIso = () => {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const day = String(now.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-};
-
 const addDaysToIsoString = (isoDateStr, days) => {
   const base = isoDateStr || getTodayIso();
   const parts = base.split('-');
   const year = parseInt(parts[0], 10);
-  const month = parseInt(parts[1], 10);
+  const month = parseInt(parts[1], 10) - 1;
   const day = parseInt(parts[2], 10);
-  const d = new Date(Date.UTC(year, month - 1, day));
-  d.setUTCDate(d.getUTCDate() + days);
-  return d.toISOString().slice(0, 10);
+  const d = new Date(year, month, day, 0, 0, 0, 0);
+  d.setDate(d.getDate() + days);
+  return formatLocalDate(d);
 };
 
 export default function DoctorAppointmentCalendarView({
@@ -140,14 +147,15 @@ export default function DoctorAppointmentCalendarView({
   const timelineDays = useMemo(() => {
     const days = [];
     const monday = getMondayDate(selectedDate);
+    const todayStr = getTodayIso();
     for (let i = 0; i < 7; i++) {
       const d = new Date(monday);
       d.setDate(monday.getDate() + i);
-      const iso = d.toISOString().slice(0, 10);
+      const iso = formatLocalDate(d);
       const dayName = d.toLocaleDateString('en-US', { weekday: 'short' });
       const fullDayName = d.toLocaleDateString('en-US', { weekday: 'long' });
       const monthDay = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-      const isToday = iso === new Date().toISOString().slice(0, 10);
+      const isToday = iso === todayStr;
       days.push({ date: iso, dayName, fullDayName, monthDay, isToday, rawDate: d });
     }
     return days;
@@ -190,7 +198,8 @@ export default function DoctorAppointmentCalendarView({
     let dayShort = '';
     if (typeof dayStrOrDate === 'string') {
       if (dayStrOrDate.includes('-')) {
-        const d = new Date(dayStrOrDate + 'T00:00:00');
+        const parts = dayStrOrDate.split('-');
+        const d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
         dayShort = d.toLocaleDateString('en-US', { weekday: 'short' });
       } else {
         dayShort = dayStrOrDate.slice(0, 3);
@@ -203,9 +212,11 @@ export default function DoctorAppointmentCalendarView({
 
   // Find appointments for a doctor on a specific date
   const getAppointmentsForDoctorAndDate = (doctorId, dateStr) => {
+    const doc = doctors.find((d) => d.id === doctorId);
     return activeAppointments.filter((b) => {
-      const match = b.resource_id === doctorId;
-      if (!match && b.resource_id) return false;
+      const resIdMatch = b.resource_id && b.resource_id === doctorId;
+      const nameMatch = !b.resource_id && doc && b.resource_name && b.resource_name.toLowerCase() === doc.name.toLowerCase();
+      if (!resIdMatch && !nameMatch) return false;
       const bDate = (b.start_time || '').slice(0, 10);
       return bDate === dateStr;
     });
@@ -406,11 +417,13 @@ export default function DoctorAppointmentCalendarView({
 
   // Date Navigator
   const handlePrev = () => {
-    setSelectedDate((prev) => addDaysToIsoString(prev, -7));
+    const shift = viewMode === 'timeline' ? -7 : -1;
+    setSelectedDate((prev) => addDaysToIsoString(prev, shift));
   };
 
   const handleNext = () => {
-    setSelectedDate((prev) => addDaysToIsoString(prev, 7));
+    const shift = viewMode === 'timeline' ? 7 : 1;
+    setSelectedDate((prev) => addDaysToIsoString(prev, shift));
   };
 
   const handleToday = () => {
@@ -950,20 +963,58 @@ export default function DoctorAppointmentCalendarView({
                           <td
                             key={td.date}
                             style={{
-                              padding: '0.65rem 0.5rem',
+                              padding: '0.5rem',
                               borderRight: '1px solid var(--border-medium)',
                               background: 'rgba(239, 68, 68, 0.04)',
-                              textAlign: 'center',
-                              verticalAlign: 'middle',
+                              verticalAlign: 'top',
                             }}
                           >
-                            <div style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: '3px' }}>
-                              <span style={{ fontSize: '0.7rem', color: '#f87171', fontWeight: 700, background: 'rgba(239, 68, 68, 0.1)', padding: '2px 6px', borderRadius: '4px', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
-                                🔒 Closed
-                              </span>
-                              <span style={{ fontSize: '0.65rem', color: 'var(--text-tertiary)' }}>
-                                Off on {td.dayName}s
-                              </span>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minHeight: '60px' }}>
+                              <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '3px' }}>
+                                <span style={{ fontSize: '0.68rem', color: '#f87171', fontWeight: 700, background: 'rgba(239, 68, 68, 0.1)', padding: '2px 6px', borderRadius: '4px', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+                                  🔒 Closed
+                                </span>
+                              </div>
+                              {dayBookings.length > 0 ? (
+                                <>
+                                  {dayBookings.map((b) => (
+                                    <div
+                                      key={b.id}
+                                      style={{
+                                        padding: '4px 6px',
+                                        borderRadius: '4px',
+                                        background: 'rgba(239, 68, 68, 0.1)',
+                                        border: '1px solid rgba(239, 68, 68, 0.3)',
+                                        fontSize: '0.7rem',
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        alignItems: 'center',
+                                      }}
+                                    >
+                                      <div>
+                                        <strong style={{ color: 'var(--text-primary)', display: 'block' }}>
+                                          {(b.start_time || '').slice(11, 16)} • {b.customer_name}
+                                        </strong>
+                                        <span style={{ fontSize: '0.65rem', color: '#f87171' }}>
+                                          {b.special_requests || 'Consultation (Off Day)'}
+                                        </span>
+                                      </div>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleCancelAppointment(b.id, b.customer_phone)}
+                                        style={{ background: 'none', border: 'none', color: '#f43f5e', cursor: 'pointer', padding: '1px' }}
+                                        title="Cancel appointment"
+                                      >
+                                        <X size={11} />
+                                      </button>
+                                    </div>
+                                  ))}
+                                </>
+                              ) : (
+                                <span style={{ fontSize: '0.65rem', color: 'var(--text-tertiary)', textAlign: 'center', display: 'block', marginTop: '2px' }}>
+                                  Off on {td.dayName}s
+                                </span>
+                              )}
                             </div>
                           </td>
                         );
@@ -999,38 +1050,58 @@ export default function DoctorAppointmentCalendarView({
                                 + Book 30m
                               </button>
                             ) : (
-                              dayBookings.map((b) => (
-                                <div
-                                  key={b.id}
-                                  style={{
-                                    padding: '4px 6px',
-                                    borderRadius: '4px',
-                                    background: 'rgba(59, 130, 246, 0.1)',
-                                    border: '1px solid rgba(59, 130, 246, 0.25)',
-                                    fontSize: '0.7rem',
-                                    display: 'flex',
-                                    justifyContent: 'space-between',
-                                    alignItems: 'center',
-                                  }}
-                                >
-                                  <div>
-                                    <strong style={{ color: 'var(--text-primary)', display: 'block' }}>
-                                      {(b.start_time || '').slice(11, 16)} • {b.customer_name}
-                                    </strong>
-                                    <span style={{ fontSize: '0.65rem', color: 'var(--text-tertiary)' }}>
-                                      {b.special_requests || 'Consultation'}
-                                    </span>
-                                  </div>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleCancelAppointment(b.id, b.customer_phone)}
-                                    style={{ background: 'none', border: 'none', color: '#f43f5e', cursor: 'pointer', padding: '1px' }}
-                                    title="Cancel appointment"
+                              <>
+                                {dayBookings.map((b) => (
+                                  <div
+                                    key={b.id}
+                                    style={{
+                                      padding: '4px 6px',
+                                      borderRadius: '4px',
+                                      background: 'rgba(59, 130, 246, 0.1)',
+                                      border: '1px solid rgba(59, 130, 246, 0.25)',
+                                      fontSize: '0.7rem',
+                                      display: 'flex',
+                                      justifyContent: 'space-between',
+                                      alignItems: 'center',
+                                    }}
                                   >
-                                    <X size={11} />
-                                  </button>
-                                </div>
-                              ))
+                                    <div>
+                                      <strong style={{ color: 'var(--text-primary)', display: 'block' }}>
+                                        {(b.start_time || '').slice(11, 16)} • {b.customer_name}
+                                      </strong>
+                                      <span style={{ fontSize: '0.65rem', color: 'var(--text-tertiary)' }}>
+                                        {b.special_requests || 'Consultation'}
+                                      </span>
+                                    </div>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleCancelAppointment(b.id, b.customer_phone)}
+                                      style={{ background: 'none', border: 'none', color: '#f43f5e', cursor: 'pointer', padding: '1px' }}
+                                      title="Cancel appointment"
+                                    >
+                                      <X size={11} />
+                                    </button>
+                                  </div>
+                                ))}
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenBookingModal(doc, td.date)}
+                                  style={{
+                                    border: '1px dashed var(--border-medium)',
+                                    background: 'transparent',
+                                    borderRadius: '4px',
+                                    padding: '3px 4px',
+                                    fontSize: '0.64rem',
+                                    color: 'var(--text-tertiary)',
+                                    cursor: 'pointer',
+                                    textAlign: 'center',
+                                    marginTop: '2px',
+                                  }}
+                                  title="Add another appointment for this day"
+                                >
+                                  + Add Slot
+                                </button>
+                              </>
                             )}
                           </div>
                         </td>

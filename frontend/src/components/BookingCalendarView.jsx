@@ -36,14 +36,29 @@ const WEEKDAYS = [
   { key: 'Sun', label: 'Sunday' },
 ];
 
+const formatLocalDate = (d) => {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const getTodayIso = () => {
+  return formatLocalDate(new Date());
+};
+
 /**
  * Compute the Monday date for any given date string YYYY-MM-DD.
  * Ensures week views consistently start on Monday and end on Sunday.
  */
 function getMondayDate(dStr) {
-  const base = new Date(dStr + 'T00:00:00');
-  const day = base.getDay(); // 0 is Sunday, 1 is Monday...
-  const diff = day === 0 ? -6 : 1 - day;
+  const parts = (dStr || getTodayIso()).split('-');
+  const year = parseInt(parts[0], 10);
+  const month = parseInt(parts[1], 10) - 1;
+  const day = parseInt(parts[2], 10);
+  const base = new Date(year, month, day, 0, 0, 0, 0);
+  const dayOfWeek = base.getDay(); // 0 is Sunday, 1 is Monday...
+  const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
   const monday = new Date(base);
   monday.setDate(base.getDate() + diff);
   return monday;
@@ -61,23 +76,15 @@ function addMinutesToTime(timeStr, minutesToAdd) {
   return `${endH.toString().padStart(2, '0')}:${endM.toString().padStart(2, '0')}`;
 }
 
-const getTodayIso = () => {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const day = String(now.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-};
-
 const addDaysToIsoString = (isoDateStr, days) => {
   const base = isoDateStr || getTodayIso();
   const parts = base.split('-');
   const year = parseInt(parts[0], 10);
-  const month = parseInt(parts[1], 10);
+  const month = parseInt(parts[1], 10) - 1;
   const day = parseInt(parts[2], 10);
-  const d = new Date(Date.UTC(year, month - 1, day));
-  d.setUTCDate(d.getUTCDate() + days);
-  return d.toISOString().slice(0, 10);
+  const d = new Date(year, month, day, 0, 0, 0, 0);
+  d.setDate(d.getDate() + days);
+  return formatLocalDate(d);
 };
 
 export default function BookingCalendarView({
@@ -107,9 +114,9 @@ export default function BookingCalendarView({
     customer_phone: '',
     resource_id: '',
     resource_type: isClinic ? 'practitioner' : 'table',
-    start_date: new Date().toISOString().slice(0, 10),
+    start_date: getTodayIso(),
     start_time: '10:00',
-    end_date: new Date().toISOString().slice(0, 10),
+    end_date: getTodayIso(),
     end_time: '10:30',
     duration_minutes: 30,
     party_size: 1,
@@ -148,7 +155,8 @@ export default function BookingCalendarView({
     let dayShort = '';
     if (typeof dayStrOrDate === 'string') {
       if (dayStrOrDate.includes('-')) {
-        const d = new Date(dayStrOrDate + 'T00:00:00');
+        const parts = dayStrOrDate.split('-');
+        const d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
         dayShort = d.toLocaleDateString('en-US', { weekday: 'short' });
       } else {
         dayShort = dayStrOrDate.slice(0, 3);
@@ -181,14 +189,15 @@ export default function BookingCalendarView({
   const timelineDays = useMemo(() => {
     const days = [];
     const monday = getMondayDate(selectedDate);
+    const todayStr = getTodayIso();
     for (let i = 0; i < 7; i++) {
       const d = new Date(monday);
       d.setDate(monday.getDate() + i);
-      const iso = d.toISOString().slice(0, 10);
+      const iso = formatLocalDate(d);
       const dayName = d.toLocaleDateString('en-US', { weekday: 'short' }); // Mon, Tue, ...
       const fullDayName = d.toLocaleDateString('en-US', { weekday: 'long' });
       const monthDay = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-      const isToday = iso === new Date().toISOString().slice(0, 10);
+      const isToday = iso === todayStr;
       days.push({ date: iso, dayName, fullDayName, monthDay, isToday, rawDate: d });
     }
     return days;
@@ -233,10 +242,12 @@ export default function BookingCalendarView({
 
   // Find reservations for a specific doctor and date
   const getReservationsForResourceAndDate = (resourceId, dateStr) => {
+    const targetRes = resources.find((r) => r.id === resourceId);
     return reservations.filter((b) => {
       if (b.status === 'cancelled') return false;
-      const resMatch = b.resource_id === resourceId;
-      if (!resMatch && b.resource_id) return false;
+      const resMatch = b.resource_id && b.resource_id === resourceId;
+      const nameMatch = !b.resource_id && targetRes && b.resource_name && b.resource_name.toLowerCase() === targetRes.name.toLowerCase();
+      if (!resMatch && !nameMatch) return false;
 
       const bStart = (b.start_time || '').slice(0, 10);
       const bEnd = (b.end_time || '').slice(0, 10);
@@ -1060,23 +1071,15 @@ export default function BookingCalendarView({
                         return (
                           <td
                             key={td.date}
-                            onClick={() => {
-                              const docDays = getResourceAvailableDays(res);
-                              setFeedback({
-                                type: 'error',
-                                text: `${res.name} does not open clinic on ${td.fullDayName}s. Scheduled working days: ${docDays.join(', ')}.`,
-                              });
-                            }}
                             style={{
                               padding: '0.45rem',
                               borderRight: '1px solid var(--border-medium)',
-                              verticalAlign: 'middle',
+                              verticalAlign: 'top',
                               background: 'repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.012), rgba(255, 255, 255, 0.012) 8px, rgba(0, 0, 0, 0.28) 8px, rgba(0, 0, 0, 0.28) 16px)',
                               position: 'relative',
                               minHeight: '60px',
-                              cursor: 'not-allowed',
                             }}
-                            title={`${res.name} does not open clinic on ${td.dayName}s`}
+                            title={`${res.name} is closed on ${td.dayName}s`}
                           >
                             <div
                               style={{
@@ -1084,9 +1087,7 @@ export default function BookingCalendarView({
                                 flexDirection: 'column',
                                 alignItems: 'center',
                                 justifyContent: 'center',
-                                opacity: 0.7,
-                                userSelect: 'none',
-                                gap: '2px',
+                                gap: '3px',
                               }}
                             >
                               <span
@@ -1105,9 +1106,31 @@ export default function BookingCalendarView({
                               >
                                 🔒 Closed
                               </span>
-                              <span style={{ fontSize: '0.60rem', color: 'var(--text-tertiary)' }}>
-                                {td.dayName === 'Mon' ? 'Off on Mondays' : 'Clinic Closed'}
-                              </span>
+                              {dayBookings.length === 0 ? (
+                                <span style={{ fontSize: '0.60rem', color: 'var(--text-tertiary)' }}>
+                                  Off on {td.dayName}s
+                                </span>
+                              ) : (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', width: '100%', marginTop: '3px' }}>
+                                  {dayBookings.map((b) => (
+                                    <div
+                                      key={b.id}
+                                      onClick={() => setSelectedBooking(b)}
+                                      style={{
+                                        padding: '4px 6px',
+                                        borderRadius: '4px',
+                                        background: 'rgba(239, 68, 68, 0.15)',
+                                        border: '1px solid rgba(239, 68, 68, 0.3)',
+                                        color: '#f87171',
+                                        fontSize: '0.68rem',
+                                        cursor: 'pointer',
+                                      }}
+                                    >
+                                      <strong>{b.customer_name}</strong> ({(b.start_time || '').slice(11, 16)})
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
                             </div>
                           </td>
                         );
@@ -1161,7 +1184,7 @@ export default function BookingCalendarView({
                                     <span style={{ fontSize: '0.64rem', opacity: 0.85, fontFamily: 'var(--font-mono)' }}>30m</span>
                                   </div>
                                   <div style={{ fontSize: '0.66rem', opacity: 0.8, marginTop: '2px', fontFamily: 'var(--font-mono)' }}>
-                                    {b.start_time?.includes('T') ? b.start_time.split('T')[1].slice(0, 5) : ''}
+                                    {(b.start_time || '').slice(11, 16)}
                                   </div>
                                 </div>
                               ))}
@@ -1405,7 +1428,7 @@ export default function BookingCalendarView({
               <tbody>
                 {reservations.map((b) => {
                   const bDateStr = b.start_time?.slice(0, 10);
-                  const isToday = bDateStr === new Date().toISOString().slice(0, 10);
+                  const isToday = bDateStr === getTodayIso();
                   const dateObj = new Date(b.start_time);
                   const formattedDate = dateObj.toLocaleDateString('en-US', {
                     weekday: 'short',
