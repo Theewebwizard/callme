@@ -921,6 +921,16 @@ class HotelBulkSetupRequest(BaseModel):
     end_room_number: Optional[int] = None
 
 
+class HotelRoomUpdateRequest(BaseModel):
+    room_number: Optional[str] = None
+    floor: Optional[int] = None
+    room_type_id: Optional[str] = None
+    bed_type: Optional[str] = None
+    capacity: Optional[int] = None
+    base_price: Optional[float] = None
+    status: Optional[str] = None
+
+
 class RoomStatusUpdateRequest(BaseModel):
     status: str = Field(..., description="'clean', 'dirty', or 'maintenance'")
 
@@ -963,6 +973,34 @@ def bulk_setup_hotel_floors(
             start_room_number=req.start_room_number,
             end_room_number=req.end_room_number,
         )
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+@router.put("/{business_id}/hotel/rooms/{resource_id}")
+def update_hotel_room(
+    business_id: str,
+    resource_id: str,
+    req: HotelRoomUpdateRequest,
+    principal: AuthenticatedPrincipal = Depends(verify_business_access),
+) -> Dict[str, Any]:
+    """Update hotel room details: room number, tier, bed type, floor, price override, or status."""
+    db_service = get_database_service()
+    try:
+        updated = db_service.update_hotel_room(
+            business_id=business_id,
+            resource_id=resource_id,
+            room_number=req.room_number,
+            floor=req.floor,
+            room_type_id=req.room_type_id,
+            bed_type=req.bed_type,
+            capacity=req.capacity,
+            base_price=req.base_price,
+            status=req.status,
+        )
+        if not updated:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Room resource not found.")
+        return updated
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 

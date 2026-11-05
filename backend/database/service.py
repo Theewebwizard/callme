@@ -1952,6 +1952,80 @@ class DatabaseService:
 
         return self.get_hotel_floor_layout(business_id)
 
+    def update_hotel_room(
+        self,
+        business_id: str,
+        resource_id: str,
+        room_number: Optional[str] = None,
+        floor: Optional[int] = None,
+        room_type_id: Optional[str] = None,
+        bed_type: Optional[str] = None,
+        capacity: Optional[int] = None,
+        base_price: Optional[float] = None,
+        status: Optional[str] = None,
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Update a hotel room resource's metadata, room tier, pricing, or floor.
+        """
+        self.invalidate_profile_cache(business_id)
+        with session_scope(self.session_factory) as session:
+            res_repo = ResourceRepository(session)
+            room_repo = RoomTypeRepository(session)
+            res = res_repo.get_resource(resource_id, business_id=business_id)
+            if not res:
+                return None
+
+            meta = dict(res.metadata_json or {})
+
+            if room_type_id is not None:
+                rt = room_repo.get(room_type_id, business_id=business_id) if room_type_id else None
+                meta["room_type_id"] = rt.id if rt else None
+                meta["room_type_name"] = rt.name if rt else "Standard Room"
+                if bed_type is None and rt and rt.bed_type:
+                    meta["bed_type"] = rt.bed_type
+                if base_price is None and rt and rt.base_price is not None:
+                    meta["base_price"] = rt.base_price
+
+            if room_number is not None:
+                clean_rn = str(room_number).strip()
+                if clean_rn:
+                    meta["room_number"] = clean_rn
+                    res.name = f"Room {clean_rn}"
+
+            if floor is not None:
+                flr_num = int(floor)
+                flr_name = (
+                    "Ground Floor" if flr_num == 0
+                    else f"{flr_num}st Floor" if flr_num == 1
+                    else f"{flr_num}nd Floor" if flr_num == 2
+                    else f"{flr_num}rd Floor" if flr_num == 3
+                    else f"{flr_num}th Floor"
+                )
+                meta["floor"] = flr_num
+                meta["floor_name"] = flr_name
+                res.section = flr_name
+
+            if bed_type is not None:
+                meta["bed_type"] = str(bed_type).strip()
+
+            if base_price is not None:
+                meta["base_price"] = float(base_price)
+
+            if capacity is not None:
+                cap_val = max(1, int(capacity))
+                res.capacity = cap_val
+                res.max_party_size = cap_val
+
+            if status is not None:
+                st = str(status).strip().lower()
+                if st in ("clean", "dirty", "maintenance"):
+                    meta["housekeeping_status"] = st
+
+            res.metadata_json = meta
+            session.flush()
+
+        return self.get_hotel_floor_layout(business_id)
+
     def update_room_housekeeping_status(
         self,
         business_id: str,

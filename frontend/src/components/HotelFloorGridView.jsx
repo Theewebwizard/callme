@@ -20,6 +20,7 @@ import {
   Building2,
   Trash2,
   Hash,
+  Pencil,
 } from 'lucide-react';
 import { api } from '../api';
 
@@ -40,6 +41,17 @@ export default function HotelFloorGridView({ business, onLayoutUpdated }) {
   const [guestPartySize, setGuestPartySize] = useState(2);
   const [checkInNotes, setCheckInNotes] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
+
+  // Edit Room Modal State
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editingRoom, setEditingRoom] = useState(null);
+  const [editRoomNumber, setEditRoomNumber] = useState('');
+  const [editFloor, setEditFloor] = useState(1);
+  const [editRoomTypeId, setEditRoomTypeId] = useState('');
+  const [editPrice, setEditPrice] = useState('');
+  const [editBedType, setEditBedType] = useState('1 King Bed');
+  const [editCapacity, setEditCapacity] = useState(2);
+  const [editStatus, setEditStatus] = useState('clean');
 
   // Bulk Setup / Add Rooms Modal State
   const [setupModalOpen, setSetupModalOpen] = useState(false);
@@ -202,6 +214,58 @@ export default function HotelFloorGridView({ business, onLayoutUpdated }) {
     const nextStart = maxRoomNum > 0 ? maxRoomNum + 1 : (newFloorNum === 0 ? 1 : newFloorNum * 100 + 1);
     setStartRoomNumber(nextStart);
     setEndRoomNumber(nextStart + 3);
+  };
+
+  const openEditRoomModal = (rm) => {
+    setEditingRoom(rm);
+    setEditRoomNumber(rm.room_number || rm.name || '');
+    setEditFloor(rm.floor !== undefined && rm.floor !== null ? rm.floor : 1);
+    setEditRoomTypeId(rm.room_type_id || '');
+    setEditPrice(rm.base_price !== undefined && rm.base_price !== null ? rm.base_price : '');
+    setEditBedType(rm.bed_type || '1 King Bed');
+    setEditCapacity(rm.capacity || 2);
+    setEditStatus(rm.status === 'occupied' ? 'clean' : (rm.status || 'clean'));
+    setEditModalOpen(true);
+  };
+
+  const handleEditRoomTypeChange = (newTypeId) => {
+    setEditRoomTypeId(newTypeId);
+    const rt = roomTypes.find((r) => r.id === newTypeId);
+    if (rt) {
+      if (rt.base_price !== undefined && rt.base_price !== null) setEditPrice(rt.base_price);
+      if (rt.bed_type) setEditBedType(rt.bed_type);
+      if (rt.max_occupancy) setEditCapacity(rt.max_occupancy);
+    }
+  };
+
+  const handleEditRoomSubmit = async (e) => {
+    e.preventDefault();
+    if (!editingRoom) return;
+    setActionLoading(true);
+    try {
+      const payload = {
+        room_number: editRoomNumber.trim(),
+        floor: Number(editFloor),
+        room_type_id: editRoomTypeId || undefined,
+        base_price: editPrice !== '' ? parseFloat(editPrice) : undefined,
+        bed_type: editBedType.trim() || undefined,
+        capacity: Number(editCapacity) || 2,
+        status: editStatus,
+      };
+      const updated = await api.updateHotelRoom(business.id, editingRoom.id, payload);
+      setLayout(updated);
+      setEditModalOpen(false);
+      setFeedback({
+        type: 'success',
+        text: `Room ${editRoomNumber.trim()} details updated!`,
+      });
+      setTimeout(() => setFeedback(null), 3000);
+      if (onLayoutUpdated) onLayoutUpdated();
+    } catch (err) {
+      setFeedback({ type: 'error', text: `Failed to update room: ${err.message}` });
+    } finally {
+      setActionLoading(false);
+    }
   };
 
   const handleDeleteRoom = async (rm) => {
@@ -715,6 +779,27 @@ export default function HotelFloorGridView({ business, onLayoutUpdated }) {
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                           {getStatusBadge(rm.status)}
+                          <button
+                            type="button"
+                            className="btn-icon"
+                            title={`Edit Room ${rm.room_number || rm.name}`}
+                            onClick={() => openEditRoomModal(rm)}
+                            disabled={actionLoading}
+                            style={{
+                              padding: '3px',
+                              background: 'transparent',
+                              border: 'none',
+                              color: 'var(--text-tertiary)',
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              borderRadius: '4px',
+                            }}
+                            onMouseEnter={(e) => (e.currentTarget.style.color = '#38bdf8')}
+                            onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-tertiary)')}
+                          >
+                            <Pencil size={13} />
+                          </button>
                           {!isOccupied && (
                             <button
                               type="button"
@@ -1262,6 +1347,154 @@ export default function HotelFloorGridView({ business, onLayoutUpdated }) {
                   </div>
                 </>
               )}
+            </form>
+          </div>
+        </div>
+      )}
+      {/* =====================================================================
+          MODAL: EDIT ROOM INFORMATION
+          ===================================================================== */}
+      {editModalOpen && editingRoom && (
+        <div className="modal-backdrop">
+          <div className="modal-content" style={{ maxWidth: '460px', padding: '1.5rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Pencil size={18} color="#38bdf8" />
+                <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700 }}>
+                  Edit Room {editingRoom.room_number || editingRoom.name}
+                </h3>
+              </div>
+              <button
+                type="button"
+                className="btn-icon"
+                onClick={() => setEditModalOpen(false)}
+                style={{ padding: '4px' }}
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <form onSubmit={handleEditRoomSubmit}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '0.85rem' }}>
+                <div className="form-group">
+                  <label className="form-label">Room Number</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={editRoomNumber}
+                    onChange={(e) => setEditRoomNumber(e.target.value)}
+                    placeholder="e.g. 101, 101A, Suite 1"
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Floor</label>
+                  <select
+                    className="form-input"
+                    value={editFloor}
+                    onChange={(e) => setEditFloor(Number(e.target.value))}
+                  >
+                    <option value={0}>Ground Floor</option>
+                    <option value={1}>1st Floor</option>
+                    <option value={2}>2nd Floor</option>
+                    <option value={3}>3rd Floor</option>
+                    <option value={4}>4th Floor</option>
+                    <option value={5}>5th Floor</option>
+                    <option value={6}>6th Floor</option>
+                    <option value={7}>7th Floor</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="form-group" style={{ marginBottom: '0.85rem' }}>
+                <label className="form-label">Room Tier / Category</label>
+                <select
+                  className="form-input"
+                  value={editRoomTypeId}
+                  onChange={(e) => handleEditRoomTypeChange(e.target.value)}
+                >
+                  {roomTypes.map((rt) => (
+                    <option key={rt.id} value={rt.id}>
+                      {rt.name} {rt.base_price ? `(₹${rt.base_price.toLocaleString()}/nt)` : ''}
+                    </option>
+                  ))}
+                  {roomTypes.length === 0 && <option value="">Standard Room</option>}
+                </select>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '0.85rem' }}>
+                <div className="form-group">
+                  <label className="form-label">Nightly Rate (₹ / night)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="any"
+                    className="form-input"
+                    value={editPrice}
+                    onChange={(e) => setEditPrice(e.target.value)}
+                    placeholder="e.g. 4500"
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Max Occupancy (Guests)</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="20"
+                    className="form-input"
+                    value={editCapacity}
+                    onChange={(e) => setEditCapacity(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="form-group" style={{ marginBottom: '0.85rem' }}>
+                <label className="form-label">Bed Configuration</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={editBedType}
+                  onChange={(e) => setEditBedType(e.target.value)}
+                  placeholder="e.g. 1 King Bed, 2 Twin Beds"
+                />
+              </div>
+
+              <div className="form-group" style={{ marginBottom: '1.25rem' }}>
+                <label className="form-label">Operational / Housekeeping Status</label>
+                {editingRoom.status === 'occupied' ? (
+                  <div style={{ fontSize: '0.78rem', color: '#38bdf8', padding: '0.4rem 0.6rem', background: 'rgba(56, 189, 248, 0.1)', borderRadius: '6px' }}>
+                    🔒 Room is currently occupied by <strong>{editingRoom.active_guest?.customer_name || 'Guest'}</strong>. Check out guest before changing status.
+                  </div>
+                ) : (
+                  <select
+                    className="form-input"
+                    value={editStatus}
+                    onChange={(e) => setEditStatus(e.target.value)}
+                  >
+                    <option value="clean">🟢 Clean & Ready</option>
+                    <option value="dirty">🟡 Needs Cleaning</option>
+                    <option value="maintenance">🔴 Maintenance</option>
+                  </select>
+                )}
+              </div>
+
+              <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={() => setEditModalOpen(false)}
+                  disabled={actionLoading}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="btn-primary"
+                  disabled={actionLoading}
+                >
+                  <CheckCircle2 size={14} /> {actionLoading ? 'Saving...' : 'Save Changes'}
+                </button>
+              </div>
             </form>
           </div>
         </div>

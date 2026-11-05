@@ -386,6 +386,11 @@ export const api = {
     request(`/businesses/${businessId}/hotel/rooms/${resourceId}`, {
       method: 'DELETE',
     }),
+  updateHotelRoom: (businessId, resourceId, payload) =>
+    request(`/businesses/${businessId}/hotel/rooms/${resourceId}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    }),
 
   // Clinic Treatments & Fee Store (Healthcare Domain)
   getTreatments: (businessId, category = null) => {
@@ -436,6 +441,7 @@ export const updateRoomStatus = (businessId, resourceId, status) => api.updateRo
 export const hotelCheckIn = (businessId, resourceId, payload) => api.hotelCheckIn(businessId, resourceId, payload);
 export const hotelCheckOut = (businessId, resourceId) => api.hotelCheckOut(businessId, resourceId);
 export const deleteHotelRoom = (businessId, resourceId) => api.deleteHotelRoom(businessId, resourceId);
+export const updateHotelRoom = (businessId, resourceId, payload) => api.updateHotelRoom(businessId, resourceId, payload);
 
 export const getTreatments = (businessId, category = null) => api.getTreatments(businessId, category);
 export const uploadTreatments = (businessId, items, replace = true) => api.uploadTreatments(businessId, items, replace);
