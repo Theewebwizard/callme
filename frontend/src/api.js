@@ -129,10 +129,15 @@ async function request(path, options = {}) {
       }
       let detail = `Error ${res.status}`;
       try {
-        const errJson = await res.json();
-        detail = errJson.detail || detail;
+        const rawText = await res.text();
+        try {
+          const errJson = JSON.parse(rawText);
+          detail = errJson.detail || errJson.message || detail;
+        } catch {
+          detail = rawText || detail;
+        }
       } catch {
-        detail = await res.text();
+        // stream read failed
       }
       throw new Error(detail || `HTTP Error ${res.status}`);
     }
