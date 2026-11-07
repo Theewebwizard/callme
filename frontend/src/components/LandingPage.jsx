@@ -332,8 +332,8 @@ export default function LandingPage({ onEnterWorkspace, onEnterAdmin }) {
           {/* Left Column: Headline, Copy & Action CTAs */}
           <div className="hero-content hero-entrance">
             <h1 className="hero-title">
-              Hire a<br />
-              receptionist <span className="text-gradient">that<br />never sleeps.</span>
+              Hire a receptionist<br />
+              <em className="hero-highlight">that never sleeps.</em>
             </h1>
 
             <p className="hero-subtitle">
