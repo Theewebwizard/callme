@@ -158,6 +158,7 @@ async function request(path, options = {}) {
 export const api = {
   // System Health
   getHealth: () => fetch(`${API_BASE}/health`).then((r) => r.json()).catch(() => ({ status: 'offline' })),
+  getPlatformMetrics: () => fetch(`${API_BASE}/platform/metrics`).then((r) => r.json()).catch(() => null),
 
   // Businesses (Tenants)
   listBusinesses: () => request('/businesses'),

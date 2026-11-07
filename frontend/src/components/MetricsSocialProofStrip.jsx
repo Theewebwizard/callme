@@ -1,13 +1,34 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { api } from '../api';
 
-const METRICS = [
-  { value: '99.98%', label: 'telephony uptime' },
+const DEFAULT_METRICS = [
+  { value: '99.9%', label: 'telephony uptime' },
   { value: '<380ms', label: 'conversational pickup' },
-  { value: '1.2M+', label: 'autonomous calls handled' },
-  { value: '30+', label: 'languages & regional accents' },
+  { value: '46+', label: 'autonomous calls handled' },
+  { value: 'Bilingual', label: 'English & Hindi accents' },
 ];
 
 export default function MetricsSocialProofStrip() {
+  const [metrics, setMetrics] = useState(DEFAULT_METRICS);
+
+  useEffect(() => {
+    let isMounted = true;
+    api.getPlatformMetrics().then((data) => {
+      if (isMounted && data) {
+        setMetrics([
+          { value: data.telephony_uptime || '99.9%', label: 'telephony uptime' },
+          { value: data.conversational_pickup || '<380ms', label: 'conversational pickup' },
+          { value: data.calls_handled || `${data.raw_calls_count || 46}+`, label: 'autonomous calls handled' },
+          { value: data.languages_label || 'Bilingual', label: data.languages_sublabel ? `${data.languages_sublabel} accents` : 'English & Hindi accents' },
+        ]);
+      }
+    }).catch(() => {});
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   return (
     <section className="reveal-on-scroll" style={{ maxWidth: '1080px', margin: '0 auto', padding: '0 1.5rem 3rem', width: '100%', boxSizing: 'border-box' }}>
       <div
@@ -21,24 +42,25 @@ export default function MetricsSocialProofStrip() {
           overflow: 'hidden',
         }}
       >
-        {METRICS.map((m, index) => (
+        {metrics.map((m, index) => (
           <div
             key={m.label}
             style={{
               padding: '1.75rem 1.5rem',
               textAlign: 'center',
-              borderRight: index < METRICS.length - 1 ? '1px solid var(--border-medium)' : 'none',
+              borderRight: index < metrics.length - 1 ? '1px solid var(--border-medium)' : 'none',
               borderBottom: 'none',
             }}
           >
             <p
               className="text-gradient"
               style={{
-                fontSize: '2.25rem',
+                fontSize: m.value.length > 6 ? '1.85rem' : '2.25rem',
                 fontWeight: 800,
                 fontFamily: 'var(--font-display)',
                 margin: '0 0 4px',
                 letterSpacing: '-0.02em',
+                lineHeight: 1.15,
               }}
             >
               {m.value}
