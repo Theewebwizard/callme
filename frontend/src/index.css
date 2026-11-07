@@ -4,9 +4,9 @@
    ========================================================================== */
 
 :root {
-  /* Common Typography (Matching anim codebase: Instrument Serif + Manrope + JetBrains Mono) */
-  --font-display: 'Instrument Serif', Georgia, 'Times New Roman', serif;
-  --font-sans: 'Manrope', 'DM Sans', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  /* Common Typography */
+  --font-display: 'Space Grotesk', 'Plus Jakarta Sans', sans-serif;
+  --font-sans: 'DM Sans', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
   /* Common Radii */
@@ -23,80 +23,56 @@
   --transition-normal: 220ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* ---------- DEFAULT / DARK THEME (Obsidian Cyan Palette from anim) ---------- */
+/* ---------- DEFAULT / DARK THEME ---------- */
 :root, html.dark {
   color-scheme: dark;
 
-  /* Color Theme Tokens (from anim) */
-  --radius: 1rem;
-  --background: oklch(0.14 0.025 265);
-  --foreground: oklch(0.95 0.01 250);
-  --card: oklch(0.19 0.03 265);
-  --card-foreground: oklch(0.95 0.01 250);
-  --popover: oklch(0.19 0.03 265);
-  --popover-foreground: oklch(0.95 0.01 250);
-  --primary: oklch(0.82 0.14 195);
-  --primary-foreground: oklch(0.15 0.03 265);
-  --secondary: oklch(0.24 0.03 265);
-  --secondary-foreground: oklch(0.95 0.01 250);
-  --muted: oklch(0.22 0.03 265);
-  --muted-foreground: oklch(0.68 0.03 255);
-  --accent: oklch(0.3 0.06 220);
-  --accent-foreground: oklch(0.95 0.01 250);
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.98 0 0);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 14%);
-  --ring: oklch(0.82 0.14 195);
-  --glow: oklch(0.65 0.18 220);
-  --sun: oklch(0.78 0.17 65);
-  --moon: oklch(0.85 0.05 250);
-  --grid-line: oklch(1 0 0 / 5%);
-
-  /* Canvas & Surfaces mapped to anim tokens */
-  --bg-app: var(--background);
-  --bg-canvas: var(--background);
-  --bg-card: var(--card);
-  --bg-surface: var(--card);
-  --bg-surface-elevated: var(--secondary);
-  --bg-surface-hover: oklch(0.27 0.035 265);
-  --bg-surface-active: oklch(0.31 0.04 265);
+  /* Canvas & Surfaces */
+  --bg-app: oklch(0.14 0.02 230);
+  --bg-canvas: oklch(0.14 0.02 230);
+  --bg-card: oklch(0.18 0.025 230);
+  --bg-surface: oklch(0.18 0.025 230);
+  --bg-surface-elevated: oklch(0.23 0.03 230);
+  --bg-surface-hover: oklch(0.26 0.035 230);
+  --bg-surface-active: oklch(0.30 0.04 230);
   --bg-subtle: oklch(1 0 0 / 4%);
-  --bg-overlay: oklch(0.14 0.025 265 / 80%);
+  --bg-overlay: oklch(0.14 0.02 230 / 80%);
 
   /* Borders & Dividers */
-  --border-subtle: oklch(1 0 0 / 8%);
-  --border-medium: var(--border);
-  --border-strong: oklch(1 0 0 / 22%);
-  --border-active: var(--primary);
+  --border-subtle: oklch(1 0 0 / 12%);
+  --border-medium: oklch(1 0 0 / 20%);
+  --border-strong: oklch(1 0 0 / 30%);
+  --border-active: oklch(1 0 0 / 45%);
 
   /* Typography Colors */
-  --text-primary: var(--foreground);
-  --text-secondary: var(--muted-foreground);
-  --text-tertiary: oklch(0.55 0.03 255);
-  --text-muted: var(--muted-foreground);
-  --text-inverse: oklch(0.14 0.025 265);
+  --text-primary: oklch(0.96 0.01 200);
+  --text-secondary: oklch(0.68 0.03 220);
+  --text-tertiary: oklch(0.55 0.03 220);
+  --text-muted: oklch(0.68 0.03 220);
+  --text-inverse: #07080a;
 
-  /* Primary Accent & Glow (Neon Mint/Teal from anim) */
-  --color-primary: var(--primary);
-  --color-primary-glow: var(--glow);
-  --color-emerald: var(--primary);
-  --mint-400: var(--primary);
-  --mint-500: var(--primary);
-  --mint-600: oklch(0.72 0.14 195);
-  --mint-100: rgba(45, 212, 191, 0.15);
-  --mint-50: rgba(45, 212, 191, 0.08);
+  /* Primary Accent & Glow (Neon Mint/Teal in Dark Mode) */
+  --color-primary: oklch(0.82 0.16 170);
+  --color-primary-glow: oklch(0.75 0.15 210);
+  --color-emerald: oklch(0.82 0.16 170);
+  --color-sun: #fbbf24;
+  --color-moon: #cbd5e1;
+  --mint-400: oklch(0.82 0.16 170);
+  --mint-500: oklch(0.82 0.16 170);
+  --mint-600: oklch(0.72 0.16 170);
+  --mint-100: rgba(16, 185, 129, 0.15);
+  --mint-50: rgba(16, 185, 129, 0.08);
 
-  --gradient-primary: var(--primary);
-  --shadow-glow: 0 0 60px -10px color-mix(in oklab, var(--primary) 55%, transparent);
+  --gradient-primary: linear-gradient(120deg, oklch(0.82 0.16 170), oklch(0.75 0.15 210));
+  --shadow-glow: 0 0 60px -10px color-mix(in oklab, oklch(0.82 0.16 170) 55%, transparent);
   --card-shadow: 0 1px 2px oklch(0 0 0 / 30%), 0 18px 44px -20px oklch(0 0 0 / 75%);
-  --glass-bg: color-mix(in oklab, var(--card) 85%, transparent);
+  --glass-bg: color-mix(in oklab, oklch(0.18 0.025 230) 84%, transparent);
 
   /* Ambient Aurora Lights (Dark Mode) */
-  --aurora-1: oklch(0.45 0.13 195);
-  --aurora-2: oklch(0.4 0.12 220);
-  --aurora-3: oklch(0.34 0.1 265);
-  --aurora-beam: var(--primary);
+  --aurora-1: oklch(0.45 0.13 175);
+  --aurora-2: oklch(0.4 0.12 215);
+  --aurora-3: oklch(0.34 0.1 250);
+  --aurora-beam: oklch(0.8 0.15 175);
   --aurora-opacity: 0.55;
 
   /* Specular Elevation */
@@ -106,91 +82,71 @@
   --specular-top: inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
-/* ---------- LIGHT THEME (Warm Editorial Parchment & Amber Palette from anim) ---------- */
+/* ---------- LIGHT THEME (White + Light Blue Signature Palette) ---------- */
 html.light {
   color-scheme: light;
 
-  /* Color Theme Tokens (from anim) */
-  --radius: 1rem;
-  --background: oklch(0.975 0.012 85);
-  --foreground: oklch(0.2 0.02 60);
-  --card: oklch(0.995 0.006 85);
-  --card-foreground: oklch(0.2 0.02 60);
-  --popover: oklch(0.995 0.006 85);
-  --popover-foreground: oklch(0.2 0.02 60);
-  --primary: oklch(0.62 0.19 40);
-  --primary-foreground: oklch(0.99 0.01 85);
-  --secondary: oklch(0.93 0.02 80);
-  --secondary-foreground: oklch(0.25 0.02 60);
-  --muted: oklch(0.94 0.015 80);
-  --muted-foreground: oklch(0.5 0.02 60);
-  --accent: oklch(0.9 0.06 70);
-  --accent-foreground: oklch(0.25 0.02 60);
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.98 0 0);
-  --border: oklch(0.88 0.02 80);
-  --input: oklch(0.88 0.02 80);
-  --ring: oklch(0.62 0.19 40);
-  --glow: oklch(0.8 0.15 60);
-  --sun: oklch(0.78 0.17 65);
-  --moon: oklch(0.85 0.05 250);
-  --grid-line: oklch(0.2 0.02 60 / 6%);
+  /* Canvas & Base (Crisp luminous sky-white canvas) */
+  --bg-app: #f4f9fd;
+  --bg-canvas: #f4f9fd;
 
-  /* Canvas & Surfaces mapped to anim tokens */
-  --bg-app: var(--background);
-  --bg-canvas: var(--background);
-  --bg-card: var(--card);
-  --bg-surface: var(--card);
-  --bg-surface-elevated: var(--secondary);
-  --bg-surface-hover: oklch(0.90 0.02 80);
-  --bg-surface-active: oklch(0.87 0.025 80);
-  --bg-subtle: oklch(0.2 0.02 60 / 4%);
-  --bg-overlay: oklch(0.975 0.012 85 / 88%);
+  /* Pure White Cards & Surfaces */
+  --bg-card: #ffffff;
+  --bg-surface: #ffffff;
 
-  /* Borders & Dividers */
-  --border-subtle: oklch(0.88 0.02 80 / 60%);
-  --border-medium: var(--border);
-  --border-strong: oklch(0.78 0.02 80);
-  --border-active: var(--primary);
+  /* Pastel Light Blue Elevated Surfaces (Tabs, Banners, Pills) */
+  --bg-surface-elevated: #e8f3fc;
+  --bg-surface-hover: #ddedfa;
+  --bg-surface-active: #d0e6f7;
+  --bg-subtle: rgba(2, 132, 199, 0.05);
+  --bg-overlay: rgba(244, 249, 253, 0.88);
 
-  /* Typography Colors */
-  --text-primary: var(--foreground);
-  --text-secondary: var(--muted-foreground);
-  --text-tertiary: oklch(0.6 0.02 60);
-  --text-muted: var(--muted-foreground);
-  --text-inverse: oklch(0.99 0.01 85);
+  /* Delicate Light Blue Borders */
+  --border-subtle: #d3e4f5;
+  --border-medium: #b6d5f2;
+  --border-strong: #8ec2ee;
+  --border-active: #0284c7;
 
-  /* Primary Accent & Glow (Warm Amber Terracotta) */
-  --color-primary: var(--primary);
-  --color-primary-glow: var(--glow);
-  --color-emerald: var(--primary);
-  --mint-400: oklch(0.70 0.18 40);
-  --mint-500: var(--primary);
-  --mint-600: oklch(0.54 0.19 40);
-  --mint-100: oklch(0.92 0.05 70);
-  --mint-50: oklch(0.96 0.02 70);
+  /* Typography Colors (High-contrast slate for readability on white & light blue) */
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-tertiary: #64748b;
+  --text-muted: #64748b;
+  --text-inverse: #ffffff;
 
-  --gradient-primary: var(--primary);
-  --shadow-glow: 0 0 44px -6px color-mix(in oklab, var(--primary) 35%, transparent);
-  --card-shadow: 0 2px 4px rgba(0, 0, 0, 0.04), 0 12px 32px -8px rgba(0, 0, 0, 0.08);
-  --glass-bg: color-mix(in oklab, var(--card) 94%, transparent);
+  /* Primary Accent & Glow (Vibrant Electric Sky / Sapphire Blue) */
+  --color-primary: #0284c7;
+  --color-primary-glow: #38bdf8;
+  --color-emerald: #0284c7;
+  --color-sun: #f59e0b;
+  --color-moon: #64748b;
+  --mint-400: #38bdf8;
+  --mint-500: #0284c7;
+  --mint-600: #0369a1;
+  --mint-100: #e0f2fe;
+  --mint-50: #f0f9ff;
 
-  /* Ambient Aurora Lights (Light Mode Warmth) */
-  --aurora-1: oklch(0.92 0.08 70);
-  --aurora-2: oklch(0.88 0.12 55);
-  --aurora-3: oklch(0.94 0.05 85);
-  --aurora-beam: var(--glow);
-  --aurora-opacity: 0.65;
+  --gradient-primary: linear-gradient(135deg, #0284c7 0%, #0ea5e9 50%, #38bdf8 100%);
+  --shadow-glow: 0 0 44px -6px rgba(2, 132, 199, 0.35);
+  --card-shadow: 0 2px 4px rgba(2, 132, 199, 0.04), 0 12px 32px -8px rgba(2, 132, 199, 0.12);
+  --glass-bg: rgba(255, 255, 255, 0.94);
+
+  /* Ambient Aurora Lights (White + Light Blue Dreamy Sky Atmosphere) */
+  --aurora-1: #bae6fd;
+  --aurora-2: #7dd3fc;
+  --aurora-3: #c7d2fe;
+  --aurora-beam: #38bdf8;
+  --aurora-opacity: 0.7;
 
   /* Specular Elevation (Light) */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04), 0 0 0 1px var(--border-medium);
-  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.06), 0 0 0 1px var(--border-medium);
-  --shadow-lg: 0 16px 36px rgba(0, 0, 0, 0.09), 0 0 0 1px var(--border-medium);
+  --shadow-sm: 0 1px 2px rgba(2, 132, 199, 0.06), 0 0 0 1px var(--border-medium);
+  --shadow-md: 0 4px 16px rgba(2, 132, 199, 0.08), 0 0 0 1px var(--border-medium);
+  --shadow-lg: 0 16px 36px rgba(2, 132, 199, 0.12), 0 0 0 1px var(--border-medium);
   --specular-top: inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
 
 /* ==========================================================================
-   Theme Switch Animations & Circular Reveal (from anim codebase)
+   Theme Switch Animations (Circular Reveal from d:\Downloads\anim)
    ========================================================================== */
 
 /* Circular reveal theme transition */
@@ -217,11 +173,7 @@ html.light {
 
 @media (prefers-reduced-motion: reduce) {
   ::view-transition-new(root) {
-    animation: none !important;
-  }
-  html.theme-transitioning,
-  html.theme-transitioning * {
-    transition: none !important;
+    animation: none;
   }
 }
 
@@ -238,118 +190,76 @@ html.theme-transitioning *::after {
   transition-delay: 0s !important;
 }
 
-/* ==========================================================================
-   ThemeToggle Button & Sun/Moon Morphing Switch (from anim)
-   ========================================================================== */
-.theme-toggle-btn {
+/* Morphing Theme Toggle Switch Button */
+.theme-switch-btn {
   position: relative;
   display: inline-flex;
   align-items: center;
-  width: 76px;
-  height: 38px;
-  border-radius: 9999px;
-  border: 1px solid var(--border);
-  background-color: var(--secondary);
+  width: 70px;
+  height: 36px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border-medium);
+  background: var(--bg-surface-elevated);
   padding: 3px;
-  box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.08);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
   cursor: pointer;
-  transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
   flex-shrink: 0;
-  outline: none;
   box-sizing: border-box;
 }
 
-.theme-toggle-btn:hover {
+.theme-switch-btn:hover {
   border-color: var(--color-primary);
 }
 
-.theme-toggle-btn:focus-visible {
-  outline: 2px solid var(--ring);
-  outline-offset: 2px;
-}
-
-.theme-toggle-thumb {
+.theme-switch-knob {
   display: flex;
-  height: 30px;
-  width: 30px;
+  width: 28px;
+  height: 28px;
   align-items: center;
   justify-content: center;
-  border-radius: 9999px;
-  background-color: var(--card);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+  border-radius: 50%;
+  background: var(--bg-card);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
   transition: transform 700ms cubic-bezier(0.7, 0, 0.2, 1), background-color 300ms ease;
   transform: translateX(0) rotate(0deg);
   box-sizing: border-box;
 }
 
-.theme-toggle-thumb.is-dark {
-  transform: translateX(38px) rotate(360deg);
+.theme-switch-knob.is-dark {
+  transform: translateX(34px) rotate(360deg);
 }
 
 .theme-toggle-svg {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   display: block;
 }
 
-.theme-sun-rays {
-  stroke: var(--sun);
+.theme-toggle-rays {
   transform-origin: center;
+  stroke: var(--color-sun, #f59e0b);
   transition: transform 500ms ease, opacity 500ms ease;
   transform: scale(1);
   opacity: 1;
 }
 
-.theme-sun-rays.is-dark {
+.theme-toggle-rays.is-dark {
   transform: scale(0);
   opacity: 0;
 }
 
-.theme-moon-cut-circle {
-  transition: cx 700ms cubic-bezier(0.7, 0, 0.2, 1), cy 700ms cubic-bezier(0.7, 0, 0.2, 1);
+.theme-toggle-mask-circle {
+  transition: cx 700ms ease, cy 700ms ease;
 }
 
-.theme-celestial-body {
-  transition: r 700ms cubic-bezier(0.7, 0, 0.2, 1), fill 700ms ease;
-  fill: var(--sun);
+.theme-toggle-circle {
+  transition: r 700ms ease, fill 700ms ease;
+  fill: var(--color-sun, #f59e0b);
 }
 
-.theme-celestial-body.is-dark {
-  fill: var(--moon);
-}
-
-/* ==========================================================================
-   Atmospheric Background Grid & Glow Orbs (from anim)
-   ========================================================================== */
-.bg-grid {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background-image:
-    linear-gradient(var(--grid-line) 1px, transparent 1px),
-    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
-  background-size: 56px 56px;
-  mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%);
-  -webkit-mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%);
-}
-
-.orb {
-  position: absolute;
-  pointer-events: none;
-  border-radius: 9999px;
-  background: radial-gradient(circle, var(--glow), transparent 65%);
-  filter: blur(60px);
-  opacity: 0.55;
-  transition: background 900ms ease;
-}
-
-@keyframes float-slow {
-  0%, 100% { transform: translate(0, 0); }
-  50% { transform: translate(30px, -40px); }
-}
-
-.animate-float {
-  animation: float-slow 12s ease-in-out infinite;
+.theme-toggle-circle.is-dark {
+  fill: var(--color-moon, #cbd5e1);
 }
 
 /* ==========================================================================
@@ -1947,15 +1857,11 @@ input:disabled + .slider {
    Lovable & Obsidian Modern Inspiration Extensions
    ========================================================================== */
 
-.text-gradient,
-.hero-highlight {
-  background: none !important;
-  -webkit-background-clip: unset !important;
-  background-clip: unset !important;
-  -webkit-text-fill-color: initial !important;
-  color: var(--primary) !important;
-  font-family: var(--font-display) !important;
-  font-style: italic !important;
+.text-gradient {
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 .bg-gradient-primary {
@@ -2454,22 +2360,12 @@ html.light {
     box-shadow: 0 4px 14px rgba(2, 132, 199, 0.32) !important;
   }
 
-  .hero-btn-primary,
-  .landing-btn-primary,
-  .btn-primary {
-    background: var(--primary) !important;
-    color: var(--primary-foreground) !important;
-    border: none !important;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
-  }
-
   .hero-btn-primary:hover,
   .landing-btn-primary:hover,
   .btn-primary:hover {
-    background: var(--primary) !important;
-    color: var(--primary-foreground) !important;
-    transform: scale(1.05);
-    box-shadow: 0 4px 14px color-mix(in oklab, var(--primary) 35%, transparent) !important;
+    background: linear-gradient(135deg, #0369a1 0%, #0284c7 100%) !important;
+    color: #ffffff !important;
+    box-shadow: 0 0 50px -4px rgba(2, 132, 199, 0.45) !important;
   }
 
   .hero-btn-secondary,
@@ -2506,13 +2402,13 @@ html.light {
   .call-simulation-container,
   .modal-content,
   .dialog-content {
-    background: var(--card) !important;
-    border: 1px solid var(--border) !important;
+    background: #ffffff !important;
+    border: 1px solid var(--border-medium) !important;
     box-shadow: var(--card-shadow) !important;
   }
 
   .agent-card::after {
-    display: none !important;
+    background: linear-gradient(135deg, transparent, rgba(2, 132, 199, 0.08), transparent);
   }
 
   .call-simulation-header {
@@ -2679,44 +2575,22 @@ html.light {
   }
 }
 
-.hero-kicker {
-  font-family: var(--font-mono);
-  font-size: 0.78rem;
-  font-weight: 500;
-  letter-spacing: 0.3em;
-  text-transform: uppercase;
-  color: var(--muted-foreground);
-  margin-bottom: 0.85rem;
-}
-
 .hero-title {
   font-family: var(--font-display);
-  font-size: clamp(3.2rem, 7.5vw, 6.2rem);
-  font-weight: 400;
-  line-height: 0.95;
-  letter-spacing: -0.025em;
-  color: var(--foreground);
-  margin-top: 1rem;
-  margin-bottom: 1.5rem;
-  max-width: 920px;
-}
-
-.hero-title em,
-.hero-title .hero-highlight,
-.hero-highlight {
-  font-family: var(--font-display);
-  font-style: italic;
-  font-weight: 400;
-  color: var(--primary);
+  font-size: clamp(2.6rem, 4.4vw, 3.85rem);
+  font-weight: 800;
+  line-height: 1.08;
+  letter-spacing: -0.035em;
+  color: var(--text-primary);
+  margin-bottom: 1.25rem;
 }
 
 .hero-subtitle {
-  font-family: var(--font-sans);
-  font-size: 1.15rem;
+  font-size: clamp(1rem, 1.3vw, 1.15rem);
   line-height: 1.6;
-  color: var(--muted-foreground);
-  max-width: 580px;
-  margin-bottom: 2.25rem;
+  color: var(--text-secondary);
+  max-width: 480px;
+  margin-bottom: 2rem;
 }
 
 .hero-actions {
@@ -2729,44 +2603,44 @@ html.light {
 .hero-btn-primary {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
   gap: 0.5rem;
-  background-color: var(--primary);
-  color: var(--primary-foreground);
+  background: var(--gradient-primary);
+  color: #ffffff;
   border: none;
-  padding: 0.85rem 1.85rem;
-  border-radius: var(--radius-full);
-  font-family: var(--font-sans);
-  font-size: 0.98rem;
-  font-weight: 500;
+  padding: 0.75rem 1.6rem;
+  border-radius: var(--radius-md, 10px);
+  font-size: 0.92rem;
+  font-weight: 600;
   cursor: pointer;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
+  box-shadow: var(--shadow-glow);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .hero-btn-primary:hover {
-  transform: scale(1.05);
+  transform: translateY(-2px);
+  box-shadow: 0 0 50px -4px color-mix(in oklab, var(--color-primary) 50%, transparent);
 }
 
 .hero-btn-secondary {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
   gap: 0.5rem;
-  background-color: transparent;
-  color: var(--foreground);
-  border: 1px solid var(--border);
-  padding: 0.85rem 1.85rem;
-  border-radius: var(--radius-full);
-  font-family: var(--font-sans);
-  font-size: 0.98rem;
-  font-weight: 500;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border: 1px solid var(--border-medium);
+  padding: 0.75rem 1.4rem;
+  border-radius: var(--radius-md, 10px);
+  font-size: 0.92rem;
+  font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.2s ease, border-color 0.2s ease;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
 .hero-btn-secondary:hover {
-  background-color: var(--secondary);
+  background: var(--bg-surface-elevated);
+  border-color: var(--border-strong);
+  transform: translateY(-1px);
 }
 
 

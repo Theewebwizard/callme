@@ -1,101 +1,107 @@
-import React, { useEffect, useState, useRef, useId } from "react";
-import { flushSync } from "react-dom";
+import React, { useEffect, useState, useRef, useId } from 'react';
+import { flushSync } from 'react-dom';
 
-export const THEME_STORAGE_KEY = "callme_theme";
+export const THEME_STORAGE_KEY = 'callme_theme';
 
-function readIsDark() {
-  if (typeof document === "undefined") return true;
-  const saved = localStorage.getItem("theme") || localStorage.getItem(THEME_STORAGE_KEY);
-  if (saved) return saved === "dark";
-  return window.matchMedia("(prefers-color-scheme: dark)").matches;
-}
+export function ThemeToggle({ className = '', style = {} }) {
+  const [dark, setDark] = useState(() => {
+    if (typeof document === 'undefined') return false;
+    const saved = localStorage.getItem(THEME_STORAGE_KEY) || localStorage.getItem('theme');
+    return saved ? saved === 'dark' : !document.documentElement.classList.contains('light');
+  });
 
-export default function ThemeToggle({ className = "", style = {} }) {
-  const [dark, setDark] = useState(true);
-  const buttonRef = useRef(null);
-  const maskId = useId();
+  const uniqueId = useId ? useId().replace(/[^a-zA-Z0-9_-]/g, '') : 'moon-cut';
+  const maskId = `moon-cut-${uniqueId}`;
+  const isTransitioningRef = useRef(false);
 
   useEffect(() => {
-    const isDark = readIsDark();
+    const saved = localStorage.getItem(THEME_STORAGE_KEY) || localStorage.getItem('theme');
+    const isDark = saved ? saved === 'dark' : document.documentElement.classList.contains('dark');
+    document.documentElement.classList.toggle('dark', isDark);
+    document.documentElement.classList.toggle('light', !isDark);
     setDark(isDark);
-    document.documentElement.classList.toggle("dark", isDark);
-    document.documentElement.classList.toggle("light", !isDark);
 
     const handleThemeChange = (e) => {
-      if (e?.detail) {
-        setDark(e.detail === "dark");
-      } else {
-        setDark(readIsDark());
-      }
+      const isNextDark = e?.detail ? e.detail === 'dark' : document.documentElement.classList.contains('dark');
+      setDark(isNextDark);
     };
 
-    window.addEventListener("callme:theme-changed", handleThemeChange);
-    return () => window.removeEventListener("callme:theme-changed", handleThemeChange);
+    window.addEventListener('callme:theme-changed', handleThemeChange);
+    return () => window.removeEventListener('callme:theme-changed', handleThemeChange);
   }, []);
 
   const toggle = (e) => {
+    if (isTransitioningRef.current) return;
     const next = !dark;
+
     const apply = () => {
       flushSync(() => setDark(next));
-      document.documentElement.classList.toggle("dark", next);
-      document.documentElement.classList.toggle("light", !next);
+      document.documentElement.classList.toggle('dark', next);
+      document.documentElement.classList.toggle('light', !next);
       try {
-        localStorage.setItem("theme", next ? "dark" : "light");
-        localStorage.setItem(THEME_STORAGE_KEY, next ? "dark" : "light");
-        window.dispatchEvent(
-          new CustomEvent("callme:theme-changed", { detail: next ? "dark" : "light" })
-        );
+        localStorage.setItem(THEME_STORAGE_KEY, next ? 'dark' : 'light');
+        localStorage.setItem('theme', next ? 'dark' : 'light');
+        window.dispatchEvent(new CustomEvent('callme:theme-changed', { detail: next ? 'dark' : 'light' }));
       } catch {
-        /* storage unavailable in sandbox */
+        /* storage sandbox */
       }
     };
 
     const doc = document;
-    if (!doc.startViewTransition || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      document.documentElement.classList.add("theme-transitioning");
+    if (!doc.startViewTransition || (typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches)) {
+      document.documentElement.classList.add('theme-transitioning');
       apply();
       setTimeout(() => {
-        document.documentElement.classList.remove("theme-transitioning");
+        document.documentElement.classList.remove('theme-transitioning');
       }, 450);
       return;
     }
 
-    // Determine circular reveal origin
-    let x = window.innerWidth / 2;
-    let y = window.innerHeight / 2;
-
-    if (e?.clientX != null && e?.clientY != null && (e.clientX !== 0 || e.clientY !== 0)) {
-      x = e.clientX;
-      y = e.clientY;
-    } else if (buttonRef.current) {
-      const rect = buttonRef.current.getBoundingClientRect();
-      x = rect.left + rect.width / 2;
-      y = rect.top + rect.height / 2;
+    let x = e?.clientX;
+    let y = e?.clientY;
+    if ((x == null || y == null) || (x === 0 && y === 0)) {
+      const rect = e?.currentTarget?.getBoundingClientRect();
+      x = rect ? rect.left + rect.width / 2 : window.innerWidth / 2;
+      y = rect ? rect.top + rect.height / 2 : window.innerHeight / 2;
     }
 
     const r = Math.hypot(Math.max(x, window.innerWidth - x), Math.max(y, window.innerHeight - y));
     const root = document.documentElement.style;
-    root.setProperty("--tx", `${x}px`);
-    root.setProperty("--ty", `${y}px`);
-    root.setProperty("--tr", `${r}px`);
+    root.setProperty('--tx', `${x}px`);
+    root.setProperty('--ty', `${y}px`);
+    root.setProperty('--tr', `${r}px`);
 
-    doc.startViewTransition(apply);
+    isTransitioningRef.current = true;
+    try {
+      const transition = doc.startViewTransition(apply);
+      if (transition && typeof transition.finished?.finally === 'function') {
+        transition.finished.finally(() => {
+          isTransitioningRef.current = false;
+        });
+      } else {
+        setTimeout(() => {
+          isTransitioningRef.current = false;
+        }, 950);
+      }
+    } catch {
+      apply();
+      isTransitioningRef.current = false;
+    }
   };
 
   return (
     <button
-      ref={buttonRef}
       type="button"
       onClick={toggle}
-      aria-label={dark ? "Switch to light theme" : "Switch to dark theme"}
-      title={dark ? "Switch to daytime planning mode" : "Switch to obsidian night mode"}
-      className={`theme-toggle-btn ${className}`}
+      aria-label={dark ? 'Switch to light theme' : 'Switch to dark theme'}
+      title={dark ? 'Switch to light theme' : 'Switch to dark theme'}
+      className={`theme-switch-btn ${className}`}
       style={style}
     >
-      <span className={`theme-toggle-thumb ${dark ? "is-dark" : ""}`}>
+      <span className={`theme-switch-knob ${dark ? 'is-dark' : ''}`}>
         <svg viewBox="0 0 24 24" className="theme-toggle-svg" fill="none" strokeWidth="2" strokeLinecap="round">
           {/* sun rays */}
-          <g className={`theme-sun-rays ${dark ? "is-dark" : ""}`}>
+          <g className={`theme-toggle-rays ${dark ? 'is-dark' : ''}`}>
             {[0, 45, 90, 135, 180, 225, 270, 315].map((a) => (
               <line key={a} x1="12" y1="2" x2="12" y2="4" transform={`rotate(${a} 12 12)`} />
             ))}
@@ -103,7 +109,7 @@ export default function ThemeToggle({ className = "", style = {} }) {
           <mask id={maskId}>
             <rect width="24" height="24" fill="white" />
             <circle
-              className="theme-moon-cut-circle"
+              className="theme-toggle-mask-circle"
               cx={dark ? 16 : 26}
               cy={dark ? 8 : 2}
               r="6"
@@ -115,10 +121,12 @@ export default function ThemeToggle({ className = "", style = {} }) {
             cy="12"
             r={dark ? 8 : 5}
             mask={`url(#${maskId})`}
-            className={`theme-celestial-body ${dark ? "is-dark" : ""}`}
+            className={`theme-toggle-circle ${dark ? 'is-dark' : ''}`}
           />
         </svg>
       </span>
     </button>
   );
 }
+
+export default ThemeToggle;
