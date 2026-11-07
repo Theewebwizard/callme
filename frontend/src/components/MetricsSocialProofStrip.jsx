@@ -2,9 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { api } from '../api';
 
 const DEFAULT_METRICS = [
-  { value: '99.9%', label: 'telephony uptime' },
+  { value: '99.98%', label: 'telephony uptime' },
   { value: '<380ms', label: 'conversational pickup' },
-  { value: '46+', label: 'autonomous calls handled' },
   { value: 'Bilingual', label: 'English & Hindi accents' },
 ];
 
@@ -16,9 +15,8 @@ export default function MetricsSocialProofStrip() {
     api.getPlatformMetrics().then((data) => {
       if (isMounted && data) {
         setMetrics([
-          { value: data.telephony_uptime || '99.9%', label: 'telephony uptime' },
+          { value: data.telephony_uptime || '99.98%', label: 'telephony uptime' },
           { value: data.conversational_pickup || '<380ms', label: 'conversational pickup' },
-          { value: data.calls_handled || `${data.raw_calls_count || 46}+`, label: 'autonomous calls handled' },
           { value: data.languages_label || 'Bilingual', label: data.languages_sublabel ? `${data.languages_sublabel} accents` : 'English & Hindi accents' },
         ]);
       }
@@ -36,7 +34,7 @@ export default function MetricsSocialProofStrip() {
         style={{
           borderRadius: 'var(--radius-xl)',
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
           border: '1px solid var(--border-medium)',
           boxShadow: 'var(--card-shadow)',
           overflow: 'hidden',
@@ -46,7 +44,7 @@ export default function MetricsSocialProofStrip() {
           <div
             key={m.label}
             style={{
-              padding: '1.75rem 1.5rem',
+              padding: '1.85rem 1.5rem',
               textAlign: 'center',
               borderRight: index < metrics.length - 1 ? '1px solid var(--border-medium)' : 'none',
               borderBottom: 'none',
