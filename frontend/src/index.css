@@ -23,54 +23,80 @@
   --transition-normal: 220ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* ---------- DEFAULT / DARK THEME ---------- */
+/* ---------- DEFAULT / DARK THEME (Obsidian Cyan Palette from anim) ---------- */
 :root, html.dark {
   color-scheme: dark;
 
-  /* Canvas & Surfaces */
-  --bg-app: oklch(0.14 0.02 230);
-  --bg-canvas: oklch(0.14 0.02 230);
-  --bg-card: oklch(0.18 0.025 230);
-  --bg-surface: oklch(0.18 0.025 230);
-  --bg-surface-elevated: oklch(0.23 0.03 230);
-  --bg-surface-hover: oklch(0.26 0.035 230);
-  --bg-surface-active: oklch(0.30 0.04 230);
+  /* Color Theme Tokens (from anim) */
+  --radius: 1rem;
+  --background: oklch(0.14 0.025 265);
+  --foreground: oklch(0.95 0.01 250);
+  --card: oklch(0.19 0.03 265);
+  --card-foreground: oklch(0.95 0.01 250);
+  --popover: oklch(0.19 0.03 265);
+  --popover-foreground: oklch(0.95 0.01 250);
+  --primary: oklch(0.82 0.14 195);
+  --primary-foreground: oklch(0.15 0.03 265);
+  --secondary: oklch(0.24 0.03 265);
+  --secondary-foreground: oklch(0.95 0.01 250);
+  --muted: oklch(0.22 0.03 265);
+  --muted-foreground: oklch(0.68 0.03 255);
+  --accent: oklch(0.3 0.06 220);
+  --accent-foreground: oklch(0.95 0.01 250);
+  --destructive: oklch(0.577 0.245 27.325);
+  --destructive-foreground: oklch(0.98 0 0);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 14%);
+  --ring: oklch(0.82 0.14 195);
+  --glow: oklch(0.65 0.18 220);
+  --sun: oklch(0.78 0.17 65);
+  --moon: oklch(0.85 0.05 250);
+  --grid-line: oklch(1 0 0 / 5%);
+
+  /* Canvas & Surfaces mapped to anim tokens */
+  --bg-app: var(--background);
+  --bg-canvas: var(--background);
+  --bg-card: var(--card);
+  --bg-surface: var(--card);
+  --bg-surface-elevated: var(--secondary);
+  --bg-surface-hover: oklch(0.27 0.035 265);
+  --bg-surface-active: oklch(0.31 0.04 265);
   --bg-subtle: oklch(1 0 0 / 4%);
-  --bg-overlay: oklch(0.14 0.02 230 / 80%);
+  --bg-overlay: oklch(0.14 0.025 265 / 80%);
 
   /* Borders & Dividers */
-  --border-subtle: oklch(1 0 0 / 12%);
-  --border-medium: oklch(1 0 0 / 20%);
-  --border-strong: oklch(1 0 0 / 30%);
-  --border-active: oklch(1 0 0 / 45%);
+  --border-subtle: oklch(1 0 0 / 8%);
+  --border-medium: var(--border);
+  --border-strong: oklch(1 0 0 / 22%);
+  --border-active: var(--primary);
 
   /* Typography Colors */
-  --text-primary: oklch(0.96 0.01 200);
-  --text-secondary: oklch(0.68 0.03 220);
-  --text-tertiary: oklch(0.55 0.03 220);
-  --text-muted: oklch(0.68 0.03 220);
-  --text-inverse: #07080a;
+  --text-primary: var(--foreground);
+  --text-secondary: var(--muted-foreground);
+  --text-tertiary: oklch(0.55 0.03 255);
+  --text-muted: var(--muted-foreground);
+  --text-inverse: oklch(0.14 0.025 265);
 
-  /* Primary Accent & Glow (Neon Mint/Teal in Dark Mode) */
-  --color-primary: oklch(0.82 0.16 170);
-  --color-primary-glow: oklch(0.75 0.15 210);
-  --color-emerald: oklch(0.82 0.16 170);
-  --mint-400: oklch(0.82 0.16 170);
-  --mint-500: oklch(0.82 0.16 170);
-  --mint-600: oklch(0.72 0.16 170);
-  --mint-100: rgba(16, 185, 129, 0.15);
-  --mint-50: rgba(16, 185, 129, 0.08);
+  /* Primary Accent & Glow (Neon Mint/Teal from anim) */
+  --color-primary: var(--primary);
+  --color-primary-glow: var(--glow);
+  --color-emerald: var(--primary);
+  --mint-400: var(--primary);
+  --mint-500: var(--primary);
+  --mint-600: oklch(0.72 0.14 195);
+  --mint-100: rgba(45, 212, 191, 0.15);
+  --mint-50: rgba(45, 212, 191, 0.08);
 
-  --gradient-primary: linear-gradient(120deg, oklch(0.82 0.16 170), oklch(0.75 0.15 210));
-  --shadow-glow: 0 0 60px -10px color-mix(in oklab, oklch(0.82 0.16 170) 55%, transparent);
+  --gradient-primary: linear-gradient(120deg, var(--primary), var(--glow));
+  --shadow-glow: 0 0 60px -10px color-mix(in oklab, var(--primary) 55%, transparent);
   --card-shadow: 0 1px 2px oklch(0 0 0 / 30%), 0 18px 44px -20px oklch(0 0 0 / 75%);
-  --glass-bg: color-mix(in oklab, oklch(0.18 0.025 230) 84%, transparent);
+  --glass-bg: color-mix(in oklab, var(--card) 85%, transparent);
 
   /* Ambient Aurora Lights (Dark Mode) */
-  --aurora-1: oklch(0.45 0.13 175);
-  --aurora-2: oklch(0.4 0.12 215);
-  --aurora-3: oklch(0.34 0.1 250);
-  --aurora-beam: oklch(0.8 0.15 175);
+  --aurora-1: oklch(0.45 0.13 195);
+  --aurora-2: oklch(0.4 0.12 220);
+  --aurora-3: oklch(0.34 0.1 265);
+  --aurora-beam: var(--primary);
   --aurora-opacity: 0.55;
 
   /* Specular Elevation */
@@ -80,103 +106,123 @@
   --specular-top: inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
-/* ---------- LIGHT THEME (White + Light Blue Signature Palette) ---------- */
+/* ---------- LIGHT THEME (Warm Editorial Parchment & Amber Palette from anim) ---------- */
 html.light {
   color-scheme: light;
 
-  /* Canvas & Base (Crisp luminous sky-white canvas) */
-  --bg-app: #f4f9fd;
-  --bg-canvas: #f4f9fd;
+  /* Color Theme Tokens (from anim) */
+  --radius: 1rem;
+  --background: oklch(0.975 0.012 85);
+  --foreground: oklch(0.2 0.02 60);
+  --card: oklch(0.995 0.006 85);
+  --card-foreground: oklch(0.2 0.02 60);
+  --popover: oklch(0.995 0.006 85);
+  --popover-foreground: oklch(0.2 0.02 60);
+  --primary: oklch(0.62 0.19 40);
+  --primary-foreground: oklch(0.99 0.01 85);
+  --secondary: oklch(0.93 0.02 80);
+  --secondary-foreground: oklch(0.25 0.02 60);
+  --muted: oklch(0.94 0.015 80);
+  --muted-foreground: oklch(0.5 0.02 60);
+  --accent: oklch(0.9 0.06 70);
+  --accent-foreground: oklch(0.25 0.02 60);
+  --destructive: oklch(0.577 0.245 27.325);
+  --destructive-foreground: oklch(0.98 0 0);
+  --border: oklch(0.88 0.02 80);
+  --input: oklch(0.88 0.02 80);
+  --ring: oklch(0.62 0.19 40);
+  --glow: oklch(0.8 0.15 60);
+  --sun: oklch(0.78 0.17 65);
+  --moon: oklch(0.85 0.05 250);
+  --grid-line: oklch(0.2 0.02 60 / 6%);
 
-  /* Pure White Cards & Surfaces */
-  --bg-card: #ffffff;
-  --bg-surface: #ffffff;
+  /* Canvas & Surfaces mapped to anim tokens */
+  --bg-app: var(--background);
+  --bg-canvas: var(--background);
+  --bg-card: var(--card);
+  --bg-surface: var(--card);
+  --bg-surface-elevated: var(--secondary);
+  --bg-surface-hover: oklch(0.90 0.02 80);
+  --bg-surface-active: oklch(0.87 0.025 80);
+  --bg-subtle: oklch(0.2 0.02 60 / 4%);
+  --bg-overlay: oklch(0.975 0.012 85 / 88%);
 
-  /* Pastel Light Blue Elevated Surfaces (Tabs, Banners, Pills) */
-  --bg-surface-elevated: #e8f3fc;
-  --bg-surface-hover: #ddedfa;
-  --bg-surface-active: #d0e6f7;
-  --bg-subtle: rgba(2, 132, 199, 0.05);
-  --bg-overlay: rgba(244, 249, 253, 0.88);
+  /* Borders & Dividers */
+  --border-subtle: oklch(0.88 0.02 80 / 60%);
+  --border-medium: var(--border);
+  --border-strong: oklch(0.78 0.02 80);
+  --border-active: var(--primary);
 
-  /* Delicate Light Blue Borders */
-  --border-subtle: #d3e4f5;
-  --border-medium: #b6d5f2;
-  --border-strong: #8ec2ee;
-  --border-active: #0284c7;
+  /* Typography Colors */
+  --text-primary: var(--foreground);
+  --text-secondary: var(--muted-foreground);
+  --text-tertiary: oklch(0.6 0.02 60);
+  --text-muted: var(--muted-foreground);
+  --text-inverse: oklch(0.99 0.01 85);
 
-  /* Typography Colors (High-contrast slate for readability on white & light blue) */
-  --text-primary: #0f172a;
-  --text-secondary: #475569;
-  --text-tertiary: #64748b;
-  --text-muted: #64748b;
-  --text-inverse: #ffffff;
+  /* Primary Accent & Glow (Warm Amber Terracotta) */
+  --color-primary: var(--primary);
+  --color-primary-glow: var(--glow);
+  --color-emerald: var(--primary);
+  --mint-400: oklch(0.70 0.18 40);
+  --mint-500: var(--primary);
+  --mint-600: oklch(0.54 0.19 40);
+  --mint-100: oklch(0.92 0.05 70);
+  --mint-50: oklch(0.96 0.02 70);
 
-  /* Primary Accent & Glow (Vibrant Electric Sky / Sapphire Blue) */
-  --color-primary: #0284c7;
-  --color-primary-glow: #38bdf8;
-  --color-emerald: #0284c7;
-  --mint-400: #38bdf8;
-  --mint-500: #0284c7;
-  --mint-600: #0369a1;
-  --mint-100: #e0f2fe;
-  --mint-50: #f0f9ff;
+  --gradient-primary: linear-gradient(135deg, var(--primary) 0%, oklch(0.68 0.17 48) 50%, var(--glow) 100%);
+  --shadow-glow: 0 0 44px -6px color-mix(in oklab, var(--primary) 35%, transparent);
+  --card-shadow: 0 2px 4px rgba(0, 0, 0, 0.04), 0 12px 32px -8px rgba(0, 0, 0, 0.08);
+  --glass-bg: color-mix(in oklab, var(--card) 94%, transparent);
 
-  --gradient-primary: linear-gradient(135deg, #0284c7 0%, #0ea5e9 50%, #38bdf8 100%);
-  --shadow-glow: 0 0 44px -6px rgba(2, 132, 199, 0.35);
-  --card-shadow: 0 2px 4px rgba(2, 132, 199, 0.04), 0 12px 32px -8px rgba(2, 132, 199, 0.12);
-  --glass-bg: rgba(255, 255, 255, 0.94);
-
-  /* Ambient Aurora Lights (White + Light Blue Dreamy Sky Atmosphere) */
-  --aurora-1: #bae6fd;
-  --aurora-2: #7dd3fc;
-  --aurora-3: #c7d2fe;
-  --aurora-beam: #38bdf8;
-  --aurora-opacity: 0.7;
+  /* Ambient Aurora Lights (Light Mode Warmth) */
+  --aurora-1: oklch(0.92 0.08 70);
+  --aurora-2: oklch(0.88 0.12 55);
+  --aurora-3: oklch(0.94 0.05 85);
+  --aurora-beam: var(--glow);
+  --aurora-opacity: 0.65;
 
   /* Specular Elevation (Light) */
-  --shadow-sm: 0 1px 2px rgba(2, 132, 199, 0.06), 0 0 0 1px var(--border-medium);
-  --shadow-md: 0 4px 16px rgba(2, 132, 199, 0.08), 0 0 0 1px var(--border-medium);
-  --shadow-lg: 0 16px 36px rgba(2, 132, 199, 0.12), 0 0 0 1px var(--border-medium);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04), 0 0 0 1px var(--border-medium);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.06), 0 0 0 1px var(--border-medium);
+  --shadow-lg: 0 16px 36px rgba(0, 0, 0, 0.09), 0 0 0 1px var(--border-medium);
   --specular-top: inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
 
 /* ==========================================================================
-   Theme Switch Animations (View Transition API + Fallback)
+   Theme Switch Animations & Circular Reveal (from anim codebase)
    ========================================================================== */
 
-/* Circular ripple reveal mode */
-html.theme-ripple-active::view-transition-old(root),
-html.theme-ripple-active::view-transition-new(root) {
-  animation: none !important;
-  mix-blend-mode: normal !important;
-}
-
-html.theme-ripple-active::view-transition-old(root) {
-  z-index: 1;
-}
-
-html.theme-ripple-active::view-transition-new(root) {
-  z-index: 999999;
-}
-
-/* Default View Transition crossfade */
-::view-transition-old(root) {
-  animation: 360ms cubic-bezier(0.4, 0, 0.2, 1) both theme-fade-out;
+/* Circular reveal theme transition */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
 }
 
 ::view-transition-new(root) {
-  animation: 360ms cubic-bezier(0.4, 0, 0.2, 1) both theme-fade-in;
+  animation: theme-reveal 900ms cubic-bezier(0.7, 0, 0.2, 1) both;
 }
 
-@keyframes theme-fade-out {
-  from { opacity: 1; }
-  to { opacity: 0; }
+@keyframes theme-reveal {
+  from {
+    clip-path: circle(0 at var(--tx, 50%) var(--ty, 50%));
+    filter: blur(6px);
+  }
+  to {
+    clip-path: circle(var(--tr, 150vmax) at var(--tx, 50%) var(--ty, 50%));
+    filter: blur(0);
+  }
 }
 
-@keyframes theme-fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-new(root) {
+    animation: none !important;
+  }
+  html.theme-transitioning,
+  html.theme-transitioning * {
+    transition: none !important;
+  }
 }
 
 /* Fallback CSS Transition for browsers without View Transitions API */
@@ -185,22 +231,125 @@ html.theme-transitioning *,
 html.theme-transitioning *::before,
 html.theme-transitioning *::after {
   transition: 
-    background-color 0.38s cubic-bezier(0.4, 0, 0.2, 1),
-    color 0.32s cubic-bezier(0.4, 0, 0.2, 1),
-    border-color 0.38s cubic-bezier(0.4, 0, 0.2, 1),
-    box-shadow 0.38s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    background-color 0.4s cubic-bezier(0.7, 0, 0.2, 1),
+    color 0.35s cubic-bezier(0.7, 0, 0.2, 1),
+    border-color 0.4s cubic-bezier(0.7, 0, 0.2, 1),
+    box-shadow 0.4s cubic-bezier(0.7, 0, 0.2, 1) !important;
   transition-delay: 0s !important;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  ::view-transition-old(root),
-  ::view-transition-new(root) {
-    animation: none !important;
-  }
-  html.theme-transitioning,
-  html.theme-transitioning * {
-    transition: none !important;
-  }
+/* ==========================================================================
+   ThemeToggle Button & Sun/Moon Morphing Switch (from anim)
+   ========================================================================== */
+.theme-toggle-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  width: 76px;
+  height: 38px;
+  border-radius: 9999px;
+  border: 1px solid var(--border);
+  background-color: var(--secondary);
+  padding: 3px;
+  box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.08);
+  cursor: pointer;
+  transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+  flex-shrink: 0;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.theme-toggle-btn:hover {
+  border-color: var(--color-primary);
+}
+
+.theme-toggle-btn:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.theme-toggle-thumb {
+  display: flex;
+  height: 30px;
+  width: 30px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background-color: var(--card);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+  transition: transform 700ms cubic-bezier(0.7, 0, 0.2, 1), background-color 300ms ease;
+  transform: translateX(0) rotate(0deg);
+  box-sizing: border-box;
+}
+
+.theme-toggle-thumb.is-dark {
+  transform: translateX(38px) rotate(360deg);
+}
+
+.theme-toggle-svg {
+  width: 20px;
+  height: 20px;
+  display: block;
+}
+
+.theme-sun-rays {
+  stroke: var(--sun);
+  transform-origin: center;
+  transition: transform 500ms ease, opacity 500ms ease;
+  transform: scale(1);
+  opacity: 1;
+}
+
+.theme-sun-rays.is-dark {
+  transform: scale(0);
+  opacity: 0;
+}
+
+.theme-moon-cut-circle {
+  transition: cx 700ms cubic-bezier(0.7, 0, 0.2, 1), cy 700ms cubic-bezier(0.7, 0, 0.2, 1);
+}
+
+.theme-celestial-body {
+  transition: r 700ms cubic-bezier(0.7, 0, 0.2, 1), fill 700ms ease;
+  fill: var(--sun);
+}
+
+.theme-celestial-body.is-dark {
+  fill: var(--moon);
+}
+
+/* ==========================================================================
+   Atmospheric Background Grid & Glow Orbs (from anim)
+   ========================================================================== */
+.bg-grid {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%);
+  -webkit-mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%);
+}
+
+.orb {
+  position: absolute;
+  pointer-events: none;
+  border-radius: 9999px;
+  background: radial-gradient(circle, var(--glow), transparent 65%);
+  filter: blur(60px);
+  opacity: 0.55;
+  transition: background 900ms ease;
+}
+
+@keyframes float-slow {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(30px, -40px); }
+}
+
+.animate-float {
+  animation: float-slow 12s ease-in-out infinite;
 }
 
 /* ==========================================================================
