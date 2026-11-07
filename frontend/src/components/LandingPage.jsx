@@ -274,26 +274,24 @@ export default function LandingPage({ onEnterWorkspace, onEnterAdmin }) {
       {/* 1. Sticky Navigation Bar with Entrance Animation */}
       <header className="landing-nav hero-enter-nav" role="banner" style={{ position: 'sticky', top: 0, zIndex: 100 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+          <div className="brand-icon" title="CallMe AI Voice Platform">
+            <PhoneCall size={16} strokeWidth={2.5} />
+          </div>
+          <span style={{ fontWeight: 700, fontSize: '1.05rem', letterSpacing: '-0.03em', color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}>
+            Call<span style={{ color: 'var(--color-emerald)' }}>Me</span>
+          </span>
           <span
             style={{
-              width: '10px',
-              height: '10px',
-              borderRadius: '50%',
-              backgroundColor: 'var(--primary)',
-              display: 'inline-block',
-            }}
-          />
-          <span
-            style={{
-              fontWeight: 600,
-              fontSize: '0.88rem',
-              letterSpacing: '0.22em',
-              color: 'var(--foreground)',
+              fontSize: '0.72rem',
               fontFamily: 'var(--font-mono)',
-              textTransform: 'uppercase',
+              background: 'var(--bg-surface-elevated)',
+              border: '1px solid var(--border-medium)',
+              padding: '2px 7px',
+              borderRadius: 'var(--radius-full)',
+              color: 'var(--text-secondary)',
             }}
           >
-            CALLME
+            v2.4
           </span>
         </div>
 
@@ -333,36 +331,34 @@ export default function LandingPage({ onEnterWorkspace, onEnterAdmin }) {
         <div className="landing-hero-grid">
           {/* Left Column: Headline, Copy & Action CTAs */}
           <div className="hero-content hero-entrance">
-            <p className="hero-kicker">
-              AUTONOMOUS · OBSERVABLE · YOURS
-            </p>
-
             <h1 className="hero-title">
-              Agents that work <em className="hero-highlight">while you dream.</em>
+              Hire a<br />
+              receptionist <span className="text-gradient">that<br />never sleeps.</span>
             </h1>
 
             <p className="hero-subtitle">
-              Flip the switch above — day mode for planning, night mode for agents on the night shift. Deploy autonomous voice receptionists that greet callers, book reservations, and handle inquiries 24/7.
+              Pick an AI receptionist, train it on your business in minutes, and let it answer calls, book appointments and greet every customer — 24/7.
             </p>
 
             <div className="hero-actions">
               <button
                 type="button"
-                className="hero-btn-primary"
-                onClick={() => scrollToAuth('business', 'register')}
-              >
-                <span>Deploy an agent</span>
-              </button>
-
-              <button
-                type="button"
-                className="hero-btn-secondary"
+                className="hero-btn-primary motion-cta"
                 onClick={() => {
                   const el = document.getElementById('agents');
                   if (el) el.scrollIntoView({ behavior: 'smooth' });
                 }}
               >
-                <span>Watch demo</span>
+                <span>Browse receptionists</span>
+                <ArrowRight size={17} />
+              </button>
+
+              <button
+                type="button"
+                className="hero-btn-secondary"
+                onClick={() => setCallCycle((c) => c + 1)}
+              >
+                <span>Replay call preview</span>
               </button>
             </div>
           </div>
