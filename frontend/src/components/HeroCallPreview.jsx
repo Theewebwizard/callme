@@ -63,7 +63,7 @@ export default function HeroCallPreview({
               insetInline: 0,
               top: 0,
               height: '34%',
-              background: 'linear-gradient(to bottom, transparent, color-mix(in oklab, var(--color-primary) 12%, transparent), transparent)',
+              background: 'color-mix(in oklab, var(--color-primary) 8%, transparent)',
             }}
           />
 
@@ -75,7 +75,7 @@ export default function HeroCallPreview({
                   width: '46px',
                   height: '46px',
                   borderRadius: '50%',
-                  background: 'var(--gradient-primary)',
+                  background: 'var(--primary)',
                   display: 'grid',
                   placeItems: 'center',
                   fontWeight: 700,
@@ -158,7 +158,7 @@ export default function HeroCallPreview({
                   width: '3.5px',
                   height: '100%',
                   borderRadius: 'var(--radius-full)',
-                  background: 'var(--gradient-primary)',
+                  background: 'var(--primary)',
                   animationDelay: `${((i * 7) % 13) * -0.09}s`,
                   animationDuration: `${0.75 + (i % 5) * 0.15}s`,
                 }}

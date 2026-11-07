@@ -4,9 +4,9 @@
    ========================================================================== */
 
 :root {
-  /* Common Typography */
-  --font-display: 'Space Grotesk', 'Plus Jakarta Sans', sans-serif;
-  --font-sans: 'DM Sans', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  /* Common Typography (Matching anim codebase: Instrument Serif + Manrope + JetBrains Mono) */
+  --font-display: 'Instrument Serif', Georgia, 'Times New Roman', serif;
+  --font-sans: 'Manrope', 'DM Sans', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
   /* Common Radii */
@@ -87,7 +87,7 @@
   --mint-100: rgba(45, 212, 191, 0.15);
   --mint-50: rgba(45, 212, 191, 0.08);
 
-  --gradient-primary: linear-gradient(120deg, var(--primary), var(--glow));
+  --gradient-primary: var(--primary);
   --shadow-glow: 0 0 60px -10px color-mix(in oklab, var(--primary) 55%, transparent);
   --card-shadow: 0 1px 2px oklch(0 0 0 / 30%), 0 18px 44px -20px oklch(0 0 0 / 75%);
   --glass-bg: color-mix(in oklab, var(--card) 85%, transparent);
@@ -170,7 +170,7 @@ html.light {
   --mint-100: oklch(0.92 0.05 70);
   --mint-50: oklch(0.96 0.02 70);
 
-  --gradient-primary: linear-gradient(135deg, var(--primary) 0%, oklch(0.68 0.17 48) 50%, var(--glow) 100%);
+  --gradient-primary: var(--primary);
   --shadow-glow: 0 0 44px -6px color-mix(in oklab, var(--primary) 35%, transparent);
   --card-shadow: 0 2px 4px rgba(0, 0, 0, 0.04), 0 12px 32px -8px rgba(0, 0, 0, 0.08);
   --glass-bg: color-mix(in oklab, var(--card) 94%, transparent);
@@ -1947,11 +1947,15 @@ input:disabled + .slider {
    Lovable & Obsidian Modern Inspiration Extensions
    ========================================================================== */
 
-.text-gradient {
-  background: var(--gradient-primary);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+.text-gradient,
+.hero-highlight {
+  background: none !important;
+  -webkit-background-clip: unset !important;
+  background-clip: unset !important;
+  -webkit-text-fill-color: initial !important;
+  color: var(--primary) !important;
+  font-family: var(--font-display) !important;
+  font-style: italic !important;
 }
 
 .bg-gradient-primary {
@@ -2450,12 +2454,22 @@ html.light {
     box-shadow: 0 4px 14px rgba(2, 132, 199, 0.32) !important;
   }
 
+  .hero-btn-primary,
+  .landing-btn-primary,
+  .btn-primary {
+    background: var(--primary) !important;
+    color: var(--primary-foreground) !important;
+    border: none !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
+  }
+
   .hero-btn-primary:hover,
   .landing-btn-primary:hover,
   .btn-primary:hover {
-    background: linear-gradient(135deg, #0369a1 0%, #0284c7 100%) !important;
-    color: #ffffff !important;
-    box-shadow: 0 0 50px -4px rgba(2, 132, 199, 0.45) !important;
+    background: var(--primary) !important;
+    color: var(--primary-foreground) !important;
+    transform: scale(1.05);
+    box-shadow: 0 4px 14px color-mix(in oklab, var(--primary) 35%, transparent) !important;
   }
 
   .hero-btn-secondary,
@@ -2492,13 +2506,13 @@ html.light {
   .call-simulation-container,
   .modal-content,
   .dialog-content {
-    background: #ffffff !important;
-    border: 1px solid var(--border-medium) !important;
+    background: var(--card) !important;
+    border: 1px solid var(--border) !important;
     box-shadow: var(--card-shadow) !important;
   }
 
   .agent-card::after {
-    background: linear-gradient(135deg, transparent, rgba(2, 132, 199, 0.08), transparent);
+    display: none !important;
   }
 
   .call-simulation-header {
@@ -2665,22 +2679,44 @@ html.light {
   }
 }
 
+.hero-kicker {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-weight: 500;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+  margin-bottom: 0.85rem;
+}
+
 .hero-title {
   font-family: var(--font-display);
-  font-size: clamp(2.6rem, 4.4vw, 3.85rem);
-  font-weight: 800;
-  line-height: 1.08;
-  letter-spacing: -0.035em;
-  color: var(--text-primary);
-  margin-bottom: 1.25rem;
+  font-size: clamp(3.2rem, 7.5vw, 6.2rem);
+  font-weight: 400;
+  line-height: 0.95;
+  letter-spacing: -0.025em;
+  color: var(--foreground);
+  margin-top: 1rem;
+  margin-bottom: 1.5rem;
+  max-width: 920px;
+}
+
+.hero-title em,
+.hero-title .hero-highlight,
+.hero-highlight {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 400;
+  color: var(--primary);
 }
 
 .hero-subtitle {
-  font-size: clamp(1rem, 1.3vw, 1.15rem);
+  font-family: var(--font-sans);
+  font-size: 1.15rem;
   line-height: 1.6;
-  color: var(--text-secondary);
-  max-width: 480px;
-  margin-bottom: 2rem;
+  color: var(--muted-foreground);
+  max-width: 580px;
+  margin-bottom: 2.25rem;
 }
 
 .hero-actions {
@@ -2693,44 +2729,44 @@ html.light {
 .hero-btn-primary {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.5rem;
-  background: var(--gradient-primary);
-  color: #ffffff;
+  background-color: var(--primary);
+  color: var(--primary-foreground);
   border: none;
-  padding: 0.75rem 1.6rem;
-  border-radius: var(--radius-md, 10px);
-  font-size: 0.92rem;
-  font-weight: 600;
+  padding: 0.85rem 1.85rem;
+  border-radius: var(--radius-full);
+  font-family: var(--font-sans);
+  font-size: 0.98rem;
+  font-weight: 500;
   cursor: pointer;
-  box-shadow: var(--shadow-glow);
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
 }
 
 .hero-btn-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 0 50px -4px color-mix(in oklab, var(--color-primary) 50%, transparent);
+  transform: scale(1.05);
 }
 
 .hero-btn-secondary {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.5rem;
-  background: var(--bg-card);
-  color: var(--text-primary);
-  border: 1px solid var(--border-medium);
-  padding: 0.75rem 1.4rem;
-  border-radius: var(--radius-md, 10px);
-  font-size: 0.92rem;
-  font-weight: 600;
+  background-color: transparent;
+  color: var(--foreground);
+  border: 1px solid var(--border);
+  padding: 0.85rem 1.85rem;
+  border-radius: var(--radius-full);
+  font-family: var(--font-sans);
+  font-size: 0.98rem;
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 
 .hero-btn-secondary:hover {
-  background: var(--bg-surface-elevated);
-  border-color: var(--border-strong);
-  transform: translateY(-1px);
+  background-color: var(--secondary);
 }
 
 

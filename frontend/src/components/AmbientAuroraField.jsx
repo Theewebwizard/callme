@@ -19,19 +19,13 @@ export default function AmbientAuroraField() {
       <div
         className="orb animate-float"
         style={{
-          width: '26rem',
-          height: '26rem',
-          bottom: '2rem',
+          width: '24rem',
+          height: '24rem',
+          bottom: '0',
           right: '-5rem',
           animationDelay: '-6s',
         }}
       />
-
-      {/* Aurora Ambient Beams */}
-      <div className="aurora aurora-1" />
-      <div className="aurora aurora-2" />
-      <div className="aurora aurora-3" />
-      <div className="aurora-beam" />
     </div>
   );
 }

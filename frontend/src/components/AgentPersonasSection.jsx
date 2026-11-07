@@ -62,7 +62,7 @@ export default function AgentPersonasSection({ onSelectPersona }) {
                   width: '52px',
                   height: '52px',
                   borderRadius: '14px',
-                  background: 'var(--gradient-primary)',
+                  background: 'var(--primary)',
                   border: '1px solid color-mix(in oklab, var(--color-primary) 35%, transparent)',
                   display: 'grid',
                   placeItems: 'center',
