@@ -201,6 +201,21 @@ def normalize_booking_date(date_str: str, tz_name: str = "Asia/Kolkata") -> str:
         if lower in {"day after tomorrow", "parson", "परसों"}:
             return (today + timedelta(days=2)).isoformat()
 
+        # If already standard ISO YYYY-MM-DD format, parse strictly without dayfirst ambiguity
+        if re.match(r"^\d{4}-\d{2}-\d{2}$", clean):
+            dt = datetime.strptime(clean, "%Y-%m-%d")
+            y, m, d = dt.year, dt.month, dt.day
+            if y < today.year:
+                target_year = today.year
+                try:
+                    candidate = date(target_year, m, d)
+                except ValueError:
+                    candidate = date(target_year, m, 28)
+                if candidate < today:
+                    target_year += 1
+                return date(target_year, m, d).isoformat()
+            return clean
+
         # Check if caller or model supplied an explicit 4-digit year
         has_explicit_year = bool(re.search(r"\b(19|20)\d{2}\b", clean))
 

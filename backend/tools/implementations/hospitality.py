@@ -93,6 +93,11 @@ def handle_check_room_availability(
                 resource_type="room",
             )
 
+            avail_res["check_in_date"] = input_data.check_in_date
+            avail_res["check_out_date"] = input_data.check_out_date
+            avail_res["nights"] = nights
+            avail_res["guests_count"] = input_data.guests_count
+
             if avail_res.get("available"):
                 return ToolExecutionResult(
                     tool_id="check_room_availability",

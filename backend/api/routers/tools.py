@@ -94,6 +94,14 @@ def update_business_tools(
 
     biz_industry = profile.get("industry") or "Other"
     registry = get_tool_registry()
+
+    for tool_id in update_req.tool_statuses.keys():
+        if not registry.get_tool(tool_id):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid tool ID: '{tool_id}' not found in registry.",
+            )
+
     allowed_tools = {t.id: t for t in registry.get_tools_for_industry(biz_industry)}
 
     for tool_id, is_enabled in update_req.tool_statuses.items():
