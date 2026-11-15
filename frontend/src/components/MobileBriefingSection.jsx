@@ -134,7 +134,7 @@ const INDUSTRY_DATA = {
         time: 'Today · 6:30 PM Check-in',
         title: 'Ocean View Corner Room 214',
         patient: 'Kenji Sato',
-        source: 'Bilingual Voice Agent',
+        source: 'Multilingual Voice Agent',
         tag: 'SMS Key Sent',
       },
     ],
