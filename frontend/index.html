@@ -13,7 +13,7 @@
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="CallMe" />
+    <meta name="apple-mobile-web-app-title" content="Answerly" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -21,7 +21,7 @@
         <script>
       (function() {
         try {
-          var saved = localStorage.getItem('callme_theme');
+          var saved = localStorage.getItem('answerly_theme') || localStorage.getItem('callme_theme');
           var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
           if (saved === 'light') {
             document.documentElement.classList.add('light');
@@ -35,7 +35,7 @@
         }
       })();
     </script>
-    <title>CallMe — AI Voice Receptionist Platform</title>
+    <title>Answerly — AI Voice Receptionist Platform</title>
   </head>
   <body>
     <div id="root"></div>

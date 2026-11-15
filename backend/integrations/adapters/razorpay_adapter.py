@@ -1258,7 +1258,7 @@ class RazorpayAdapter(IntegrationAdapter):
             "Authorization": self._get_auth_header(),
             "Content-Type": "application/json",
             "Accept": "application/json",
-            "User-Agent": "CallMe-RazorpayAdapter/1.0",
+            "User-Agent": "Answerly-RazorpayAdapter/1.0",
         }
 
         data_bytes = json.dumps(payload).encode("utf-8") if payload is not None else None

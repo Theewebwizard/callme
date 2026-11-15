@@ -895,7 +895,7 @@ class OutlookCalendarAdapter(ReservationAdapterInterface):
             end_dt = start_dt + timedelta(minutes=dur)
 
         # Graph Event Payload with native transactionId idempotency protection
-        idempotency_key = context.idempotency_key or f"callme_{int(start_dt.timestamp())}_{cust_phone}"
+        idempotency_key = context.idempotency_key or f"answerly_{int(start_dt.timestamp())}_{cust_phone}"
         event_body = {
             "subject": title,
             "body": {

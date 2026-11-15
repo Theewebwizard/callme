@@ -93,7 +93,7 @@ class OpenTableAdapter(ReservationAdapterInterface):
                     label="OpenTable Partner ID",
                     type=FieldType.STRING,
                     required=True,
-                    placeholder="e.g. callme_reception_prod",
+                    placeholder="e.g. answerly_reception_prod",
                     description="Approved integration partner ID provisioned by OpenTable",
                 ),
                 SetupField(

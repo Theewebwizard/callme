@@ -175,7 +175,7 @@ def index_page() -> HTMLResponse:
     index_file = frontend_dist / "index.html"
     if index_file.exists():
         return HTMLResponse(content=index_file.read_text(encoding="utf-8"))
-    return HTMLResponse(content="<h1>CallMe React Frontend</h1><p>Please run 'npm run build' inside frontend directory.</p>")
+    return HTMLResponse(content="<h1>Answerly React Frontend</h1><p>Please run 'npm run build' inside frontend directory.</p>")
 
 
 @app.get("/call", response_class=HTMLResponse, tags=["Web Phone"])
@@ -220,8 +220,8 @@ def get_public_platform_metrics() -> dict:
             "conversational_pickup": "<380ms",
             "calls_handled": "46+",
             "raw_calls_count": 46,
-            "languages_label": "Bilingual",
-            "languages_sublabel": "English & Hindi",
+            "languages_label": "12+ Languages",
+            "languages_sublabel": "Native Indic & English",
             "active_tenants": 21,
         }
 

@@ -560,6 +560,9 @@ export default function ToolLibrary({ business }) {
                 className="btn-secondary"
                 style={{ padding: '0.3rem 0.75rem', fontSize: '0.78rem', cursor: 'pointer' }}
                 onClick={() => {
+                  localStorage.removeItem('answerly_token');
+                  localStorage.removeItem('answerly_active_business_id');
+                  localStorage.removeItem('answerly_role');
                   localStorage.removeItem('callme_token');
                   localStorage.removeItem('callme_active_business_id');
                   localStorage.removeItem('callme_role');
@@ -615,7 +618,7 @@ export default function ToolLibrary({ business }) {
           }}
           onClick={() => setActiveTab('capabilities')}
         >
-          <Wrench size={14} /> Capabilities ({tools.length})
+          <Wrench size={14} /> Capabilities
         </button>
 
         {domainConfig.hasMenu && (
@@ -631,7 +634,7 @@ export default function ToolLibrary({ business }) {
             }}
             onClick={() => setActiveTab('menu')}
           >
-            <Utensils size={14} /> 🍽️ {domainConfig.menuConfig.shortTitle} ({menuItemCount})
+            <Utensils size={14} /> {domainConfig.menuConfig.shortTitle}
           </button>
         )}
 
@@ -648,7 +651,7 @@ export default function ToolLibrary({ business }) {
             }}
             onClick={() => setActiveTab('rooms')}
           >
-            <Bed size={14} /> 🏨 {domainConfig.roomConfig?.shortTitle || 'Rooms & Rates'} ({roomCount})
+            <Bed size={14} /> {domainConfig.roomConfig?.shortTitle || 'Rooms & Rates'}
           </button>
         )}
 
@@ -665,7 +668,7 @@ export default function ToolLibrary({ business }) {
             }}
             onClick={() => setActiveTab('treatments')}
           >
-            <Stethoscope size={14} /> 🩺 {domainConfig.treatmentConfig?.shortTitle || 'Treatments & Fees'} ({treatmentCount})
+            <Stethoscope size={14} /> {domainConfig.treatmentConfig?.shortTitle || 'Treatments & Fees'}
           </button>
         )}
 
@@ -681,7 +684,7 @@ export default function ToolLibrary({ business }) {
           }}
           onClick={() => setActiveTab('resources')}
         >
-          <ResourceIcon size={14} /> {domainConfig.resourceConfig.shortTitle} ({resources.length})
+          <ResourceIcon size={14} /> {domainConfig.resourceConfig.shortTitle}
         </button>
 
         <button
@@ -696,7 +699,7 @@ export default function ToolLibrary({ business }) {
           }}
           onClick={() => setActiveTab('demands')}
         >
-          <Sparkles size={14} /> Custom Feature Demands ({demands.length})
+          <Sparkles size={14} /> Custom Feature Demands
         </button>
       </div>
 

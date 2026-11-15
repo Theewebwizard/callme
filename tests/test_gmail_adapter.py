@@ -178,7 +178,7 @@ def test_gmail_authorization_url_least_privilege_scopes():
 
     # 1. Default send_only tier
     url_send = adapter.get_authorization_url(
-        redirect_uri="https://api.callme.ai/auth/gmail/callback",
+        redirect_uri="https://api.answerly.ai/auth/gmail/callback",
         state="csrf_state_123",
     )
     assert "https://accounts.google.com/o/oauth2/v2/auth" in url_send
@@ -192,7 +192,7 @@ def test_gmail_authorization_url_least_privilege_scopes():
 
     # 2. Explicit read_only tier
     url_read = adapter.get_authorization_url(
-        redirect_uri="https://api.callme.ai/auth/gmail/callback",
+        redirect_uri="https://api.answerly.ai/auth/gmail/callback",
         state="csrf_state_456",
         scope_tier="read_only",
     )
@@ -228,7 +228,7 @@ def test_gmail_token_exchange_and_refresh():
 
         token_res = adapter.exchange_code_for_tokens(
             code="auth_code_xyz",
-            redirect_uri="https://api.callme.ai/auth/gmail/callback",
+            redirect_uri="https://api.answerly.ai/auth/gmail/callback",
         )
         assert token_res["access_token"] == "ya29.new_token"
         assert adapter.credentials["access_token"] == "ya29.new_token"

@@ -1,5 +1,5 @@
 /* ==========================================================================
-   CallMe — Dual-Theme Design System (Inspired by Lovable & Apple)
+   Answerly — Dual-Theme Design System (Inspired by Lovable & Apple)
    Light & Dark custom properties driven by CSS custom tokens
    ========================================================================== */
 
@@ -2516,23 +2516,43 @@ html.light {
   }
 }
 
+.hero-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
 .hero-title {
   font-family: 'Instrument Serif', Georgia, 'Times New Roman', serif;
-  font-size: clamp(3.2rem, 6.5vw, 5.8rem);
+  font-size: clamp(2.85rem, 5.2vw, 4.5rem);
   font-weight: 400;
-  line-height: 0.96;
-  letter-spacing: -0.015em;
+  line-height: 1.1;
+  letter-spacing: 0.012em;
   color: var(--text-primary);
   margin-bottom: 1.5rem;
+  text-align: center;
+  width: 100%;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+.hero-title span {
+  display: block;
+  text-align: center;
 }
 
 .hero-title em,
 .hero-title .hero-highlight,
 .hero-title .text-gradient {
+  display: block;
   font-family: 'Instrument Serif', Georgia, 'Times New Roman', serif;
   font-style: italic;
   font-weight: 400;
-  color: oklch(0.62 0.19 40);
+  letter-spacing: 0.015em;
+  color: #0369a1; /* Calm, deep ocean sapphire blue */
+  text-align: center;
   background: none !important;
   -webkit-background-clip: unset !important;
   background-clip: unset !important;
@@ -2543,7 +2563,7 @@ html.light {
 html.dark .hero-title em,
 html.dark .hero-title .hero-highlight,
 html.dark .hero-title .text-gradient {
-  color: #fb923c;
+  color: #7dd3fc; /* Soft celestial sky blue in dark mode */
 }
 
 .hero-subtitle {
@@ -2552,11 +2572,15 @@ html.dark .hero-title .text-gradient {
   color: var(--text-secondary);
   max-width: 480px;
   margin-bottom: 2rem;
+  text-align: center;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .hero-actions {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 0.85rem;
   flex-wrap: wrap;
 }

@@ -435,7 +435,7 @@ export function TreatmentManagerView({
           }}
         >
           <ClipboardList size={16} />
-          Treatments & Fee Store ({treatments.length})
+          Treatments & Fee Store
         </button>
 
         <button

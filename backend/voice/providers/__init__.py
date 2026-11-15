@@ -17,6 +17,13 @@ from backend.voice.providers.groq_speech import (
     GroqTTSProvider,
     GroqSTTStream,
 )
+from backend.voice.providers.gnani import (
+    GnaniSTTProvider,
+    GnaniTTSProvider,
+    GNANI_SUPPORTED_LANGUAGES,
+    GNANI_LANGUAGE_CODES,
+    GNANI_VOICES,
+)
 from backend.voice.providers.exotel import (
     ExotelTelephonyProvider,
     ExotelWebSocketMessage,
@@ -38,6 +45,8 @@ _TELEPHONY_PROVIDERS: Dict[str, TelephonyProvider] = {
 }
 
 _STT_PROVIDERS: Dict[str, SpeechToTextProvider] = {
+    "gnani": GnaniSTTProvider(),
+    "gnani_stt": GnaniSTTProvider(),
     "mock": MockSTTProvider(),
     "deepgram": DeepgramSTTProvider(),
     "deepgram_stt": DeepgramSTTProvider(),
@@ -46,6 +55,8 @@ _STT_PROVIDERS: Dict[str, SpeechToTextProvider] = {
 }
 
 _TTS_PROVIDERS: Dict[str, TextToSpeechProvider] = {
+    "gnani": GnaniTTSProvider(),
+    "gnani_tts": GnaniTTSProvider(),
     "mock": MockTTSProvider(),
     "deepgram": DeepgramTTSProvider(),
     "deepgram_tts": DeepgramTTSProvider(),
@@ -93,7 +104,9 @@ def get_stt_provider(name: Optional[str] = None) -> SpeechToTextProvider:
     settings = get_settings()
 
     if name is None or name.lower() == "default":
-        if settings.is_deepgram_configured:
+        if settings.is_gnani_configured:
+            target = "gnani"
+        elif settings.is_deepgram_configured:
             target = "deepgram"
         elif settings.GROQ_API_KEY:
             target = "groq"
@@ -120,7 +133,9 @@ def get_tts_provider(name: Optional[str] = None) -> TextToSpeechProvider:
     settings = get_settings()
 
     if name is None or name.lower() == "default":
-        if settings.is_deepgram_configured:
+        if settings.is_gnani_configured:
+            target = "gnani"
+        elif settings.is_deepgram_configured:
             target = "deepgram"
         elif settings.GROQ_API_KEY:
             target = "groq"

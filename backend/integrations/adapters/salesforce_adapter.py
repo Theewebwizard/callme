@@ -1863,7 +1863,7 @@ class SalesforceAdapter(IntegrationAdapter):
         headers = {
             "Authorization": f"Bearer {token}",
             "Content-Type": "application/json",
-            "User-Agent": "CallMe-SalesforceAdapter/1.0",
+            "User-Agent": "Answerly-SalesforceAdapter/1.0",
         }
 
         data_bytes = json.dumps(payload).encode("utf-8") if payload is not None else None
@@ -1907,7 +1907,7 @@ class SalesforceAdapter(IntegrationAdapter):
             data=encoded_data,
             headers={
                 "Content-Type": "application/x-www-form-urlencoded",
-                "User-Agent": "CallMe-SalesforceAdapter/1.0",
+                "User-Agent": "Answerly-SalesforceAdapter/1.0",
             },
             method="POST",
         )

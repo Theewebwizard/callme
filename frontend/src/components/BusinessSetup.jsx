@@ -289,10 +289,10 @@ export default function BusinessSetup({ business, onBusinessSaved }) {
             }}
           >
             {[
-              { id: 'profile', label: '1. Profile & Hours', icon: Building2 },
-              { id: 'voice', label: '2. Voice & Greeting', icon: Bot },
-              { id: 'escalation', label: '3. Escalation Rules', icon: ShieldCheck },
-              { id: 'faqs', label: `4. Knowledge Base FAQs (${(editForm.faqs || []).length})`, icon: BookOpen },
+              { id: 'profile', label: 'Profile & Hours', icon: Building2 },
+              { id: 'voice', label: 'Voice & Greeting', icon: Bot },
+              { id: 'escalation', label: 'Escalation Rules', icon: ShieldCheck },
+              { id: 'faqs', label: 'Knowledge Base FAQs', icon: BookOpen },
             ].map((tab) => {
               const Icon = tab.icon;
               const isActive = activeSection === tab.id;
@@ -500,7 +500,7 @@ export default function BusinessSetup({ business, onBusinessSaved }) {
                   Deterministic Escalation & Staff Handoffs
                 </h3>
                 <p style={{ fontSize: '0.76rem', color: 'var(--text-tertiary)', margin: '4px 0 0' }}>
-                  Safety policies that dictate when CallMe immediately transfers callers to human staff.
+                  Safety policies that dictate when Answerly immediately transfers callers to human staff.
                 </p>
               </div>
 
@@ -513,20 +513,6 @@ export default function BusinessSetup({ business, onBusinessSaved }) {
                   rows={4}
                   placeholder="e.g. Transfer caller immediately if they ask for corporate banquets (>20 guests), private party catering, or have an urgent clinical escalation."
                 />
-              </div>
-
-              <div
-                style={{
-                  background: 'rgba(245, 158, 11, 0.08)',
-                  border: '1px solid rgba(245, 158, 11, 0.25)',
-                  borderRadius: 'var(--radius-sm)',
-                  padding: '0.75rem 1rem',
-                  fontSize: '0.78rem',
-                  color: 'var(--amber-400)',
-                  lineHeight: 1.5,
-                }}
-              >
-                <strong>Guarded Handoff Guarantee:</strong> When the caller triggers this policy, CallMe executes the <code>transfer_call</code> tool deterministically and bridges the live caller to your designated staff number with complete session context.
               </div>
             </div>
           )}

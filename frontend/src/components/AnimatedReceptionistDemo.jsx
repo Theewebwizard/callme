@@ -16,12 +16,12 @@ import {
 } from 'lucide-react';
 
 export const DEMO_STAGES = [
-  { id: 'incoming', label: '1. Incoming Ring' },
-  { id: 'answered', label: '2. Auto Answer' },
-  { id: 'caller_inquiry', label: '3. Caller Inquiry' },
-  { id: 'ai_response', label: '4. AI Voice Response' },
-  { id: 'tool_check', label: '5. Calendar Check' },
-  { id: 'confirmed', label: '6. Confirmed Outcome' },
+  { id: 'incoming', label: 'Incoming Ring' },
+  { id: 'answered', label: 'Auto Answer' },
+  { id: 'caller_inquiry', label: 'Caller Inquiry' },
+  { id: 'ai_response', label: 'AI Voice Response' },
+  { id: 'tool_check', label: 'Calendar Check' },
+  { id: 'confirmed', label: 'Confirmed Outcome' },
 ];
 
 /**
@@ -67,7 +67,7 @@ function SimulatedWaveform({ stage, isPaused }) {
       case 'caller_inquiry':
         return { label: 'Simulated Inbound Caller Audio • 8kHz PCM', color: 'var(--sky-500)', glow: 'rgba(56, 189, 248, 0.3)' };
       case 'ai_response':
-        return { label: 'Simulated CallMe Neural Voice Synthesis • 24kHz HD', color: 'var(--mint-400)', glow: 'rgba(16, 185, 129, 0.4)' };
+        return { label: 'Simulated Answerly Neural Voice Synthesis • 24kHz HD', color: 'var(--mint-400)', glow: 'rgba(16, 185, 129, 0.4)' };
       case 'tool_check':
         return { label: 'Simulated Real-Time Database Query Pulse', color: 'var(--indigo-400)', glow: 'rgba(99, 102, 241, 0.3)' };
       case 'confirmed':

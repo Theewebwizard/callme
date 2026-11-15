@@ -212,7 +212,7 @@ def test_salesforce_authorization_url_generation():
     )
 
     url = adapter.get_authorization_url(
-        redirect_uri="https://callme.example.com/oauth/callback",
+        redirect_uri="https://answerly.example.com/oauth/callback",
         state="state_xyz_123",
     )
 

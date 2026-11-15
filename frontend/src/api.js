@@ -1,9 +1,43 @@
 /**
- * CallMe REST API Client
+ * Answerly REST API Client
  * Connects React frontend directly to FastAPI backend.
  */
 
 const API_BASE = '/api';
+
+const TOKEN_KEY = 'answerly_token';
+const LEGACY_TOKEN_KEY = 'callme_token';
+
+function getStoredToken() {
+  try {
+    return localStorage.getItem(TOKEN_KEY) || localStorage.getItem(LEGACY_TOKEN_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function setStoredToken(token) {
+  try {
+    if (token) {
+      localStorage.setItem(TOKEN_KEY, token);
+      localStorage.setItem(LEGACY_TOKEN_KEY, token);
+    }
+  } catch {}
+}
+
+function removeStoredToken() {
+  try {
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(LEGACY_TOKEN_KEY);
+  } catch {}
+}
+
+function dispatchUnauthorized(path) {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('answerly:unauthorized', { detail: { path } }));
+    window.dispatchEvent(new CustomEvent('callme:unauthorized', { detail: { path } }));
+  }
+}
 
 function getTokenExpiration(token) {
   try {
@@ -32,7 +66,7 @@ async function tryRefreshToken() {
   isRefreshingToken = true;
   refreshPromise = (async () => {
     try {
-      const currentToken = localStorage.getItem('callme_token');
+      const currentToken = getStoredToken();
       if (!currentToken || currentToken === 'undefined' || currentToken === 'null') return;
       const res = await fetch(`${API_BASE}/businesses/refresh`, {
         method: 'POST',
@@ -44,7 +78,7 @@ async function tryRefreshToken() {
       if (res.ok) {
         const data = await res.json();
         if (data && data.access_token) {
-          localStorage.setItem('callme_token', data.access_token);
+          setStoredToken(data.access_token);
           return data.access_token;
         }
       }
@@ -65,9 +99,9 @@ async function request(path, options = {}) {
     ...(options.headers || {}),
   };
 
-  let token = localStorage.getItem('callme_token');
-  const adminKey = localStorage.getItem('callme_admin_key') || 'admin';
-  const role = localStorage.getItem('callme_role');
+  let token = getStoredToken();
+  const adminKey = localStorage.getItem('answerly_admin_key') || localStorage.getItem('callme_admin_key') || 'admin';
+  const role = localStorage.getItem('answerly_role') || localStorage.getItem('callme_role');
   const isAdminPath = path.startsWith('/admin') || role === 'admin';
 
   if (isAdminPath) {
@@ -82,7 +116,7 @@ async function request(path, options = {}) {
         // Proactively refresh when less than 5 minutes remain and token hasn't already expired
         if (timeRemaining > 0 && timeRemaining < 300000) {
           await tryRefreshToken();
-          token = localStorage.getItem('callme_token');
+          token = getStoredToken();
         }
       }
     }
@@ -117,15 +151,11 @@ async function request(path, options = {}) {
             return await retryRes.text();
           }
         }
-        localStorage.removeItem('callme_token');
-        if (typeof window !== 'undefined') {
-          window.dispatchEvent(new CustomEvent('callme:unauthorized', { detail: { path } }));
-        }
+        removeStoredToken();
+        dispatchUnauthorized(path);
       } else if (res.status === 401) {
-        localStorage.removeItem('callme_token');
-        if (typeof window !== 'undefined') {
-          window.dispatchEvent(new CustomEvent('callme:unauthorized', { detail: { path } }));
-        }
+        removeStoredToken();
+        dispatchUnauthorized(path);
       }
       let detail = `Error ${res.status}`;
       try {
@@ -166,28 +196,28 @@ export const api = {
   loginBusiness: async (email, password) => {
     const res = await request('/businesses/login', { method: 'POST', body: JSON.stringify({ email, password }) });
     if (res && res.access_token) {
-      localStorage.setItem('callme_token', res.access_token);
+      setStoredToken(res.access_token);
     }
     return res;
   },
   accessBusiness: async (identifier) => {
     const res = await request('/businesses/access', { method: 'POST', body: JSON.stringify({ identifier }) });
     if (res && res.access_token) {
-      localStorage.setItem('callme_token', res.access_token);
+      setStoredToken(res.access_token);
     }
     return res;
   },
   googleAuth: async (payload) => {
     const res = await request('/businesses/google-auth', { method: 'POST', body: JSON.stringify(payload) });
     if (res && res.access_token) {
-      localStorage.setItem('callme_token', res.access_token);
+      setStoredToken(res.access_token);
     }
     return res;
   },
   createBusiness: async (data) => {
     const res = await request('/businesses', { method: 'POST', body: JSON.stringify(data) });
     if (res && res.access_token) {
-      localStorage.setItem('callme_token', res.access_token);
+      setStoredToken(res.access_token);
     }
     return res;
   },
@@ -233,15 +263,17 @@ export const api = {
   cancelAction: (businessId, actionId) =>
     request(`/businesses/${businessId}/pending-actions/${actionId}/cancel`, { method: 'POST' }),
 
-  // Direct Web Voice Phone
-  startWebCall: (businessId) =>
+  // Direct Web Voice Phone (Gnani.ai Vachana Voice Models)
+  getVoiceLanguages: () => request('/voice/web/languages'),
+  startWebCall: (businessId, language = 'hi-IN') =>
     request('/voice/web/start', {
       method: 'POST',
-      body: JSON.stringify({ business_id: businessId }),
+      body: JSON.stringify({ business_id: businessId, language }),
     }),
-  sendWebCallTurn: async (sessionId, audioBlob, textFallback = '') => {
+  sendWebCallTurn: async (sessionId, audioBlob, textFallback = '', language = 'hi-IN') => {
     const formData = new FormData();
     formData.append('session_id', sessionId);
+    if (language) formData.append('language', language);
     if (textFallback) {
       formData.append('text', textFallback);
       formData.append('text_fallback', textFallback);

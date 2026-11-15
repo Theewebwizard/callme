@@ -1075,7 +1075,7 @@ class WhatsAppCloudAdapter(IntegrationAdapter):
         headers = {
             "Authorization": f"Bearer {token}",
             "Content-Type": "application/json",
-            "User-Agent": "CallMe-WhatsAppCloudAdapter/1.0",
+            "User-Agent": "Answerly-WhatsAppCloudAdapter/1.0",
         }
 
         data_bytes = json.dumps(payload).encode("utf-8") if payload is not None else None

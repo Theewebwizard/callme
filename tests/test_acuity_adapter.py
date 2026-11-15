@@ -540,7 +540,7 @@ def test_acuity_webhook_signature_verification_success():
         headers=headers,
         raw_body=raw_body,
         parsed_json={"action": "appointment.scheduled", "id": 998877},
-        url="https://api.callme.ai/api/webhooks/acuity",
+        url="https://api.answerly.ai/api/webhooks/acuity",
     )
     result = adapter.handle_webhook(req)
     assert result.success is True
@@ -567,7 +567,7 @@ def test_acuity_webhook_signature_tampered_fails():
         headers=headers,
         raw_body=raw_body,
         parsed_json={},
-        url="https://api.callme.ai/api/webhooks/acuity",
+        url="https://api.answerly.ai/api/webhooks/acuity",
     )
     result = adapter.handle_webhook(req)
     assert result.success is False
@@ -602,7 +602,7 @@ def test_acuity_webhook_replay_deduplication():
             headers=headers,
             raw_body=raw_body,
             parsed_json={"action": "appointment.canceled", "id": 554433},
-            url="https://api.callme.ai/api/webhooks/acuity",
+            url="https://api.answerly.ai/api/webhooks/acuity",
         )
 
         res1 = manager.handle_provider_webhook("acuity", req)

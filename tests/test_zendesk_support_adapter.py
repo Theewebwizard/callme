@@ -130,7 +130,7 @@ def test_zendesk_oauth_authorization_url_and_token_exchange():
 
     # 1. Authorization URL
     auth_url = adapter.get_authorization_url(
-        redirect_uri="https://api.callme.ai/auth/zendesk/callback",
+        redirect_uri="https://api.answerly.ai/auth/zendesk/callback",
         state="csrf_state_xyz",
     )
     assert "https://acmeclinic.zendesk.com/oauth/authorizations/new" in auth_url
@@ -150,7 +150,7 @@ def test_zendesk_oauth_authorization_url_and_token_exchange():
     with patch("urllib.request.urlopen", return_value=mock_resp):
         token_data = adapter.exchange_code_for_tokens(
             code="auth_code_999",
-            redirect_uri="https://api.callme.ai/auth/zendesk/callback",
+            redirect_uri="https://api.answerly.ai/auth/zendesk/callback",
         )
         assert token_data["access_token"] == "ya29.zendesk_oauth_token_789"
         assert adapter.credentials["access_token"] == "ya29.zendesk_oauth_token_789"

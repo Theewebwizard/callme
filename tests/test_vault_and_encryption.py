@@ -186,7 +186,7 @@ def test_production_rejects_placeholder_keys():
     """Verify production environment rejects known development/placeholder keys."""
     with pytest.raises(KeyValidationError, match="insecure placeholder"):
         validate_and_decode_key(
-            raw_key="callme-default-vault-entropy-key-2026",
+            raw_key="answerly-default-vault-entropy-key-2026",
             environment="production",
         )
 

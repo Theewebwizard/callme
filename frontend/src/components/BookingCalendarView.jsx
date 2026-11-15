@@ -444,58 +444,6 @@ export default function BookingCalendarView({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', width: '100%' }}>
-      {/* =========================================================================
-         AI AGENT AUTONOMY & CAPABILITY REASSURANCE BANNER
-         ========================================================================= */}
-      <div
-        style={{
-          background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(16, 185, 129, 0.08) 100%)',
-          border: '1px solid rgba(59, 130, 246, 0.25)',
-          borderRadius: 'var(--radius-md)',
-          padding: '0.85rem 1.25rem',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: '1rem',
-          flexWrap: 'wrap',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div
-            style={{
-              width: '36px',
-              height: '36px',
-              borderRadius: '8px',
-              background: 'rgba(59, 130, 246, 0.15)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#3b82f6',
-            }}
-          >
-            <Bot size={20} />
-          </div>
-          <div>
-            <div style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span>🤖 AI Voice Receptionist Active: Autonomous Appointments & Live Calendar Booking</span>
-              <span style={{ fontSize: '0.66rem', padding: '1px 6px', borderRadius: '999px', background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', fontWeight: 700, border: '1px solid rgba(16, 185, 129, 0.3)' }}>ONLINE</span>
-            </div>
-            <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
-              When patients call, our voice AI agent autonomously checks doctor working days, verifies 30-min slot availability, confirms bookings verbally with the caller, and commits new appointments directly onto this live schedule in real time.
-            </div>
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-          <span style={{ fontSize: '0.72rem', color: 'var(--text-tertiary)', background: 'var(--bg-card)', padding: '4px 8px', borderRadius: '6px', border: '1px solid var(--border-medium)' }}>
-            ⚡ 2-Way Atomic Sync
-          </span>
-          <span style={{ fontSize: '0.72rem', color: 'var(--color-emerald)', background: 'rgba(16, 185, 129, 0.08)', padding: '4px 8px', borderRadius: '6px', border: '1px solid rgba(16, 185, 129, 0.25)' }}>
-            30m Slot Enforcement
-          </span>
-        </div>
-      </div>
-
       {/* Feedback Banner */}
       {feedback && (
         <div

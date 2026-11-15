@@ -348,58 +348,6 @@ export default function RestaurantTableFloorView({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', width: '100%' }}>
-      {/* =========================================================================
-         AI VOICE HOSTESS AUTONOMY BANNER (RESTAURANT TAILORED)
-         ========================================================================= */}
-      <div
-        style={{
-          background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(245, 158, 11, 0.08) 100%)',
-          border: '1px solid rgba(16, 185, 129, 0.25)',
-          borderRadius: 'var(--radius-md)',
-          padding: '0.9rem 1.25rem',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: '1rem',
-          flexWrap: 'wrap',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div
-            style={{
-              width: '38px',
-              height: '38px',
-              borderRadius: '8px',
-              background: 'rgba(16, 185, 129, 0.15)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'var(--color-emerald)',
-            }}
-          >
-            <Utensils size={20} />
-          </div>
-          <div>
-            <div style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span>🍽️ AI Voice Hostess Active: Autonomous Table Reservations & Seating Management</span>
-              <span style={{ fontSize: '0.66rem', padding: '1px 7px', borderRadius: '999px', background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', fontWeight: 700, border: '1px solid rgba(16, 185, 129, 0.3)' }}>ONLINE</span>
-            </div>
-            <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
-              When guests call, your voice AI hostess checks live table availability matching party size, prevents double-booking during peak lunch & dinner rush hours, notes dietary & seating requests (window booths, high chairs, patio seating), and confirms table reservations in real time.
-            </div>
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
-          <span style={{ fontSize: '0.72rem', color: 'var(--text-tertiary)', background: 'var(--bg-card)', padding: '4px 8px', borderRadius: '6px', border: '1px solid var(--border-medium)' }}>
-            👥 Capacity Matching
-          </span>
-          <span style={{ fontSize: '0.72rem', color: 'var(--color-emerald)', background: 'rgba(16, 185, 129, 0.08)', padding: '4px 8px', borderRadius: '6px', border: '1px solid rgba(16, 185, 129, 0.25)' }}>
-            ⚡ Rush-Hour Conflict Guard
-          </span>
-        </div>
-      </div>
-
       {/* Feedback Banner */}
       {feedback && (
         <div
@@ -574,7 +522,7 @@ export default function RestaurantTableFloorView({
                 color: activeTab === 'reservations' ? '#07080a' : 'var(--text-secondary)',
               }}
             >
-              <ListIcon size={13} /> 📋 Guest Reservations ({activeReservations.length})
+              <ListIcon size={13} /> Guest Reservations
             </button>
 
             <button
@@ -589,7 +537,7 @@ export default function RestaurantTableFloorView({
                 color: activeTab === 'tables' ? '#07080a' : 'var(--text-secondary)',
               }}
             >
-              <Layers size={13} /> 🛠️ Manage Tables ({tables.length})
+              <Layers size={13} /> Manage Tables
             </button>
           </div>
 

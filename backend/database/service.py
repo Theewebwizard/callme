@@ -111,8 +111,8 @@ class DatabaseService:
                 "conversational_pickup": "<380ms",
                 "calls_handled": display_calls,
                 "raw_calls_count": total_calls,
-                "languages_label": "Bilingual",
-                "languages_sublabel": "English & Hindi",
+                "languages_label": "12+ Languages",
+                "languages_sublabel": "Native Indic & English",
                 "active_tenants": active_businesses,
             }
 

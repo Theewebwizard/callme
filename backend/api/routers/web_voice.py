@@ -27,6 +27,7 @@ router = APIRouter(prefix="/voice/web", tags=["Web Voice Phone"])
 
 class WebCallStartRequest(BaseModel):
     business_id: str = "biz_spice_garden"
+    language: Optional[str] = "hi-IN"
 
 
 class WebCallHangupRequest(BaseModel):
@@ -63,17 +64,32 @@ def detect_voice_for_text(text: str) -> str:
     return "en-IN-NeerjaNeural"
 
 
-async def synthesize_speech_base64(text: str) -> tuple[str, str]:
+async def synthesize_speech_base64(text: str, language: str = "hi-IN", voice: Optional[str] = None) -> tuple[str, str]:
     """
-    Synthesize speech using high-quality Edge-TTS (unlimited, zero rate limits)
-    with dynamic Indian Hindi (hi-IN-SwaraNeural) / Indian English (en-IN-NeerjaNeural) voice selection.
+    Synthesize speech using Gnani.ai Timbre v2.5 sovereign Indic neural models,
+    with automatic fallback to Edge-TTS and Groq Orpheus.
     Returns (base64_audio, mime_type).
     """
     clean_text = text.strip()
     if not clean_text:
         return "", ""
 
-    # 1. Primary: Edge-TTS (unlimited, natural neural voice, zero daily rate limits)
+    settings = get_settings()
+
+    # 1. Primary: Gnani.ai Timbre v2.5 Neural Synthesis
+    if settings.is_gnani_configured:
+        try:
+            from backend.voice.providers.gnani import GnaniTTSProvider
+            tts = GnaniTTSProvider()
+            selected_voice = voice or getattr(settings, "GNANI_TTS_VOICE", "Nalini")
+            lang = language or ("hi-IN" if any("\u0900" <= ch <= "\u097f" for ch in clean_text) else "en-IN")
+            audio_bytes = tts.synthesize(text=clean_text, voice_id=selected_voice, language=lang)
+            if audio_bytes and len(audio_bytes) > 200:
+                return base64.b64encode(audio_bytes).decode("utf-8"), "audio/wav"
+        except Exception as e:
+            logger.warning("Gnani Timbre TTS synthesis failed, falling back: %s", str(e))
+
+    # 2. Secondary: Edge-TTS
     try:
         import edge_tts
         voice_to_use = detect_voice_for_text(clean_text)
@@ -88,10 +104,9 @@ async def synthesize_speech_base64(text: str) -> tuple[str, str]:
     except Exception as e:
         logger.warning("edge-tts synthesis failed: %s", str(e))
 
-    # 2. Secondary fallback: Groq Orpheus
+    # 3. Tertiary fallback: Groq Orpheus
     try:
         groq = get_groq_service()
-        settings = get_settings()
         if settings.GROQ_API_KEY:
             resp = groq.client.audio.speech.create(
                 input=clean_text,
@@ -160,8 +175,9 @@ async def start_web_call(
         content=greeting_text,
     )
 
-    # Synthesize opening greeting
-    audio_b64, audio_mime = await synthesize_speech_base64(greeting_text)
+    # Synthesize opening greeting using Gnani Timbre v2.5
+    call_lang = req.language or ("hi-IN" if any("\u0900" <= ch <= "\u097f" for ch in greeting_text) else "en-IN")
+    audio_b64, audio_mime = await synthesize_speech_base64(greeting_text, language=call_lang)
 
     return {
         "session_id": session.session_id,
@@ -173,11 +189,27 @@ async def start_web_call(
     }
 
 
+@router.get("/languages")
+async def get_supported_languages() -> Dict[str, Any]:
+    """Return available speech recognition and synthesis languages and models."""
+    from backend.voice.providers.gnani import GNANI_SUPPORTED_LANGUAGES, GNANI_VOICES
+    settings = get_settings()
+    return {
+        "provider": "gnani" if settings.is_gnani_configured else "default",
+        "stt_model": getattr(settings, "GNANI_STT_MODEL", "prisma-v3.0"),
+        "tts_model": getattr(settings, "GNANI_TTS_MODEL", "timbre-v2.5"),
+        "default_voice": getattr(settings, "GNANI_TTS_VOICE", "Nalini"),
+        "languages": GNANI_SUPPORTED_LANGUAGES,
+        "voices": GNANI_VOICES,
+    }
+
+
 @router.post("/turn")
 async def process_web_turn(
     session_id: str = Form(...),
     text: Optional[str] = Form(None),
     text_fallback: Optional[str] = Form(None),
+    language: Optional[str] = Form(None),
     audio: Optional[UploadFile] = File(None),
     audio_file: Optional[UploadFile] = File(None),
     session_manager: DatabaseVoiceSessionManager = Depends(get_session_manager),
@@ -193,8 +225,8 @@ async def process_web_turn(
         raise HTTPException(status_code=404, detail="Session not found or expired.")
 
     caller_text = ""
-    groq = get_groq_service()
     settings = get_settings()
+    turn_lang = language or getattr(settings, "GNANI_DEFAULT_LANGUAGE", "hi-IN")
 
     active_audio = audio or audio_file
 
@@ -202,15 +234,33 @@ async def process_web_turn(
     if active_audio is not None:
         try:
             audio_bytes = await active_audio.read()
-            if audio_bytes and len(audio_bytes) > 500:
-                audio_buf = io.BytesIO(audio_bytes)
-                audio_buf.name = active_audio.filename or "recording.webm"
-                stt_res = groq.client.audio.transcriptions.create(
-                    model=getattr(settings, "GROQ_STT_MODEL", "whisper-large-v3-turbo"),
-                    file=audio_buf,
-                )
-                if stt_res and hasattr(stt_res, "text") and stt_res.text:
-                    caller_text = stt_res.text.strip()
+            if audio_bytes and len(audio_bytes) > 200:
+                # Primary: Gnani.ai Prisma v3.0 sovereign Indic ASR
+                if settings.is_gnani_configured:
+                    try:
+                        from backend.voice.providers.gnani import GnaniSTTProvider
+                        gnani_stt = GnaniSTTProvider()
+                        stt_event = gnani_stt.transcribe(
+                            audio_bytes=audio_bytes,
+                            language=turn_lang,
+                            filename=active_audio.filename or "recording.wav",
+                        )
+                        if stt_event and stt_event.text:
+                            caller_text = stt_event.text.strip()
+                    except Exception as ge:
+                        logger.warning("Gnani STT failed, trying fallback: %s", str(ge))
+
+                # Fallback: Groq Whisper
+                if not caller_text and settings.GROQ_API_KEY:
+                    groq = get_groq_service()
+                    audio_buf = io.BytesIO(audio_bytes)
+                    audio_buf.name = active_audio.filename or "recording.webm"
+                    stt_res = groq.client.audio.transcriptions.create(
+                        model=getattr(settings, "GROQ_STT_MODEL", "whisper-large-v3-turbo"),
+                        file=audio_buf,
+                    )
+                    if stt_res and hasattr(stt_res, "text") and stt_res.text:
+                        caller_text = stt_res.text.strip()
         except Exception as e:
             logger.warning("Web voice transcription failed: %s", str(e))
 
@@ -220,7 +270,7 @@ async def process_web_turn(
 
     if not caller_text or caller_text == "Thank you.":
         fallback_msg = "I didn't quite catch that. Could you please repeat?"
-        fb_b64, fb_mime = await synthesize_speech_base64(fallback_msg)
+        fb_b64, fb_mime = await synthesize_speech_base64(fallback_msg, language=turn_lang)
         return {
             "session_id": session_id,
             "user_text": "",
@@ -247,8 +297,8 @@ async def process_web_turn(
     turn_result = orchestrator.process_turn(session_id, transcript_event, synthesize_audio=False)
     assistant_text = turn_result.assistant_text or ""
 
-    # 5. Synthesize assistant voice reply for browser playback
-    audio_b64, audio_mime = await synthesize_speech_base64(assistant_text) if assistant_text else ("", "")
+    # 5. Synthesize assistant voice reply for browser playback (Gnani Timbre v2.5)
+    audio_b64, audio_mime = await synthesize_speech_base64(assistant_text, language=turn_lang) if assistant_text else ("", "")
 
     # 6. Check termination
     if turn_result.should_terminate:

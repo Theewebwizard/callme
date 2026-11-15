@@ -93,6 +93,7 @@ export default function GoogleAuthModal({
           name: name || email.split('@')[0],
           avatarInitial: (name || email)[0].toUpperCase(),
         };
+        localStorage.setItem('answerly_google_user', JSON.stringify(googleUser));
         localStorage.setItem('callme_google_user', JSON.stringify(googleUser));
         onSuccess(res.business, googleUser);
         onClose();
@@ -162,7 +163,7 @@ export default function GoogleAuthModal({
             {mode === 'signup' ? 'Sign up with Google' : 'Sign in with Google'}
           </h3>
           <p style={{ fontSize: '0.85rem', color: '#5f6368', margin: 0 }}>
-            to continue to <strong style={{ color: '#202124' }}>CallMe AI Receptionist</strong>
+            to continue to <strong style={{ color: '#202124' }}>Answerly AI Receptionist</strong>
           </p>
         </div>
 
@@ -383,7 +384,7 @@ export default function GoogleAuthModal({
 
           {/* Google Legal Disclaimer Note */}
           <div style={{ marginTop: '1.25rem', paddingTop: '0.85rem', borderTop: '1px solid var(--border-medium)', fontSize: '0.74rem', color: '#5f6368', lineHeight: 1.4 }}>
-            To continue, Google will securely share your email address and profile identity with <strong>CallMe AI Receptionist</strong> in accordance with strict tenant privacy standards.
+            To continue, Google will securely share your email address and profile identity with <strong>Answerly AI Receptionist</strong> in accordance with strict tenant privacy standards.
           </div>
         </div>
       </div>

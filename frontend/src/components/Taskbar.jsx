@@ -60,7 +60,7 @@ export default function Taskbar({
 
   const savedGoogleUser = (() => {
     try {
-      return JSON.parse(localStorage.getItem('callme_google_user') || 'null');
+      return JSON.parse(localStorage.getItem('answerly_google_user') || localStorage.getItem('callme_google_user') || 'null');
     } catch {
       return null;
     }
@@ -92,12 +92,12 @@ export default function Taskbar({
         <div className="top-panel-main-row">
           <div className="top-panel-left">
             {/* Platform Brand */}
-            <div className="top-panel-brand" title="CallMe Autonomous Voice Platform">
+            <div className="top-panel-brand" title="Answerly Autonomous Voice Platform">
               <div className="brand-icon">
                 <PhoneCall size={16} strokeWidth={2.5} />
               </div>
               <div className="brand-text">
-                Call<span>Me</span>
+                Answer<span>ly</span>
               </div>
               <span className="brand-version-badge">v2.4</span>
             </div>
@@ -185,11 +185,10 @@ export default function Taskbar({
                           setActiveTab(item.id);
                           setMobileMenuOpen(false);
                         }}
-                        title={`${item.label} (${item.desc}) — Shortcut key: ${item.shortcut}`}
+                        title={`${item.label} (${item.desc})`}
                       >
                         <Icon size={14} className="top-nav-icon" />
                         <span className="top-nav-label">{item.label}</span>
-                        <kbd className="top-nav-kbd">{item.shortcut}</kbd>
                       </button>
                     );
                   })}
@@ -225,7 +224,7 @@ export default function Taskbar({
             <PhoneCall size={12} strokeWidth={2.5} />
           </div>
           <span style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-            {business?.name || 'CallMe Console'}
+            {business?.name || 'Answerly Console'}
           </span>
         </div>
 
@@ -255,7 +254,7 @@ export default function Taskbar({
                 <div className="brand-icon" style={{ width: 24, height: 24 }}>
                   <PhoneCall size={14} />
                 </div>
-                <span style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.95rem' }}>CallMe Console</span>
+                <span style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.95rem' }}>Answerly Console</span>
               </div>
               <button
                 type="button"

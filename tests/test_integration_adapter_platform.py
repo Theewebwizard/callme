@@ -443,7 +443,7 @@ def test_exotel_webhook_signature_verification():
 def test_twilio_webhook_signature_verification():
     """Verify Twilio HMAC-SHA1 webhook signature verification."""
     adapter = TwilioMessagingAdapter("biz_tenant_alpha", configuration={"auth_token": "auth_token_secret_123"})
-    url = "https://api.callme.ai/api/webhooks/twilio"
+    url = "https://api.answerly.ai/api/webhooks/twilio"
     params = {"AccountSid": "AC123", "MessageSid": "SM12345", "MessageStatus": "delivered"}
 
     sorted_keys = sorted(params.keys())

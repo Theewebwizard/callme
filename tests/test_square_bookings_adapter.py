@@ -608,7 +608,7 @@ def test_square_webhook_signature_verification_success():
         credentials={"access_token": "live_token_123", "webhook_signature_key": sig_key},
     )
 
-    notification_url = "https://api.callme.ai/api/webhooks/square"
+    notification_url = "https://api.answerly.ai/api/webhooks/square"
     raw_body = b'{"type": "booking.created", "event_id": "evt_sq_101", "data": {"object": {"booking": {"id": "BK_7788", "version": 1}}}}'
 
     combined = notification_url.encode("utf-8") + raw_body
@@ -643,7 +643,7 @@ def test_square_webhook_signature_tampered_fails():
         credentials={"access_token": "live_token_123", "webhook_signature_key": sig_key},
     )
 
-    notification_url = "https://api.callme.ai/api/webhooks/square"
+    notification_url = "https://api.answerly.ai/api/webhooks/square"
     raw_body = b'{"type": "booking.created"}'
     headers = {"x-square-hmacsha256-signature": "tampered_signature_value"}
 
@@ -666,7 +666,7 @@ def test_square_webhook_replay_deduplication():
     manager = get_integration_manager()
     sig_key = "sq_wh_secret_key_8899"
 
-    notification_url = "https://api.callme.ai/api/webhooks/square"
+    notification_url = "https://api.answerly.ai/api/webhooks/square"
     raw_body = b'{"type": "booking.canceled", "event_id": "evt_unique_sq_dedup_01"}'
 
     combined = notification_url.encode("utf-8") + raw_body

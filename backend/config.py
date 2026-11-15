@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     """Platform configuration settings."""
 
     # Application Info
-    APP_NAME: str = "AI Receptionist Platform"
+    APP_NAME: str = "Answerly AI Receptionist Platform"
     APP_VERSION: str = "0.1.0"
     ENVIRONMENT: str = "development"
     DEBUG: bool = True
@@ -86,6 +86,14 @@ class Settings(BaseSettings):
     DEEPGRAM_TTS_ENCODING: str = "linear16"
     VOICE_INTERTURN_TIMEOUT_SECONDS: int = 30
 
+    # Gnani.ai Vachana Voice Models (STT & TTS)
+    GNANI_API_KEY: Optional[str] = None
+    GNANI_STT_MODEL: str = "prisma-v3.0"
+    GNANI_TTS_MODEL: str = "timbre-v2.5"
+    GNANI_TTS_VOICE: str = "Nalini"
+    GNANI_DEFAULT_LANGUAGE: str = "hi-IN"
+    GNANI_API_BASE: str = "https://api.vachana.ai"
+
     # Multi-Tenant Integration Adapter & Secret Vault Settings
     CAPABILITY_ENCRYPTION_KEY: Optional[str] = None
     CAPABILITY_KEYRING: Optional[str] = None
@@ -108,6 +116,11 @@ class Settings(BaseSettings):
     def is_exotel_configured(self) -> bool:
         """Check if minimum production Exotel credentials are configured."""
         return bool(self.EXOTEL_ACCOUNT_SID and self.EXOTEL_API_KEY and self.EXOTEL_API_TOKEN)
+
+    @property
+    def is_gnani_configured(self) -> bool:
+        """Check if Gnani.ai API key is configured."""
+        return bool(self.GNANI_API_KEY and self.GNANI_API_KEY.strip())
 
     @property
     def is_deepgram_configured(self) -> bool:

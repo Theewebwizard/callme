@@ -22,7 +22,7 @@ async function safeGetMenu(businessId, category = null) {
   if (api && typeof api.getMenu === 'function') {
     return api.getMenu(businessId, category);
   }
-  const token = localStorage.getItem('callme_token');
+  const token = localStorage.getItem('answerly_token') || localStorage.getItem('callme_token');
   const q = category ? `?category=${encodeURIComponent(category)}` : '';
   const res = await fetch(`/api/businesses/${businessId}/menu${q}`, {
     headers: token ? { Authorization: `Bearer ${token}` } : {},
@@ -35,7 +35,7 @@ async function safeUploadMenu(businessId, items, replace = false) {
   if (api && typeof api.uploadMenu === 'function') {
     return api.uploadMenu(businessId, items, replace);
   }
-  const token = localStorage.getItem('callme_token');
+  const token = localStorage.getItem('answerly_token') || localStorage.getItem('callme_token');
   const res = await fetch(`/api/businesses/${businessId}/menu/upload`, {
     method: 'POST',
     headers: {
@@ -55,7 +55,7 @@ async function safeDeleteMenuItem(businessId, itemId) {
   if (api && typeof api.deleteMenuItem === 'function') {
     return api.deleteMenuItem(businessId, itemId);
   }
-  const token = localStorage.getItem('callme_token');
+  const token = localStorage.getItem('answerly_token') || localStorage.getItem('callme_token');
   const res = await fetch(`/api/businesses/${businessId}/menu/${itemId}`, {
     method: 'DELETE',
     headers: token ? { Authorization: `Bearer ${token}` } : {},
@@ -68,7 +68,7 @@ async function safeParseMenuText(businessId, text, defaultCategory = 'Mains') {
   if (api && typeof api.parseMenuText === 'function') {
     return api.parseMenuText(businessId, text, defaultCategory);
   }
-  const token = localStorage.getItem('callme_token');
+  const token = localStorage.getItem('answerly_token') || localStorage.getItem('callme_token');
   const res = await fetch(`/api/businesses/${businessId}/menu/parse-text`, {
     method: 'POST',
     headers: {
@@ -238,7 +238,7 @@ export function MenuManagerView({ business, isEmbedded = false, onMenuUpdated, o
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.setAttribute('download', 'callme_menu_template.csv');
+    link.setAttribute('download', 'answerly_menu_template.csv');
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -464,7 +464,7 @@ export function MenuManagerView({ business, isEmbedded = false, onMenuUpdated, o
           </div>
           <div>
             <div style={{ fontWeight: 800, fontSize: '0.84rem', color: activeTab === 'upload' ? '#0c4a6e' : 'var(--slate-800, #1e293b)' }}>
-              1. File Upload (CSV/JSON)
+              File Upload (CSV/JSON)
             </div>
             <div style={{ fontSize: '0.72rem', color: activeTab === 'upload' ? '#0284c7' : 'var(--slate-500, #64748b)', marginTop: '1px', fontWeight: activeTab === 'upload' ? 600 : 400 }}>
               Upload spreadsheet file
@@ -508,7 +508,7 @@ export function MenuManagerView({ business, isEmbedded = false, onMenuUpdated, o
           </div>
           <div>
             <div style={{ fontWeight: 800, fontSize: '0.84rem', color: activeTab === 'paste' ? '#0c4a6e' : 'var(--slate-800, #1e293b)' }}>
-              2. Paste Menu Text (AI)
+              Paste Menu Text (AI)
             </div>
             <div style={{ fontSize: '0.72rem', color: activeTab === 'paste' ? '#0284c7' : 'var(--slate-500, #64748b)', marginTop: '1px', fontWeight: activeTab === 'paste' ? 600 : 400 }}>
               Auto-detect dishes & prices
@@ -552,7 +552,7 @@ export function MenuManagerView({ business, isEmbedded = false, onMenuUpdated, o
           </div>
           <div>
             <div style={{ fontWeight: 800, fontSize: '0.84rem', color: activeTab === 'table' ? '#0c4a6e' : 'var(--slate-800, #1e293b)' }}>
-              3. View & Add Dishes ({menuItems.length})
+              View & Add Dishes
             </div>
             <div style={{ fontSize: '0.72rem', color: activeTab === 'table' ? '#0284c7' : 'var(--slate-500, #64748b)', marginTop: '1px', fontWeight: activeTab === 'table' ? 600 : 400 }}>
               Browse & edit {menuItems.length} items

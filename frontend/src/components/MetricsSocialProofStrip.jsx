@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { api } from '../api';
 
 const DEFAULT_METRICS = [
-  { value: '99.98%', label: 'telephony uptime' },
+  { value: '99.9%', label: 'telephony uptime' },
   { value: '<380ms', label: 'conversational pickup' },
-  { value: 'Bilingual', label: 'English & Hindi accents' },
+  { value: '12+ Languages', label: 'native Indic & English accents' },
 ];
 
 export default function MetricsSocialProofStrip() {
@@ -15,9 +15,9 @@ export default function MetricsSocialProofStrip() {
     api.getPlatformMetrics().then((data) => {
       if (isMounted && data) {
         setMetrics([
-          { value: data.telephony_uptime || '99.98%', label: 'telephony uptime' },
+          { value: data.telephony_uptime || '99.9%', label: 'telephony uptime' },
           { value: data.conversational_pickup || '<380ms', label: 'conversational pickup' },
-          { value: data.languages_label || 'Bilingual', label: data.languages_sublabel ? `${data.languages_sublabel} accents` : 'English & Hindi accents' },
+          { value: data.languages_label || '12+ Languages', label: data.languages_sublabel ? `${data.languages_sublabel} accents` : 'native Indic & English accents' },
         ]);
       }
     }).catch(() => {});

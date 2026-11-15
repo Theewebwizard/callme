@@ -941,7 +941,7 @@ class FreshdeskSupportAdapter(IntegrationAdapter):
         headers = {
             "Authorization": auth_header,
             "Content-Type": "application/json",
-            "User-Agent": "CallMe-FreshdeskAdapter/1.0",
+            "User-Agent": "Answerly-FreshdeskAdapter/1.0",
         }
 
         data_bytes = json.dumps(payload).encode("utf-8") if payload is not None else None

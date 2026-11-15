@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 
 /**
  * CinematicHeroBackground
- * Raycast-inspired ambient canvas background for CallMe.
+ * Raycast-inspired ambient canvas background for Answerly.
  * Renders subtle audio-inspired harmonic wave ribbons, drifting acoustic nodes,
  * soft atmospheric lighting, and a fine film grain noise overlay.
  *

@@ -271,12 +271,11 @@ export default function Playground({ business }) {
           type="button"
           className="btn-secondary"
           onClick={resetConversation}
-          title="Reset dialogue session (⌘R)"
+          title="Reset dialogue session"
           style={{ padding: '0.35rem 0.85rem', fontSize: '0.76rem' }}
         >
           <RotateCcw size={12} />
           <span>Reset Dialogue</span>
-          <kbd className="sidebar-kbd">⌘R</kbd>
         </button>
       </div>
 

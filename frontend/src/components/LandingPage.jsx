@@ -33,21 +33,6 @@ import ThemeToggle from './ThemeToggle';
 
 export const INDUSTRY_PREVIEWS = [
   {
-    id: 'Dental',
-    title: 'Dental & Clinic',
-    businessName: 'Bright Smile Dental',
-    phone: '+1 (555) 392-8100',
-    dialogue: [
-      { speaker: 'caller', text: 'Hi, can I book a cleaning for Friday?' },
-      { speaker: 'receptionist', text: 'Of course! I have 10:30 AM or 3:00 PM open on Friday. Which works best?' },
-      { speaker: 'tool', text: '⚡ check_hygienist_slots(service: "Cleaning", date: "Friday") → 10:30 AM, 3:00 PM Available' },
-      { speaker: 'caller', text: '10:30 AM sounds perfect, thank you!' },
-      { speaker: 'receptionist', text: 'You are all set for Friday at 10:30 AM with Dr. Taylor! A confirmation SMS has been dispatched.' },
-    ],
-    tools: ['check_hygienist_slots', 'book_dental_appointment', 'send_sms_confirmation'],
-    outcome: 'Appointment booked · Fri 10:30 AM · SMS sent',
-  },
-  {
     id: 'Restaurant',
     title: 'Restaurant & Dining',
     businessName: 'Spice Garden Bistro',
@@ -107,7 +92,7 @@ export default function LandingPage({ onEnterWorkspace, onEnterAdmin }) {
   const [errorMsg, setErrorMsg] = useState(null);
 
   // Active industry tab for hero simulation
-  const [activeIndustryId, setActiveIndustryId] = useState('Dental');
+  const [activeIndustryId, setActiveIndustryId] = useState('Restaurant');
   const [callCycle, setCallCycle] = useState(0);
   const activePreview = INDUSTRY_PREVIEWS.find((p) => p.id === activeIndustryId) || INDUSTRY_PREVIEWS[0];
 
@@ -176,14 +161,13 @@ export default function LandingPage({ onEnterWorkspace, onEnterAdmin }) {
     try {
       const res = await api.loginBusiness(loginEmail.trim(), loginPassword.trim());
       if (res && res.business) {
-        localStorage.setItem(
-          'callme_google_user',
-          JSON.stringify({
-            email: loginEmail.trim().toLowerCase(),
-            name: res.business.owner_name || res.business.name,
-            avatarInitial: loginEmail.trim()[0].toUpperCase(),
-          })
-        );
+        const googleUserPayload = JSON.stringify({
+          email: loginEmail.trim().toLowerCase(),
+          name: res.business.owner_name || res.business.name,
+          avatarInitial: loginEmail.trim()[0].toUpperCase(),
+        });
+        localStorage.setItem('answerly_google_user', googleUserPayload);
+        localStorage.setItem('callme_google_user', googleUserPayload);
         onEnterWorkspace(res.business);
       }
     } catch (err) {
@@ -235,14 +219,13 @@ export default function LandingPage({ onEnterWorkspace, onEnterAdmin }) {
 
     try {
       const created = await api.createBusiness(payload);
-      localStorage.setItem(
-        'callme_google_user',
-        JSON.stringify({
-          email: regEmail.trim().toLowerCase(),
-          name: name.trim(),
-          avatarInitial: regEmail.trim()[0].toUpperCase(),
-        })
-      );
+      const regUserPayload = JSON.stringify({
+        email: regEmail.trim().toLowerCase(),
+        name: name.trim(),
+        avatarInitial: regEmail.trim()[0].toUpperCase(),
+      });
+      localStorage.setItem('answerly_google_user', regUserPayload);
+      localStorage.setItem('callme_google_user', regUserPayload);
       onEnterWorkspace(created);
     } catch (err) {
       setErrorMsg(err.message || 'Failed to provision business receptionist.');
@@ -259,11 +242,11 @@ export default function LandingPage({ onEnterWorkspace, onEnterAdmin }) {
       {/* 1. Sticky Navigation Bar with Entrance Animation */}
       <header className="landing-nav hero-enter-nav" role="banner" style={{ position: 'sticky', top: 0, zIndex: 100 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-          <div className="brand-icon" title="CallMe AI Voice Platform">
+          <div className="brand-icon" title="Answerly AI Voice Platform">
             <PhoneCall size={16} strokeWidth={2.5} />
           </div>
           <span style={{ fontWeight: 700, fontSize: '1.05rem', letterSpacing: '-0.03em', color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}>
-            Call<span style={{ color: 'var(--color-emerald)' }}>Me</span>
+            Answer<span style={{ color: 'var(--color-emerald)' }}>ly</span>
           </span>
           <span
             style={{
@@ -308,7 +291,7 @@ export default function LandingPage({ onEnterWorkspace, onEnterAdmin }) {
           {/* Left Column: Headline, Copy & Action CTAs */}
           <div className="hero-content hero-entrance">
             <h1 className="hero-title">
-              Hire a receptionist<br />
+              <span>Hire a receptionist</span>
               <em className="hero-highlight">that never sleeps.</em>
             </h1>
 
@@ -689,7 +672,7 @@ export default function LandingPage({ onEnterWorkspace, onEnterAdmin }) {
           <div className="brand-icon" style={{ width: 22, height: 22 }}>
             <PhoneCall size={12} strokeWidth={2.5} />
           </div>
-          <span style={{ color: 'var(--text-primary)', fontWeight: 600, fontFamily: 'var(--font-display)' }}>CallMe Platform</span>
+          <span style={{ color: 'var(--text-primary)', fontWeight: 600, fontFamily: 'var(--font-display)' }}>Answerly Platform</span>
           <span>© 2026. All rights reserved.</span>
         </div>
 

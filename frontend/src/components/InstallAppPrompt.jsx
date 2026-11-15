@@ -67,7 +67,7 @@ export default function InstallAppPrompt({ variant = 'badge' }) {
         <button
           onClick={handleInstallClick}
           className="btn-pwa-install"
-          title="Install CallMe as an App on your Mobile or Desktop"
+          title="Install Answerly as an App on your Mobile or Desktop"
         >
           <Download size={13} strokeWidth={2.5} />
           <span>Install App</span>
@@ -79,14 +79,14 @@ export default function InstallAppPrompt({ variant = 'badge' }) {
               <div className="ios-card-header">
                 <div className="ios-badge">
                   <Smartphone size={18} color="#6366f1" />
-                  <strong>Install CallMe on iPhone / iPad</strong>
+                  <strong>Install Answerly on iPhone / iPad</strong>
                 </div>
                 <button className="btn-close" onClick={() => setShowIOSModal(false)}>
                   <X size={16} />
                 </button>
               </div>
               <p className="ios-desc">
-                Install CallMe directly to your home screen for instant full-screen access:
+                Install Answerly directly to your home screen for instant full-screen access:
               </p>
               <ol className="ios-steps">
                 <li>

@@ -178,7 +178,7 @@ class AcuityAdapter(ReservationAdapterInterface):
         headers = {
             "Accept": "application/json",
             "Content-Type": "application/json",
-            "User-Agent": "CallMe-AI-Receptionist/1.0",
+            "User-Agent": "Answerly-AI-Receptionist/1.0",
         }
 
         if access_token:

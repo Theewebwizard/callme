@@ -180,6 +180,21 @@ function DynamicAudioWaveform({ state }) {
   );
 }
 
+export const GNANI_LANGUAGES = [
+  { id: 'indic-auto', label: 'Auto (Indic / Hinglish)', short: 'Auto' },
+  { id: 'hi-IN', label: 'Hindi (हिन्दी)', short: 'Hindi' },
+  { id: 'en-IN', label: 'English (India)', short: 'English' },
+  { id: 'bn-IN', label: 'Bengali (বাংলা)', short: 'Bengali' },
+  { id: 'kn-IN', label: 'Kannada (ಕನ್ನಡ)', short: 'Kannada' },
+  { id: 'ta-IN', label: 'Tamil (தமிழ்)', short: 'Tamil' },
+  { id: 'te-IN', label: 'Telugu (తెలుగు)', short: 'Telugu' },
+  { id: 'mr-IN', label: 'Marathi (मराठी)', short: 'Marathi' },
+  { id: 'gu-IN', label: 'Gujarati (ગુજરાતી)', short: 'Gujarati' },
+  { id: 'pa-IN', label: 'Punjabi (ਪੰਜਾਬੀ)', short: 'Punjabi' },
+  { id: 'ml-IN', label: 'Malayalam (മലയാളം)', short: 'Malayalam' },
+  { id: 'as-IN', label: 'Assamese (অসমীয়া)', short: 'Assamese' },
+];
+
 export default function WebPhone({ business }) {
   const [callActive, setCallActive] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
@@ -199,7 +214,7 @@ export default function WebPhone({ business }) {
 
   const [speechLang, setSpeechLang] = useState(() => {
     try {
-      return localStorage.getItem('callme_speech_lang') || 'hi-IN';
+      return localStorage.getItem('answerly_speech_lang') || localStorage.getItem('callme_speech_lang') || 'hi-IN';
     } catch {
       return 'hi-IN';
     }
@@ -256,7 +271,10 @@ export default function WebPhone({ business }) {
   const changeSpeechLanguage = (lang) => {
     setSpeechLang(lang);
     speechLangRef.current = lang;
-    try { localStorage.setItem('callme_speech_lang', lang); } catch {}
+    try {
+      localStorage.setItem('answerly_speech_lang', lang);
+      localStorage.setItem('callme_speech_lang', lang);
+    } catch {}
     if (callActiveRef.current && isListeningRef.current) {
       stopRecognition();
       setTimeout(() => {
@@ -278,11 +296,15 @@ export default function WebPhone({ business }) {
     try {
       const AudioCtx = window.AudioContext || window.webkitAudioContext;
       if (AudioCtx) {
-        if (!window._callmeAudioCtx) window._callmeAudioCtx = new AudioCtx();
-        if (window._callmeAudioCtx.state === 'suspended') window._callmeAudioCtx.resume();
-        const buf = window._callmeAudioCtx.createBuffer(1, 1, 22050);
-        const src = window._callmeAudioCtx.createBufferSource();
-        src.buffer = buf; src.connect(window._callmeAudioCtx.destination); src.start(0);
+        if (!window._answerlyAudioCtx && !window._callmeAudioCtx) {
+          window._answerlyAudioCtx = new AudioCtx();
+          window._callmeAudioCtx = window._answerlyAudioCtx;
+        }
+        const aCtx = window._answerlyAudioCtx || window._callmeAudioCtx;
+        if (aCtx.state === 'suspended') aCtx.resume();
+        const buf = aCtx.createBuffer(1, 1, 22050);
+        const src = aCtx.createBufferSource();
+        src.buffer = buf; src.connect(aCtx.destination); src.start(0);
       }
     } catch {}
     try {
@@ -482,7 +504,7 @@ export default function WebPhone({ business }) {
     ]);
 
     try {
-      const resp = await api.sendWebCallTurn(sessionIdRef.current, null, textToSend);
+      const resp = await api.sendWebCallTurn(sessionIdRef.current, null, textToSend, speechLangRef.current || 'hi-IN');
       if (!callActiveRef.current) return;
 
       const aiText = resp.text || resp.message || 'I hear you.';
@@ -552,7 +574,7 @@ export default function WebPhone({ business }) {
     unlockAudioForMobile();
 
     try {
-      const resp = await api.startWebCall(business.id);
+      const resp = await api.startWebCall(business.id, speechLangRef.current || 'hi-IN');
       setSessionId(resp.session_id);
       sessionIdRef.current = resp.session_id;
       setCallActive(true);
@@ -575,7 +597,7 @@ export default function WebPhone({ business }) {
       }, 1000);
 
       setCallStatus('speaking');
-      playAudio(resp.greeting_audio_base64, resp.greeting_audio_mime, greetingText, () => {
+      playAudio(resp.audio_base64 || resp.greeting_audio_base64, resp.audio_mime || resp.greeting_audio_mime, greetingText, () => {
         if (callActiveRef.current && handsFreeRef.current && !isMicMutedRef.current) {
           startSpeechListening();
         } else if (callActiveRef.current) {
@@ -920,44 +942,45 @@ export default function WebPhone({ business }) {
                 <span>Call Language:</span>
               </span>
 
-              <div
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  background: 'var(--bg-surface-elevated, #f0f7ff)',
-                  border: '1.5px solid var(--border-medium, #bae6fd)',
-                  borderRadius: '8px',
-                  padding: '2px',
-                  gap: '2px',
-                }}
-              >
-                {[
-                  { id: 'hi-IN', label: 'Hindi' },
-                  { id: 'en-IN', label: 'English' },
-                ].map((l) => {
-                  const isActive = speechLang === l.id;
-                  return (
-                    <button
-                      key={l.id}
-                      type="button"
-                      onClick={() => changeSpeechLanguage(l.id)}
-                      style={{
-                        background: isActive ? '#0ea5e9' : 'transparent',
-                        color: isActive ? '#ffffff' : 'var(--text-secondary, #475569)',
-                        border: 'none',
-                        borderRadius: '6px',
-                        padding: '4px 11px',
-                        fontSize: '0.74rem',
-                        fontWeight: isActive ? 700 : 600,
-                        cursor: 'pointer',
-                        transition: 'all 0.15s ease',
-                        boxShadow: isActive ? '0 1px 4px rgba(14, 165, 233, 0.3)' : 'none',
-                      }}
-                    >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <select
+                  value={speechLang}
+                  onChange={(e) => changeSpeechLanguage(e.target.value)}
+                  style={{
+                    background: 'var(--bg-surface-elevated, #f0f7ff)',
+                    border: '1.5px solid var(--border-medium, #bae6fd)',
+                    borderRadius: '8px',
+                    padding: '3px 8px',
+                    fontSize: '0.74rem',
+                    fontWeight: 600,
+                    color: 'var(--text-primary)',
+                    cursor: 'pointer',
+                    outline: 'none',
+                    maxWidth: '170px',
+                  }}
+                  title="Select Indic Speech Model Language (Gnani.ai)"
+                >
+                  {GNANI_LANGUAGES.map((l) => (
+                    <option key={l.id} value={l.id}>
                       {l.label}
-                    </button>
-                  );
-                })}
+                    </option>
+                  ))}
+                </select>
+                <span
+                  style={{
+                    fontSize: '0.66rem',
+                    fontFamily: 'var(--font-mono)',
+                    color: '#0284c7',
+                    background: 'rgba(14, 165, 233, 0.12)',
+                    border: '1px solid rgba(14, 165, 233, 0.25)',
+                    padding: '2px 5px',
+                    borderRadius: '4px',
+                    fontWeight: 700,
+                  }}
+                  title="Powered by Gnani.ai Prisma v3.0 & Timbre v2.5"
+                >
+                  Gnani
+                </span>
               </div>
             </div>
 

@@ -399,7 +399,7 @@ export function RoomManagerView({
             gap: '6px',
           }}
         >
-          <Bed size={15} /> All Room Types ({rooms.length})
+          <Bed size={15} /> All Room Types
         </button>
         <button
           type="button"
