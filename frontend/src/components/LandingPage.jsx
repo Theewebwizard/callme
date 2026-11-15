@@ -7,7 +7,6 @@ import {
   Phone,
   Clock,
   ArrowRight,
-  ShieldCheck,
   CheckCircle2,
   AlertCircle,
   Bot,
@@ -103,7 +102,6 @@ export const INDUSTRY_PREVIEWS = [
 
 export default function LandingPage({ onEnterWorkspace, onEnterAdmin }) {
   // Auth state
-  const [authRole, setAuthRole] = useState('business'); // 'business' | 'admin'
   const [businessAuthMode, setBusinessAuthMode] = useState('login'); // 'login' | 'register'
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
@@ -141,14 +139,8 @@ export default function LandingPage({ onEnterWorkspace, onEnterAdmin }) {
   const [openTime, setOpenTime] = useState('09:00');
   const [closeTime, setCloseTime] = useState('21:00');
 
-  // Admin login state
-  const [adminPasscode, setAdminPasscode] = useState('');
-
-  const scrollToAuth = (role = 'business', mode = 'login') => {
-    setAuthRole(role);
-    if (role === 'business') {
-      setBusinessAuthMode(mode);
-    }
+  const scrollToAuth = (mode = 'login') => {
+    setBusinessAuthMode(mode);
     const el = document.getElementById('auth-section');
     if (el) {
       el.scrollIntoView({ behavior: 'smooth' });
@@ -156,7 +148,6 @@ export default function LandingPage({ onEnterWorkspace, onEnterAdmin }) {
   };
 
   const handleSelectPersona = (persona) => {
-    setAuthRole('business');
     setBusinessAuthMode('register');
     if (persona.demoBusiness) setName(persona.demoBusiness);
     if (persona.industryPreset) setIndustry(persona.industryPreset);
@@ -260,12 +251,6 @@ export default function LandingPage({ onEnterWorkspace, onEnterAdmin }) {
     }
   };
 
-  const handleAdminLogin = (e) => {
-    e.preventDefault();
-    localStorage.setItem('callme_admin_key', adminPasscode.trim() || 'admin');
-    onEnterAdmin();
-  };
-
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg-app)', color: 'var(--text-primary)', display: 'flex', flexDirection: 'column', position: 'relative' }}>
       {/* Ambient Aurora Light Field Background */}
@@ -307,18 +292,9 @@ export default function LandingPage({ onEnterWorkspace, onEnterAdmin }) {
           <ThemeToggle />
           <button
             type="button"
-            className="landing-btn-secondary"
-            style={{ padding: '0.35rem 0.85rem', fontSize: '0.8rem' }}
-            onClick={() => scrollToAuth('admin')}
-          >
-            <ShieldCheck size={13} />
-            <span>Operator Access</span>
-          </button>
-          <button
-            type="button"
             className="landing-btn-primary"
             style={{ padding: '0.35rem 0.95rem', fontSize: '0.8rem' }}
-            onClick={() => scrollToAuth('business', 'login')}
+            onClick={() => scrollToAuth('login')}
           >
             <span>Launch Console</span>
             <ArrowRight size={13} />
@@ -408,65 +384,6 @@ export default function LandingPage({ onEnterWorkspace, onEnterAdmin }) {
         }}
       >
         <div className="card glass" style={{ padding: '2rem 1.75rem', borderRadius: 'var(--radius-xl)', border: '1px solid var(--border-medium)', boxShadow: 'var(--card-shadow)' }}>
-          {/* Role Tabs: Business vs Operator */}
-          <div
-            style={{
-              display: 'flex',
-              background: 'var(--bg-surface-elevated)',
-              border: '1px solid var(--border-medium)',
-              borderRadius: 'var(--radius-sm)',
-              padding: '3px',
-              marginBottom: '1.5rem',
-            }}
-          >
-            <button
-              type="button"
-              onClick={() => {
-                setAuthRole('business');
-                setErrorMsg(null);
-              }}
-              style={{
-                flex: 1,
-                padding: '0.45rem',
-                borderRadius: 'var(--radius-xs)',
-                border: 'none',
-                background: authRole === 'business' ? 'var(--bg-card)' : 'transparent',
-                border: authRole === 'business' ? '1px solid var(--border-medium)' : '1px solid transparent',
-                color: authRole === 'business' ? 'var(--text-primary)' : 'var(--text-secondary)',
-                boxShadow: authRole === 'business' ? '0 1px 3px rgba(0, 0, 0, 0.08)' : 'none',
-                fontSize: '0.8rem',
-                fontWeight: 600,
-                cursor: 'pointer',
-                transition: 'all var(--transition-fast)',
-              }}
-            >
-              Business Console
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setAuthRole('admin');
-                setErrorMsg(null);
-              }}
-              style={{
-                flex: 1,
-                padding: '0.45rem',
-                borderRadius: 'var(--radius-xs)',
-                border: 'none',
-                background: authRole === 'admin' ? 'var(--bg-card)' : 'transparent',
-                border: authRole === 'admin' ? '1px solid var(--border-medium)' : '1px solid transparent',
-                color: authRole === 'admin' ? 'var(--text-primary)' : 'var(--text-secondary)',
-                boxShadow: authRole === 'admin' ? '0 1px 3px rgba(0, 0, 0, 0.08)' : 'none',
-                fontSize: '0.8rem',
-                fontWeight: 600,
-                cursor: 'pointer',
-                transition: 'all var(--transition-fast)',
-              }}
-            >
-              Operator Portal
-            </button>
-          </div>
-
           {errorMsg && (
             <div
               style={{
@@ -487,9 +404,7 @@ export default function LandingPage({ onEnterWorkspace, onEnterAdmin }) {
             </div>
           )}
 
-          {authRole === 'business' ? (
-            <>
-              {/* Business Mode Switcher: Sign In vs Register */}
+          {/* Business Mode Switcher: Sign In vs Register */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
                 <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
                   {businessAuthMode === 'login' ? 'Business Sign In' : 'Provision New Receptionist'}
@@ -749,136 +664,10 @@ export default function LandingPage({ onEnterWorkspace, onEnterAdmin }) {
                   </button>
                 </form>
               )}
-            </>
-          ) : (
-            <>
-              <div style={{ marginBottom: '1.25rem' }}>
-                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
-                  Operator Admin Access
-                </h3>
-                <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', margin: '4px 0 0' }}>
-                  Manage global telephony trunks, multi-tenant businesses, and tool telemetry.
-                </p>
-              </div>
-
-              <div
-                style={{
-                  background: 'var(--bg-surface-elevated)',
-                  border: '1px solid var(--border-medium)',
-                  padding: '0.65rem 0.85rem',
-                  borderRadius: 'var(--radius-sm)',
-                  marginBottom: '1.25rem',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                }}
-              >
-                <span style={{ fontSize: '0.76rem', color: 'var(--text-secondary)' }}>
-                  Local operator key default is <strong>admin</strong>:
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setAdminPasscode('admin')}
-                  style={{
-                    padding: '0.28rem 0.65rem',
-                    borderRadius: 'var(--radius-xs)',
-                    background: 'var(--bg-card)',
-                    border: '1px solid var(--border-medium)',
-                    color: 'var(--color-primary)',
-                    fontSize: '0.74rem',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
-                  }}
-                >
-                  Autofill
-                </button>
-              </div>
-
-              <form onSubmit={handleAdminLogin} style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-                <div className="form-group">
-                  <label className="form-label">Operator Passcode</label>
-                  <input
-                    type="password"
-                    value={adminPasscode}
-                    onChange={(e) => setAdminPasscode(e.target.value)}
-                    placeholder="Enter operator key"
-                    className="form-input"
-                    required
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  className="btn-primary"
-                  style={{ width: '100%', padding: '0.65rem', marginTop: '0.5rem' }}
-                >
-                  Authenticate Operator
-                </button>
-              </form>
-            </>
-          )}
         </div>
       </section>
 
-      {/* 9. High-Converting Bottom CTA Banner */}
-      <section className="reveal-on-scroll" style={{ maxWidth: '1152px', margin: '0 auto', padding: '0 1.5rem 6rem', width: '100%', boxSizing: 'border-box' }}>
-        <div className="glass border-glow shadow-glow" style={{ borderRadius: '1.5rem', padding: '3.5rem 2rem', textAlign: 'center', border: '1px solid var(--border-medium)' }}>
-          <h2 style={{ fontSize: 'clamp(2rem, 4vw, 2.5rem)', fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 0.75rem', letterSpacing: '-0.025em' }}>
-            Your receptionist can start today.
-          </h2>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '1rem', maxWidth: '440px', margin: '0 auto 2rem' }}>
-            14-day free trial. No contracts. Cancel anytime.
-          </p>
-          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', gap: '1rem' }}>
-            <button
-              type="button"
-              className="landing-btn-primary"
-              onClick={() => scrollToAuth('business', 'register')}
-              style={{ padding: '0.75rem 2rem', fontSize: '0.95rem', fontWeight: 600, borderRadius: '8px' }}
-            >
-              Start free trial
-            </button>
-            <button
-              type="button"
-              onClick={() => scrollToAuth('business', 'login')}
-              style={{
-                padding: '0.75rem 2rem',
-                fontSize: '0.95rem',
-                fontWeight: 600,
-                borderRadius: '8px',
-                border: '1px solid var(--border-medium)',
-                background: 'transparent',
-                color: 'var(--text-primary)',
-                cursor: 'pointer',
-                transition: 'border-color 0.2s, background 0.2s',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = 'var(--color-primary)';
-                e.currentTarget.style.background = 'var(--bg-subtle)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = 'var(--border-medium)';
-                e.currentTarget.style.background = 'transparent';
-              }}
-            >
-              Log in
-            </button>
-          </div>
-          <p style={{ marginTop: '1.25rem', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-            Already a customer?{' '}
-            <button
-              type="button"
-              onClick={() => scrollToAuth('business', 'login')}
-              style={{ background: 'none', border: 'none', color: 'var(--color-primary)', fontWeight: 600, cursor: 'pointer', textDecoration: 'underline', padding: 0 }}
-            >
-              Log in to your dashboard
-            </button>
-          </p>
-        </div>
-      </section>
-
-      {/* 10. Polished Dark Footer */}
+      {/* 9. Polished Dark Footer */}
       <footer
         style={{
           borderTop: '1px solid var(--border-medium)',

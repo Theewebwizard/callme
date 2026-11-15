@@ -189,19 +189,7 @@ export default function PortalGateway({ onEnterWorkspace, onEnterAdmin }) {
             >
               <KeyRound size={16} /> 🔑 Business Login
             </button>
-            <button
-              className={`btn-secondary ${mode === 'admin' ? 'active' : ''}`}
-              style={{
-                background: mode === 'admin' ? 'var(--color-primary)' : 'var(--bg-card)',
-                color: mode === 'admin' ? 'var(--text-inverse)' : 'var(--text-secondary)',
-                borderColor: mode === 'admin' ? 'var(--color-primary)' : 'var(--border-medium)',
-                padding: '0.65rem 1.25rem',
-                borderRadius: 'var(--radius-full)',
-              }}
-              onClick={() => { setMode('admin'); setErrorMsg(null); }}
-            >
-              <ShieldCheck size={16} /> 🛡️ Operator Admin
-            </button>
+
           </div>
 
           {errorMsg && (
@@ -256,39 +244,6 @@ export default function PortalGateway({ onEnterWorkspace, onEnterAdmin }) {
                   {loading ? 'Verifying...' : 'Open My Workspace'} <ArrowRight size={16} />
                 </button>
               </form>
-            </div>
-          )}
-
-          {/* =========================================================================
-             MODE C: OPERATOR / ADMIN COMMAND CENTER
-             ========================================================================= */}
-          {mode === 'admin' && (
-            <div className="card" style={{ maxWidth: '520px', margin: '0 auto', padding: '2rem', border: '2px solid var(--sky-400)' }}>
-              <div className="card-title">
-                <ShieldCheck size={22} color="var(--sky-600)" /> Operator Admin Command Center
-              </div>
-              <div className="card-desc">
-                Access the cross-tenant admin overview, live agents fleet, user records, and master tool repository.
-              </div>
-
-              <div style={{ background: 'var(--sky-50)', padding: '1rem', borderRadius: 'var(--radius-sm)', marginBottom: '1.25rem', fontSize: '0.85rem', color: 'var(--sky-900)' }}>
-                <strong>Platform Operator Privileges:</strong>
-                <ul style={{ paddingLeft: '1.25rem', marginTop: '0.35rem', lineHeight: 1.5 }}>
-                  <li>Monitor all registered receptionist agents live</li>
-                  <li>Inspect tenant user profiles & operating schedules</li>
-                  <li>Review master canonical tools repository and cross-agent usage</li>
-                  <li>Manage custom tool demands and integrations queue</li>
-                </ul>
-              </div>
-
-              <button
-                type="button"
-                className="btn-primary"
-                onClick={onEnterAdmin}
-                style={{ width: '100%', padding: '0.85rem', background: 'linear-gradient(135deg, #0284c7 0%, #0f172a 100%)' }}
-              >
-                <ShieldCheck size={16} /> Enter Admin Command Center <ArrowRight size={16} />
-              </button>
             </div>
           )}
 
