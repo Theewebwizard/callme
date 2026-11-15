@@ -3,7 +3,7 @@
  * Connects React frontend directly to FastAPI backend.
  */
 
-const API_BASE = '/api';
+const API_BASE = (import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/\/+$/, '') : '') + '/api';
 
 const TOKEN_KEY = 'answerly_token';
 const LEGACY_TOKEN_KEY = 'callme_token';
