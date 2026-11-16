@@ -1,3 +1,13 @@
+---
+title: CallMe Backend API
+emoji: 📞
+colorFrom: blue
+colorTo: indigo
+sdk: gradio
+app_file: app.py
+pinned: false
+---
+
 # AI Receptionist Platform
 
 A modular, multi-tenant AI Receptionist platform designed to handle inbound business customer phone calls. Every business shares a unified LangGraph conversation workflow while maintaining tenant-specific business configurations, knowledge bases, and enabled tools.

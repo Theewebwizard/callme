@@ -3,7 +3,8 @@
  * Connects React frontend directly to FastAPI backend.
  */
 
-const API_BASE = (import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/\/+$/, '') : '') + '/api';
+const FALLBACK_API_URL = 'https://harsii03-callme-backend.hf.space';
+const API_BASE = (import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/\/+$/, '') : FALLBACK_API_URL) + '/api';
 
 const TOKEN_KEY = 'callme_token';
 const LEGACY_TOKEN_KEY = 'answerly_token';
