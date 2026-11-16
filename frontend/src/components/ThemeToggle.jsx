@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Sun, Moon } from 'lucide-react';
 
-export const THEME_STORAGE_KEY = 'answerly_theme';
-export const LEGACY_THEME_STORAGE_KEY = 'callme_theme';
+export const THEME_STORAGE_KEY = 'callme_theme';
+export const LEGACY_THEME_STORAGE_KEY = 'answerly_theme';
 
 function readTheme() {
   if (typeof document === 'undefined') return 'dark';

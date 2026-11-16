@@ -1,12 +1,12 @@
 /**
- * Answerly REST API Client
+ * CallMe REST API Client
  * Connects React frontend directly to FastAPI backend.
  */
 
 const API_BASE = '/api';
 
-const TOKEN_KEY = 'answerly_token';
-const LEGACY_TOKEN_KEY = 'callme_token';
+const TOKEN_KEY = 'callme_token';
+const LEGACY_TOKEN_KEY = 'answerly_token';
 
 function getStoredToken() {
   try {
@@ -100,8 +100,8 @@ async function request(path, options = {}) {
   };
 
   let token = getStoredToken();
-  const adminKey = localStorage.getItem('answerly_admin_key') || localStorage.getItem('callme_admin_key') || 'admin';
-  const role = localStorage.getItem('answerly_role') || localStorage.getItem('callme_role');
+  const adminKey = localStorage.getItem('callme_admin_key') || localStorage.getItem('answerly_admin_key') || 'admin';
+  const role = localStorage.getItem('callme_role') || localStorage.getItem('answerly_role');
   const isAdminPath = path.startsWith('/admin') || role === 'admin';
 
   if (isAdminPath) {

@@ -77,7 +77,7 @@ export default function ConfigConsoleSection() {
             <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#f59e0b' }} />
             <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#10b981' }} />
             <span style={{ marginLeft: '8px', fontSize: '0.72rem', fontFamily: 'var(--font-mono)', color: 'var(--text-tertiary)' }}>
-              answerly.config.yaml
+              callme.config.yaml
             </span>
           </div>
 
@@ -101,7 +101,7 @@ export default function ConfigConsoleSection() {
             <span>  - </span><span style={{ color: '#0ea5e9' }}>table_inventory_engine</span>{'\n'}
             <span>  - </span><span style={{ color: '#0ea5e9' }}>semantic_menu_pricing</span>{'\n'}
             <span>  - </span><span style={{ color: '#0ea5e9' }}>sms_voucher_dispatch</span>{'\n'}
-            <span style={{ color: 'var(--color-primary)', fontWeight: 700 }}>{'> answerly deploy --live --verify'}</span>{'\n'}
+            <span style={{ color: 'var(--color-primary)', fontWeight: 700 }}>{'> callme deploy --live --verify'}</span>{'\n'}
             <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>✓ DID Line Bound · Receptionist Online · 380ms Latency</span>
             <span className="animate-blink" style={{ color: 'var(--color-primary)', fontWeight: 800 }}>▍</span>
           </pre>

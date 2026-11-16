@@ -175,7 +175,7 @@ Located in `backend/integrations/contracts.py`:
   - OpenTable's Consumer API v2 is **strictly partner-gated**. Third-party applications cannot query live table inventory or commit reservations without a formal OpenTable Integration Partner Agreement.
   - Setup wizard strictly distinguishes `pending_provider_approval` from `ready`.
   - If `partner_approved` is `False`, the adapter marks readiness as `pending_provider_approval` with `is_ready=False` and blocks live reservation execution (`PERMISSION_DENIED`).
-  - **Zero Guessing / No Scraping Guarantee**: Under no circumstances does Answerly substitute guessed endpoints, scraped HTML, or the local built-in booking database for OpenTable live inventory while claiming to use OpenTable.
+  - **Zero Guessing / No Scraping Guarantee**: Under no circumstances does CallMe substitute guessed endpoints, scraped HTML, or the local built-in booking database for OpenTable live inventory while claiming to use OpenTable.
 - **Documented Partner Approval Checklist**:
   1. **Commercial Agreement**: Execute official Integration Partner Program contract with OpenTable Partner Network.
   2. **Partner ID & Key Provisioning**: Obtain production/sandbox Partner ID and Consumer API v2 secret key.
@@ -205,7 +205,7 @@ Located in `backend/integrations/contracts.py`:
 - **Partner Gating & Access Rules**:
   - SevenRooms developer documentation and REST API endpoints are **individually provisioned and partner-gated** (`api-integration-support@sevenrooms.com` / `api-docs.sevenrooms.com`).
   - If `partner_approved` is `False`, the adapter marks readiness as `pending_provider_approval` with `is_ready=False` and blocks live reservation execution (`PERMISSION_DENIED`).
-  - **No Fabrication / Built-in Alternative Guarantee**: Under no circumstances does Answerly fabricate a working SevenRooms connection, scrape HTML, or query the built-in database under the SevenRooms name. If external access is not available, the platform offers the **Built-in Table & Capacity Manager** (`builtin_dining`) as an independent, transparent option.
+  - **No Fabrication / Built-in Alternative Guarantee**: Under no circumstances does CallMe fabricate a working SevenRooms connection, scrape HTML, or query the built-in database under the SevenRooms name. If external access is not available, the platform offers the **Built-in Table & Capacity Manager** (`builtin_dining`) as an independent, transparent option.
 - **Documented Partner Approval Checklist**:
   1. **Commercial Agreement**: Execute partnership or venue API access agreement with SevenRooms.
   2. **Developer Credentials Provisioning**: Obtain Client ID, Client Secret, or Bearer API Key from SevenRooms Developer Portal (`api-docs.sevenrooms.com`).
@@ -245,7 +245,7 @@ Located in `backend/integrations/contracts.py`:
   - Live availability endpoint verification against Acuity's real-time scheduling rules:
     - Step 1: `GET /availability/dates?month=YYYY-MM&appointmentTypeID=...&calendarID=...&timezone=...`
     - Step 2: `GET /availability/times?date=YYYY-MM-DD&appointmentTypeID=...&calendarID=...&timezone=...`
-  - Under no circumstances does Answerly infer slot availability by subtracting appointments from working hours; Acuity's live booking rules, buffers, and calendar blocks are authoritative.
+  - Under no circumstances does CallMe infer slot availability by subtracting appointments from working hours; Acuity's live booking rules, buffers, and calendar blocks are authoritative.
 - **Appointment Lifecycle Operations**:
   - **Create (`POST /appointments`)**: Submits appointment type, formatted ISO-8601 datetime with timezone offset, customer details (`firstName`, `lastName`, `email`, `phone`), and notes with embedded idempotency token.
   - **Separation of Confirmed vs Pending Appointments**:
@@ -657,7 +657,7 @@ Before activating integrations for live production tenants:
 - **Authoritative Source-of-Truth Guarantees**:
   - All booking decisions query the platform's own transactional database.
   - The AI agent **must never infer availability** from FAQs, old conversation history, or external calendar events alone.
-  - When an external provider is selected, Answerly uses that provider's authoritative inventory and never silently writes to both systems.
+  - When an external provider is selected, CallMe uses that provider's authoritative inventory and never silently writes to both systems.
   - Confirmed bookings are never returned to callers unless the transaction has committed and the record exists in the database.
 - **Concurrency & Double-Booking Prevention**:
   - Uses transactional row conflict checks: `(resource_id == r.id) & (status in ['confirmed', 'hold']) & (start_time < effective_end) & (end_time > effective_start) & (hold_not_expired)`.
@@ -676,8 +676,8 @@ Before activating integrations for live production tenants:
 - **Timezone Awareness & Daylight-Saving Transitions (DST)**:
   - All database timestamps are stored in UTC with timezone awareness.
   - Clear rules for DST transitions implemented using Python `zoneinfo.ZoneInfo`:
-    - **Fall Back (Ambiguous Hour / Overlap)**: Clocks repeat an hour (e.g., 01:30 AM occurs twice). Answerly defaults to `fold=0` (the first occurrence in standard daylight time) and records the resolution in audit metadata.
-    - **Spring Forward (Nonexistent Hour / Gap)**: Clocks jump from 02:00 to 03:00 (02:30 AM does not exist). Answerly detects the gap and automatically shifts the booking to the post-transition operational wall-clock time (e.g. 03:30 AM) with audit tracking.
+    - **Fall Back (Ambiguous Hour / Overlap)**: Clocks repeat an hour (e.g., 01:30 AM occurs twice). CallMe defaults to `fold=0` (the first occurrence in standard daylight time) and records the resolution in audit metadata.
+    - **Spring Forward (Nonexistent Hour / Gap)**: Clocks jump from 02:00 to 03:00 (02:30 AM does not exist). CallMe detects the gap and automatically shifts the booking to the post-transition operational wall-clock time (e.g. 03:30 AM) with audit tracking.
 - **Operating Rules & Policy Enforcement**:
   - Operating days: Restricts bookings to active business days (e.g., closed on Sundays).
   - Operating hours: Validates opening and closing hours in the business timezone.

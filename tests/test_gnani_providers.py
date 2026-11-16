@@ -74,7 +74,7 @@ def test_gnani_tts_provider_synthesize_mock():
     mock_response.__enter__.return_value = mock_response
 
     with patch("urllib.request.urlopen", return_value=mock_response):
-        audio = provider.synthesize(text="Hello from Answerly", language="en-IN")
+        audio = provider.synthesize(text="Hello from CallMe", language="en-IN")
         assert audio == mock_audio_bytes
 
 

@@ -72,7 +72,7 @@ def validate_and_decode_key(
     # Reject known placeholders and legacy default keys in production
     if is_production and (
         "callme-default-vault" in key_str
-        or "answerly-default-vault" in key_str
+        or "callme-default-vault" in key_str
         or "dev_secret" in key_str
         or "change_in_production" in key_str
     ):

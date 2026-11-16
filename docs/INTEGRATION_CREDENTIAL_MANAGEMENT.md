@@ -2,7 +2,7 @@
 
 ## 1. Executive Summary & Core Principles
 
-Answerly is a multi-tenant AI receptionist platform. To automate appointments, reservations, customer messaging, and payments, tenants connect third-party providers (Google Calendar, Stripe Connect, Twilio, SevenRooms, OpenTable, HubSpot, etc.).
+CallMe is a multi-tenant AI receptionist platform. To automate appointments, reservations, customer messaging, and payments, tenants connect third-party providers (Google Calendar, Stripe Connect, Twilio, SevenRooms, OpenTable, HubSpot, etc.).
 
 Managing third-party credentials in a multi-tenant environment requires strict isolation, defense-in-depth cryptography, and concurrency coordination.
 
@@ -19,7 +19,7 @@ Managing third-party credentials in a multi-tenant environment requires strict i
 
 ## 2. Threat Model & Security Boundaries
 
-| Threat / Attack Vector | Mitigation in Answerly |
+| Threat / Attack Vector | Mitigation in CallMe |
 |---|---|
 | **Database Compromise (SQL Dump / Backup Leak)** | Stored data is AES-256-GCM ciphertext. Without access to the master key (`CAPABILITY_ENCRYPTION_KEY` or KMS), ciphertext is unrecoverable. |
 | **Ciphertext Tampering / Bit-Flipping** | 128-bit authentication tags verified on every read. Tampered ciphertext or authentication tags fail closed (`CredentialDecryptionError`). |
@@ -224,12 +224,12 @@ When a business disconnects an integration via `CapabilitySetupWizard.disconnect
 
 ## 8. Stripe Connect Authentication Architecture
 
-Answerly distinguishes **Platform Credentials** from **Tenant Credentials**:
+CallMe distinguishes **Platform Credentials** from **Tenant Credentials**:
 
-- **Platform Credentials**: Answerly's own Stripe secret key (`sk_live_...` or `STRIPE_API_KEY`) and webhook signing secrets. These belong strictly to the Answerly platform infrastructure.
+- **Platform Credentials**: CallMe's own Stripe secret key (`sk_live_...` or `STRIPE_API_KEY`) and webhook signing secrets. These belong strictly to the CallMe platform infrastructure.
 - **Tenant Credentials**: Businesses connecting Stripe to receive payments for reservations or appointments authenticate via Stripe Connect.
 - **Authentication Execution**:
-  - The Stripe API client uses Answerly's platform secret key for API requests.
+  - The Stripe API client uses CallMe's platform secret key for API requests.
   - Tenant requests include the tenant's connected account ID via the `Stripe-Account: acct_...` header.
   - A connected account ID alone does **not** provide authorization without the platform key. Both are required and verified on every payment operation.
 

@@ -607,7 +607,7 @@ class GmailAdapter(IntegrationAdapter):
             try:
                 res = self.send_email(
                     to=test_recipient,
-                    subject="Answerly AI Receptionist: Gmail Connection Verification",
+                    subject="CallMe AI Receptionist: Gmail Connection Verification",
                     body_text="This is an automated connection diagnostic authorized by the tenant administrator.",
                 )
                 return ReadinessCheckResult(
@@ -1209,7 +1209,7 @@ class GmailAdapter(IntegrationAdapter):
         data_bytes = urllib.parse.urlencode(payload).encode("utf-8")
         headers = {
             "Content-Type": "application/x-www-form-urlencoded",
-            "User-Agent": "Answerly-GmailAdapter/1.0",
+            "User-Agent": "CallMe-GmailAdapter/1.0",
         }
         req = urllib.request.Request(url, data=data_bytes, headers=headers, method="POST")
 
@@ -1238,7 +1238,7 @@ class GmailAdapter(IntegrationAdapter):
         headers = {
             "Authorization": f"Bearer {token}",
             "Content-Type": "application/json",
-            "User-Agent": "Answerly-GmailAdapter/1.0",
+            "User-Agent": "CallMe-GmailAdapter/1.0",
         }
 
         data_bytes = json.dumps(payload).encode("utf-8") if payload is not None else None

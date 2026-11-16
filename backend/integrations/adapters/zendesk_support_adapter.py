@@ -410,7 +410,7 @@ class ZendeskSupportAdapter(IntegrationAdapter):
         data_bytes = json.dumps(payload).encode("utf-8")
         headers = {
             "Content-Type": "application/json",
-            "User-Agent": "Answerly-ZendeskAdapter/1.0",
+            "User-Agent": "CallMe-ZendeskAdapter/1.0",
         }
         req = urllib.request.Request(url, data=data_bytes, headers=headers, method="POST")
 
@@ -1099,7 +1099,7 @@ class ZendeskSupportAdapter(IntegrationAdapter):
             "Authorization": auth_header,
             "Content-Type": "application/json",
             "Accept": "application/json",
-            "User-Agent": "Answerly-ZendeskAdapter/1.0",
+            "User-Agent": "CallMe-ZendeskAdapter/1.0",
         }
 
         data_bytes = json.dumps(payload).encode("utf-8") if payload is not None else None

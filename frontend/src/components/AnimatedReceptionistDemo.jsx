@@ -67,7 +67,7 @@ function SimulatedWaveform({ stage, isPaused }) {
       case 'caller_inquiry':
         return { label: 'Simulated Inbound Caller Audio • 8kHz PCM', color: 'var(--sky-500)', glow: 'rgba(56, 189, 248, 0.3)' };
       case 'ai_response':
-        return { label: 'Simulated Answerly Neural Voice Synthesis • 24kHz HD', color: 'var(--mint-400)', glow: 'rgba(16, 185, 129, 0.4)' };
+        return { label: 'Simulated CallMe Neural Voice Synthesis • 24kHz HD', color: 'var(--mint-400)', glow: 'rgba(16, 185, 129, 0.4)' };
       case 'tool_check':
         return { label: 'Simulated Real-Time Database Query Pulse', color: 'var(--indigo-400)', glow: 'rgba(99, 102, 241, 0.3)' };
       case 'confirmed':

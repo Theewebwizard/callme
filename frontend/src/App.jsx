@@ -154,7 +154,7 @@ export default function App() {
   if (initialLoading) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-app)', color: 'var(--indigo-600)', fontWeight: 600 }}>
-        Loading Answerly AI Receptionist Platform...
+        Loading CallMe AI Receptionist Platform...
       </div>
     );
   }

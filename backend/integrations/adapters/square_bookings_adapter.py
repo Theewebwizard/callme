@@ -923,7 +923,7 @@ class SquareBookingsAdapter(ReservationAdapterInterface):
                     family_name=last_name,
                     phone_number=cust_phone if cust_phone else None,
                     email_address=cust_email if cust_email else None,
-                    note=f"Created via Answerly AI Receptionist ({context.tenant_id})",
+                    note=f"Created via CallMe AI Receptionist ({context.tenant_id})",
                 )
                 created_cust = getattr(cust_create_resp, "customer", None)
                 if created_cust:
@@ -943,7 +943,7 @@ class SquareBookingsAdapter(ReservationAdapterInterface):
             "location_id": loc_id,
             "customer_id": customer_id,
             "customer_note": cust_notes,
-            "seller_note": f"Answerly AI Receptionist Booking [Idempotency: {idempotency_key}]",
+            "seller_note": f"CallMe AI Receptionist Booking [Idempotency: {idempotency_key}]",
             "appointment_segments": [segment],
         }
 

@@ -175,7 +175,7 @@ def index_page() -> HTMLResponse:
     index_file = frontend_dist / "index.html"
     if index_file.exists():
         return HTMLResponse(content=index_file.read_text(encoding="utf-8"))
-    return HTMLResponse(content="<h1>Answerly React Frontend</h1><p>Please run 'npm run build' inside frontend directory.</p>")
+    return HTMLResponse(content="<h1>CallMe React Frontend</h1><p>Please run 'npm run build' inside frontend directory.</p>")
 
 
 @app.get("/call", response_class=HTMLResponse, tags=["Web Phone"])

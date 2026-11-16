@@ -92,12 +92,12 @@ export default function Taskbar({
         <div className="top-panel-main-row">
           <div className="top-panel-left">
             {/* Platform Brand */}
-            <div className="top-panel-brand" title="Answerly Autonomous Voice Platform">
+            <div className="top-panel-brand" title="CallMe Autonomous Voice Platform">
               <div className="brand-icon">
                 <PhoneCall size={16} strokeWidth={2.5} />
               </div>
               <div className="brand-text">
-                Answer<span>ly</span>
+                Call<span>Me</span>
               </div>
               <span className="brand-version-badge">v2.4</span>
             </div>
@@ -224,7 +224,7 @@ export default function Taskbar({
             <PhoneCall size={12} strokeWidth={2.5} />
           </div>
           <span style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-            {business?.name || 'Answerly Console'}
+            {business?.name || 'CallMe Console'}
           </span>
         </div>
 
@@ -254,7 +254,7 @@ export default function Taskbar({
                 <div className="brand-icon" style={{ width: 24, height: 24 }}>
                   <PhoneCall size={14} />
                 </div>
-                <span style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.95rem' }}>Answerly Console</span>
+                <span style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.95rem' }}>CallMe Console</span>
               </div>
               <button
                 type="button"

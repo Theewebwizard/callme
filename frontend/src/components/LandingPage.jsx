@@ -242,11 +242,11 @@ export default function LandingPage({ onEnterWorkspace, onEnterAdmin }) {
       {/* 1. Sticky Navigation Bar with Entrance Animation */}
       <header className="landing-nav hero-enter-nav" role="banner" style={{ position: 'sticky', top: 0, zIndex: 100 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-          <div className="brand-icon" title="Answerly AI Voice Platform">
+          <div className="brand-icon" title="CallMe AI Voice Platform">
             <PhoneCall size={16} strokeWidth={2.5} />
           </div>
           <span style={{ fontWeight: 700, fontSize: '1.05rem', letterSpacing: '-0.03em', color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}>
-            Answer<span style={{ color: 'var(--color-emerald)' }}>ly</span>
+            Call<span style={{ color: 'var(--color-emerald)' }}>Me</span>
           </span>
           <span
             style={{
@@ -672,7 +672,7 @@ export default function LandingPage({ onEnterWorkspace, onEnterAdmin }) {
           <div className="brand-icon" style={{ width: 22, height: 22 }}>
             <PhoneCall size={12} strokeWidth={2.5} />
           </div>
-          <span style={{ color: 'var(--text-primary)', fontWeight: 600, fontFamily: 'var(--font-display)' }}>Answerly Platform</span>
+          <span style={{ color: 'var(--text-primary)', fontWeight: 600, fontFamily: 'var(--font-display)' }}>CallMe Platform</span>
           <span>© 2026. All rights reserved.</span>
         </div>
 

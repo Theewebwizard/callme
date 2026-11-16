@@ -389,7 +389,7 @@ def test_existing_secrets_remain_intact_after_successful_refresh(test_db_service
         "client_secret": "app_secret_xyz",
         "access_token": "old_token",
         "refresh_token": "permanent_refresh_key",
-        "redirect_uri": "https://answerly.example.com/oauth/callback",
+        "redirect_uri": "https://callme.example.com/oauth/callback",
         "token_uri": "https://oauth2.googleapis.com/token",
         "custom_settings": {"calendar_id": "primary", "sync_events": True},
     }
@@ -415,12 +415,12 @@ def test_existing_secrets_remain_intact_after_successful_refresh(test_db_service
     )
 
     assert refreshed["access_token"] == "refreshed_access_token_ok"
-    assert refreshed["redirect_uri"] == "https://answerly.example.com/oauth/callback"
+    assert refreshed["redirect_uri"] == "https://callme.example.com/oauth/callback"
     assert refreshed["custom_settings"]["calendar_id"] == "primary"
 
     raw = test_db_service.get_credential_raw("biz_tenant_alpha", "check_appointment_availability")
     stored = decrypt_vault_payload(raw["encrypted_secrets"])
-    assert stored["redirect_uri"] == "https://answerly.example.com/oauth/callback"
+    assert stored["redirect_uri"] == "https://callme.example.com/oauth/callback"
     assert stored["custom_settings"]["sync_events"] is True
 
 

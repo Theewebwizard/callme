@@ -50,7 +50,7 @@ export default function Dashboard({ business, onNavigate, calls = [] }) {
             >
               <Sparkles size={13} /> Getting Started
             </div>
-            <h2>Welcome to Your Answerly Voice Receptionist Workspace</h2>
+            <h2>Welcome to Your CallMe Voice Receptionist Workspace</h2>
             <p className="section-subtitle" style={{ maxWidth: '680px' }}>
               No business tenant profile is currently loaded. Configure your business identity, operating hours, and voice prompts now to activate your 24/7 autonomous receptionist.
             </p>

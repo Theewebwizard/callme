@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     """Platform configuration settings."""
 
     # Application Info
-    APP_NAME: str = "Answerly AI Receptionist Platform"
+    APP_NAME: str = "CallMe AI Receptionist Platform"
     APP_VERSION: str = "0.1.0"
     ENVIRONMENT: str = "development"
     DEBUG: bool = True

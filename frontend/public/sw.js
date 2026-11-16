@@ -1,5 +1,5 @@
-/* Answerly AI Receptionist — Progressive Web App Service Worker */
-const CACHE_NAME = 'answerly-pwa-v1';
+/* CallMe AI Receptionist — Progressive Web App Service Worker */
+const CACHE_NAME = 'callme-pwa-v1';
 const PRECACHE_ASSETS = [
   '/',
   '/index.html',

@@ -214,7 +214,7 @@ class HubspotCrmAdapter(IntegrationAdapter):
                     label="OAuth Redirect URI",
                     type=FieldType.STRING,
                     required=False,
-                    placeholder="https://api.answerly.ai/oauth/hubspot/callback",
+                    placeholder="https://api.callme.ai/oauth/hubspot/callback",
                 ),
                 SetupField(
                     key="enabled_objects",
@@ -554,7 +554,7 @@ class HubspotCrmAdapter(IntegrationAdapter):
 
         # HTTP Fallback
         url = f"{HUBSPOT_OAUTH_INFO_URL}/{tok}"
-        req = urllib.request.Request(url, headers={"User-Agent": "Answerly-HubSpotAdapter/1.0"})
+        req = urllib.request.Request(url, headers={"User-Agent": "CallMe-HubSpotAdapter/1.0"})
         try:
             with urllib.request.urlopen(req, timeout=8.0) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
@@ -1919,7 +1919,7 @@ class HubspotCrmAdapter(IntegrationAdapter):
             data=encoded_data,
             headers={
                 "Content-Type": "application/x-www-form-urlencoded",
-                "User-Agent": "Answerly-HubSpotAdapter/1.0",
+                "User-Agent": "CallMe-HubSpotAdapter/1.0",
             },
             method="POST",
         )

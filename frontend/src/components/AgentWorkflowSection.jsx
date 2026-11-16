@@ -17,34 +17,34 @@ export const WORKFLOW_STEPS = [
     tag: 'Inbound telephony',
     stageLabel: 'Receive',
     title: 'A call arrives on the first ring',
-    text: 'Never lose a high-value customer, whether during the dinner peak rush or at 3 AM when the front desk is closed. Answerly monitors your business DID line 24/7 with a sub-380ms pickup guarantee.',
+    text: 'Never lose a high-value customer, whether during the dinner peak rush or at 3 AM when the front desk is closed. CallMe monitors your business DID line 24/7 with a sub-380ms pickup guarantee.',
     points: ['Picks up on the 1st ring', 'Zero dropped calls guarantee', 'Direct carrier DID binding'],
   },
   {
     tag: 'Multilingual Indic voice engine',
     stageLabel: 'Respond',
-    title: 'Answerly answers with natural human warmth',
-    text: 'No frustrating "press 1 for reservations" IVR phone trees. Answerly immediately greets callers across 12+ Indic languages and dialects, detecting speech pauses and accents with ultra-low acoustic turn latency.',
+    title: 'CallMe answers with natural human warmth',
+    text: 'No frustrating "press 1 for reservations" IVR phone trees. CallMe immediately greets callers across 12+ Indic languages and dialects, detecting speech pauses and accents with ultra-low acoustic turn latency.',
     points: ['12+ Indic languages & code-switching', 'No robotic phone trees', '380ms conversational turn time'],
   },
   {
     tag: 'Semantic intent extraction',
     stageLabel: 'Understand',
-    title: 'Answerly extracts the exact customer request',
-    text: 'As callers speak naturally—"Hi, can we get a table for 4 tonight around 8 PM outside?"—Answerly accurately parses party size, time, date, dietary needs, or clinical symptoms grounded in your business policies.',
+    title: 'CallMe extracts the exact customer request',
+    text: 'As callers speak naturally—"Hi, can we get a table for 4 tonight around 8 PM outside?"—CallMe accurately parses party size, time, date, dietary needs, or clinical symptoms grounded in your business policies.',
     points: ['Entity extraction (party, time, date)', 'FAQ knowledge grounding', 'Conversational context retention'],
   },
   {
     tag: 'Calendar & inventory truth',
     stageLabel: 'Verify',
-    title: 'Answerly verifies live database availability',
-    text: 'Answerly executes real-time database queries against your live room nights, restaurant tables, or doctor consultation chairs. It checks genuine availability, enforces party limits, and prevents double bookings.',
+    title: 'CallMe verifies live database availability',
+    text: 'CallMe executes real-time database queries against your live room nights, restaurant tables, or doctor consultation chairs. It checks genuine availability, enforces party limits, and prevents double bookings.',
     points: ['Authoritative database lookup', 'Zero double-booking guarantee', 'Live capacity & party limits enforcement'],
   },
   {
     tag: 'Workflow resolution',
     stageLabel: 'Resolve',
-    title: 'Answerly confirms and logs the entire transaction',
+    title: 'CallMe confirms and logs the entire transaction',
     text: 'The booking is committed to your authoritative database, a confirmation SMS with directions is dispatched to the caller’s mobile, and full turn-by-turn audio transcripts are synced to your cockpit.',
     points: ['Instant SMS confirmation dispatch', 'Structured Cockpit Audit Trail', '100% Autonomous Resolution'],
   },
@@ -124,7 +124,7 @@ export default function AgentWorkflowSection() {
           <span>Autonomous Call Lifecycle</span>
         </div>
         <h2 style={{ fontSize: 'clamp(1.75rem, 4vw, 2.75rem)', fontWeight: 700, letterSpacing: '-0.03em', color: 'var(--text-primary)', maxWidth: '820px', margin: '0 auto 0.85rem' }}>
-          How Answerly handles a call from <span className="text-gradient">first ring to confirmed booking</span>
+          How CallMe handles a call from <span className="text-gradient">first ring to confirmed booking</span>
         </h2>
         <p style={{ color: 'var(--text-secondary)', fontSize: '0.94rem', maxWidth: '640px', margin: '0 auto' }}>
           One receptionist. An intelligent, deterministic workflow from incoming caller speech to committed database transaction.

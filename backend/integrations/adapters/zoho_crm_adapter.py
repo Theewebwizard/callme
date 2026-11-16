@@ -1793,7 +1793,7 @@ class ZohoCrmAdapter(IntegrationAdapter):
         headers = {
             "Authorization": f"Zoho-oauthtoken {token}",
             "Content-Type": "application/json",
-            "User-Agent": "Answerly-ZohoAdapter/1.0",
+            "User-Agent": "CallMe-ZohoAdapter/1.0",
         }
         if org_id:
             headers["X-CRM-ORG"] = org_id
@@ -1836,7 +1836,7 @@ class ZohoCrmAdapter(IntegrationAdapter):
             data=encoded_data,
             headers={
                 "Content-Type": "application/x-www-form-urlencoded",
-                "User-Agent": "Answerly-ZohoAdapter/1.0",
+                "User-Agent": "CallMe-ZohoAdapter/1.0",
             },
             method="POST",
         )

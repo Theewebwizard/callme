@@ -21,34 +21,34 @@ const STORY_STEPS = [
     step: '01',
     badge: 'INBOUND TELEPHONY',
     title: 'A call arrives on the first ring',
-    desc: 'Never lose a high-value customer, whether during the dinner peak rush or at 3 AM when the front desk is closed. Answerly monitors your business DID line 24/7 with a sub-380ms pickup guarantee.',
+    desc: 'Never lose a high-value customer, whether during the dinner peak rush or at 3 AM when the front desk is closed. CallMe monitors your business DID line 24/7 with a sub-380ms pickup guarantee.',
     highlights: ['Picks up on the 1st ring', 'Zero dropped calls', 'Direct carrier DID binding'],
   },
   {
     step: '02',
     badge: 'MULTILINGUAL INDIC VOICE ENGINE',
-    title: 'Answerly answers with natural human warmth',
-    desc: 'No frustrating "press 1 for reservations" IVR phone trees. Answerly immediately greets callers across 12+ Indic languages and dialects, detecting speech pauses and accents with ultra-low acoustic turn latency.',
+    title: 'CallMe answers with natural human warmth',
+    desc: 'No frustrating "press 1 for reservations" IVR phone trees. CallMe immediately greets callers across 12+ Indic languages and dialects, detecting speech pauses and accents with ultra-low acoustic turn latency.',
     highlights: ['12+ Indic languages & code-switching', 'No robotic phone trees', '380ms conversational turn time'],
   },
   {
     step: '03',
     badge: 'SEMANTIC INTENT EXTRACTION',
-    title: 'Answerly extracts the exact customer request',
-    desc: 'As callers speak naturally—"Hi, can we get a table for 4 tonight around 8 PM outside?"—Answerly accurately parses party size, time, date, dietary needs, or clinical symptoms grounded in your business policies.',
+    title: 'CallMe extracts the exact customer request',
+    desc: 'As callers speak naturally—"Hi, can we get a table for 4 tonight around 8 PM outside?"—CallMe accurately parses party size, time, date, dietary needs, or clinical symptoms grounded in your business policies.',
     highlights: ['Entity extraction (party, time, date)', 'FAQ knowledge grounding', 'Conversational context retention'],
   },
   {
     step: '04',
     badge: 'CALENDAR & INVENTORY TRUTH',
-    title: 'Answerly verifies live database availability',
-    desc: 'Answerly executes real-time database queries against your live room nights, restaurant tables, or doctor consultation chairs. It checks genuine availability, enforces party limits, and prevents double bookings.',
+    title: 'CallMe verifies live database availability',
+    desc: 'CallMe executes real-time database queries against your live room nights, restaurant tables, or doctor consultation chairs. It checks genuine availability, enforces party limits, and prevents double bookings.',
     highlights: ['Authoritative database lookup', 'Zero double-booking guarantee', 'Turnaround time calculation'],
   },
   {
     step: '05',
     badge: 'WORKFLOW RESOLUTION',
-    title: 'Answerly confirms and logs the entire transaction',
+    title: 'CallMe confirms and logs the entire transaction',
     desc: 'The booking is committed to your authoritative database, a confirmation SMS with directions is dispatched to the caller’s mobile, and full turn-by-turn audio transcripts are synced to your cockpit.',
     highlights: ['Instant SMS voucher dispatch', 'Structured Cockpit Audit Trail', '100% Autonomous Resolution'],
   },
@@ -488,10 +488,10 @@ export default function ScrollStorytellingSection() {
         </div>
 
         <h2 style={{ fontSize: 'clamp(1.8rem, 3.5vw, 2.6rem)', fontWeight: 800, letterSpacing: '-0.03em', color: 'var(--text-primary)', marginBottom: '0.75rem' }}>
-          How Answerly handles a call from first ring to confirmed booking
+          How CallMe handles a call from first ring to confirmed booking
         </h2>
         <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', maxWidth: '640px', margin: '0 auto', lineHeight: 1.6 }}>
-          Scroll through an autonomous inbound call journey. Observe how Answerly extracts intent, verifies live database inventory, and finalizes workflows with zero human delay.
+          Scroll through an autonomous inbound call journey. Observe how CallMe extracts intent, verifies live database inventory, and finalizes workflows with zero human delay.
         </p>
       </div>
 

@@ -22,7 +22,7 @@ async function safeGetMenu(businessId, category = null) {
   if (api && typeof api.getMenu === 'function') {
     return api.getMenu(businessId, category);
   }
-  const token = localStorage.getItem('answerly_token') || localStorage.getItem('callme_token');
+  const token = localStorage.getItem('callme_token') || localStorage.getItem('callme_token');
   const q = category ? `?category=${encodeURIComponent(category)}` : '';
   const res = await fetch(`/api/businesses/${businessId}/menu${q}`, {
     headers: token ? { Authorization: `Bearer ${token}` } : {},
@@ -35,7 +35,7 @@ async function safeUploadMenu(businessId, items, replace = false) {
   if (api && typeof api.uploadMenu === 'function') {
     return api.uploadMenu(businessId, items, replace);
   }
-  const token = localStorage.getItem('answerly_token') || localStorage.getItem('callme_token');
+  const token = localStorage.getItem('callme_token') || localStorage.getItem('callme_token');
   const res = await fetch(`/api/businesses/${businessId}/menu/upload`, {
     method: 'POST',
     headers: {
@@ -55,7 +55,7 @@ async function safeDeleteMenuItem(businessId, itemId) {
   if (api && typeof api.deleteMenuItem === 'function') {
     return api.deleteMenuItem(businessId, itemId);
   }
-  const token = localStorage.getItem('answerly_token') || localStorage.getItem('callme_token');
+  const token = localStorage.getItem('callme_token') || localStorage.getItem('callme_token');
   const res = await fetch(`/api/businesses/${businessId}/menu/${itemId}`, {
     method: 'DELETE',
     headers: token ? { Authorization: `Bearer ${token}` } : {},
@@ -68,7 +68,7 @@ async function safeParseMenuText(businessId, text, defaultCategory = 'Mains') {
   if (api && typeof api.parseMenuText === 'function') {
     return api.parseMenuText(businessId, text, defaultCategory);
   }
-  const token = localStorage.getItem('answerly_token') || localStorage.getItem('callme_token');
+  const token = localStorage.getItem('callme_token') || localStorage.getItem('callme_token');
   const res = await fetch(`/api/businesses/${businessId}/menu/parse-text`, {
     method: 'POST',
     headers: {
@@ -238,7 +238,7 @@ export function MenuManagerView({ business, isEmbedded = false, onMenuUpdated, o
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.setAttribute('download', 'answerly_menu_template.csv');
+    link.setAttribute('download', 'callme_menu_template.csv');
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

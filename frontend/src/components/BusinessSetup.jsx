@@ -500,7 +500,7 @@ export default function BusinessSetup({ business, onBusinessSaved }) {
                   Deterministic Escalation & Staff Handoffs
                 </h3>
                 <p style={{ fontSize: '0.76rem', color: 'var(--text-tertiary)', margin: '4px 0 0' }}>
-                  Safety policies that dictate when Answerly immediately transfers callers to human staff.
+                  Safety policies that dictate when CallMe immediately transfers callers to human staff.
                 </p>
               </div>
 

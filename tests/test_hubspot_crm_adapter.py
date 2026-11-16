@@ -101,13 +101,13 @@ def test_hubspot_oauth_authorization_url_generation():
         business_id="tenant_dental",
         configuration={
             "client_id": "client_abc_123",
-            "redirect_uri": "https://answerly.ai/oauth/callback",
+            "redirect_uri": "https://callme.ai/oauth/callback",
             "enabled_objects": ["contacts", "notes", "tasks"],
         },
     )
 
     url = adapter.get_authorization_url(
-        redirect_uri="https://answerly.ai/oauth/callback",
+        redirect_uri="https://callme.ai/oauth/callback",
         state="csrf_state_999",
     )
 
@@ -125,7 +125,7 @@ def test_hubspot_oauth_token_exchange():
         business_id="tenant_dental",
         configuration={
             "client_id": "client_abc_123",
-            "redirect_uri": "https://answerly.ai/oauth/callback",
+            "redirect_uri": "https://callme.ai/oauth/callback",
         },
         credentials={
             "client_secret": "secret_xyz_888",
@@ -656,7 +656,7 @@ def test_hubspot_webhook_signature_v3_verification():
     )
 
     raw_body = b'[{"eventId": 12345, "subscriptionType": "contact.creation", "objectId": 101}]'
-    notification_url = "https://api.answerly.ai/api/v1/integrations/webhooks/hubspot"
+    notification_url = "https://api.callme.ai/api/v1/integrations/webhooks/hubspot"
     http_method = "POST"
     now_ms = str(int(time.time() * 1000))
 
@@ -699,7 +699,7 @@ def test_hubspot_webhook_handling():
         headers={},
         raw_body=b'[{"eventId": 987654, "subscriptionType": "contact.creation", "objectId": 101}]',
         parsed_json={"events": [{"eventId": 987654, "subscriptionType": "contact.creation", "objectId": 101}]},
-        url="https://api.answerly.ai/api/v1/integrations/webhooks/hubspot",
+        url="https://api.callme.ai/api/v1/integrations/webhooks/hubspot",
     )
 
     result = adapter.handle_webhook(wh_req)

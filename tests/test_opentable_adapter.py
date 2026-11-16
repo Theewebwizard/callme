@@ -91,7 +91,7 @@ def test_unapproved_partner_readiness_pending_provider_approval():
         option_id="opentable",
         configuration={
             "restaurant_id": "104291",
-            "partner_id": "answerly_partner_sandbox",
+            "partner_id": "callme_partner_sandbox",
             "partner_approved": False,
         },
         credentials={
@@ -120,7 +120,7 @@ def test_unapproved_partner_strictly_blocks_execution_without_database_fallback(
         option_id="opentable",
         configuration={
             "restaurant_id": "104291",
-            "partner_id": "answerly_partner_sandbox",
+            "partner_id": "callme_partner_sandbox",
             "partner_approved": False,
         },
         credentials={
@@ -184,7 +184,7 @@ def test_approved_partner_readiness_ready():
         option_id="opentable",
         configuration={
             "restaurant_id": "104291",
-            "partner_id": "answerly_partner_sandbox",
+            "partner_id": "callme_partner_sandbox",
             "partner_approved": True,
             "environment": "sandbox",
         },
@@ -232,7 +232,7 @@ def test_partner_approval_checklist():
 
     # Now update with partner approval & credentials
     adapter.configuration["partner_approved"] = True
-    adapter.configuration["partner_id"] = "answerly_ot"
+    adapter.configuration["partner_id"] = "callme_ot"
     adapter.credentials["partner_api_key"] = "sec_test_123"
 
     updated_checklist = adapter.get_partner_approval_checklist()
@@ -256,7 +256,7 @@ def test_availability_search_payload_and_mapping():
         option_id="opentable",
         configuration={
             "restaurant_id": "104291",
-            "partner_id": "answerly_partner",
+            "partner_id": "callme_partner",
             "partner_approved": True,
             "environment": "sandbox",
         },
@@ -320,7 +320,7 @@ def test_reservation_creation_with_idempotency_request_id():
         option_id="opentable",
         configuration={
             "restaurant_id": "104291",
-            "partner_id": "answerly_partner",
+            "partner_id": "callme_partner",
             "partner_approved": True,
             "environment": "sandbox",
         },
@@ -392,7 +392,7 @@ def test_reservation_lifecycle_get_reschedule_cancel():
         option_id="opentable",
         configuration={
             "restaurant_id": "104291",
-            "partner_id": "answerly_partner",
+            "partner_id": "callme_partner",
             "partner_approved": True,
         },
         credentials={
@@ -539,7 +539,7 @@ def test_setup_wizard_distinguishes_pending_provider_approval_and_blocks_activat
         step_id="configuration",
         input_data={
             "restaurant_id": "104291",
-            "partner_id": "answerly_partner_id",
+            "partner_id": "callme_partner_id",
             "partner_api_key": "secret_ot_token_xyz",
             "partner_approved": False,
         },
@@ -566,7 +566,7 @@ def test_setup_wizard_distinguishes_pending_provider_approval_and_blocks_activat
         step_id="configuration",
         input_data={
             "restaurant_id": "104291",
-            "partner_id": "answerly_partner_id",
+            "partner_id": "callme_partner_id",
             "partner_api_key": "sandbox_key_verified",
             "partner_approved": True,
             "environment": "sandbox",

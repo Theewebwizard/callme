@@ -31,7 +31,7 @@ TOOL_CAPABILITY_SPECS: Dict[str, ToolCapabilityRequirement] = {
             IntegrationOption(
                 option_id="builtin_dining",
                 name="Built-in Table & Capacity Manager",
-                description="Transactional first-party table inventory manager built directly into Answerly.",
+                description="Transactional first-party table inventory manager built directly into CallMe.",
                 is_built_in=True,
                 requires_external_connection=False,
                 authoritative_source=AuthoritativeSource.BUILTIN_DATABASE,
@@ -63,7 +63,7 @@ TOOL_CAPABILITY_SPECS: Dict[str, ToolCapabilityRequirement] = {
                 ],
                 instructions_markdown=(
                     "### Built-in Dining Table Manager\n"
-                    "Answerly manages table inventory directly in your tenant database.\n\n"
+                    "CallMe manages table inventory directly in your tenant database.\n\n"
                     "**Readiness Requirements:**\n"
                     "1. Configure seating duration and turnover buffer.\n"
                     "2. Add at least one active dining table under **Resource Inventory**."
@@ -96,7 +96,7 @@ TOOL_CAPABILITY_SPECS: Dict[str, ToolCapabilityRequirement] = {
                 ],
                 instructions_markdown=(
                     "### Built-in Booking & Resource Manager\n"
-                    "Answerly manages authoritative resource inventory directly in your tenant database."
+                    "CallMe manages authoritative resource inventory directly in your tenant database."
                 ),
             ),
             IntegrationOption(
@@ -151,7 +151,7 @@ TOOL_CAPABILITY_SPECS: Dict[str, ToolCapabilityRequirement] = {
                     "**Partner Approval Prerequisite:**\n"
                     "- SevenRooms API access is partner-gated. Obtain provisioned credentials from SevenRooms Support (`api-integration-support@sevenrooms.com`).\n"
                     "- If partner access is pending, this capability displays `pending_provider_approval` and keeps live reservation execution disabled.\n"
-                    "- **Built-in Alternative**: If SevenRooms external access is not available, select the **Built-in Table & Capacity Manager** (`builtin_dining`) to manage inventory directly in Answerly."
+                    "- **Built-in Alternative**: If SevenRooms external access is not available, select the **Built-in Table & Capacity Manager** (`builtin_dining`) to manage inventory directly in CallMe."
                 ),
             ),
             IntegrationOption(
@@ -175,7 +175,7 @@ TOOL_CAPABILITY_SPECS: Dict[str, ToolCapabilityRequirement] = {
                         label="OpenTable Partner ID",
                         type=FieldType.STRING,
                         required=True,
-                        placeholder="e.g. answerly_reception_prod",
+                        placeholder="e.g. callme_reception_prod",
                         description="Approved integration partner ID provisioned by OpenTable.",
                     ),
                     SetupField(
@@ -348,7 +348,7 @@ TOOL_CAPABILITY_SPECS: Dict[str, ToolCapabilityRequirement] = {
                     "**Partner Approval Prerequisite:**\n"
                     "- Live booking execution is blocked until `partner_approved` is confirmed.\n"
                     "- Employs `X-Request-Id` and `client_reference_id` idempotency tokens on every commit.\n"
-                    "- **Built-in Alternative**: If SevenRooms credentials are not approved, select **Built-in Table & Capacity Manager** (`builtin_dining`) to reserve tables in Answerly."
+                    "- **Built-in Alternative**: If SevenRooms credentials are not approved, select **Built-in Table & Capacity Manager** (`builtin_dining`) to reserve tables in CallMe."
                 ),
             ),
             IntegrationOption(
@@ -372,7 +372,7 @@ TOOL_CAPABILITY_SPECS: Dict[str, ToolCapabilityRequirement] = {
                         label="OpenTable Partner ID",
                         type=FieldType.STRING,
                         required=True,
-                        placeholder="e.g. answerly_reception_prod",
+                        placeholder="e.g. callme_reception_prod",
                         description="Approved integration partner ID provisioned by OpenTable.",
                     ),
                     SetupField(
@@ -420,7 +420,7 @@ TOOL_CAPABILITY_SPECS: Dict[str, ToolCapabilityRequirement] = {
             IntegrationOption(
                 option_id="builtin_booking",
                 name="Built-in Room & Lodging Manager",
-                description="Transactional first-party hotel room inventory manager built into Answerly.",
+                description="Transactional first-party hotel room inventory manager built into CallMe.",
                 is_built_in=True,
                 requires_external_connection=False,
                 authoritative_source=AuthoritativeSource.BUILTIN_DATABASE,
@@ -544,7 +544,7 @@ TOOL_CAPABILITY_SPECS: Dict[str, ToolCapabilityRequirement] = {
                 ],
                 instructions_markdown=(
                     "### Built-in Clinical Scheduler\n"
-                    "Manage appointments using Answerly's internal clinical scheduling engine."
+                    "Manage appointments using CallMe's internal clinical scheduling engine."
                 ),
             ),
             IntegrationOption(
@@ -972,7 +972,7 @@ TOOL_CAPABILITY_SPECS: Dict[str, ToolCapabilityRequirement] = {
             IntegrationOption(
                 option_id="builtin_messaging",
                 name="Transactional Message Store",
-                description="Persist caller messages directly into Answerly's staff review store.",
+                description="Persist caller messages directly into CallMe's staff review store.",
                 is_built_in=True,
                 requires_external_connection=False,
                 authoritative_source=AuthoritativeSource.COMMUNICATION_SERVICE,
@@ -1111,7 +1111,7 @@ TOOL_CAPABILITY_SPECS: Dict[str, ToolCapabilityRequirement] = {
             IntegrationOption(
                 option_id="builtin_restaurant_menu",
                 name="Tenant Restaurant Menu & Pricing Store",
-                description="Semantic concept search and multi-tenant menu storage built directly into Answerly.",
+                description="Semantic concept search and multi-tenant menu storage built directly into CallMe.",
                 is_built_in=True,
                 requires_external_connection=False,
                 authoritative_source=AuthoritativeSource.BUILTIN_DATABASE,
@@ -1135,7 +1135,7 @@ TOOL_CAPABILITY_SPECS: Dict[str, ToolCapabilityRequirement] = {
                 ],
                 instructions_markdown=(
                     "### Tenant Restaurant Menu & Pricing Store\n"
-                    "Answerly manages and semantically indexes your dishes directly in your tenant database.\n\n"
+                    "CallMe manages and semantically indexes your dishes directly in your tenant database.\n\n"
                     "**Readiness Requirements:**\n"
                     "1. Upload your restaurant dishes with prices, descriptions, and dietary tags under **Menu Management**.\n"
                     "2. The receptionist AI uses semantic concept search to answer caller dish and price queries."
@@ -1160,7 +1160,7 @@ TOOL_CAPABILITY_SPECS: Dict[str, ToolCapabilityRequirement] = {
             IntegrationOption(
                 option_id="builtin_hotel_rooms",
                 name="Tenant Room Types & Rate Card Store",
-                description="Semantic room search and multi-tenant rate card storage built directly into Answerly.",
+                description="Semantic room search and multi-tenant rate card storage built directly into CallMe.",
                 is_built_in=True,
                 requires_external_connection=False,
                 authoritative_source=AuthoritativeSource.BUILTIN_DATABASE,
@@ -1184,7 +1184,7 @@ TOOL_CAPABILITY_SPECS: Dict[str, ToolCapabilityRequirement] = {
                 ],
                 instructions_markdown=(
                     "### Tenant Room Types & Rate Card Store\n"
-                    "Answerly manages and semantically indexes your hotel room tiers, nightly tariffs, and amenities directly in your tenant database.\n\n"
+                    "CallMe manages and semantically indexes your hotel room tiers, nightly tariffs, and amenities directly in your tenant database.\n\n"
                     "**Readiness Requirements:**\n"
                     "1. Upload your room types with rates, bed types, and amenities under **Room Rates & Amenities**.\n"
                     "2. The receptionist AI uses semantic search to answer guest room, rate, and amenity inquiries."
@@ -1208,7 +1208,7 @@ TOOL_CAPABILITY_SPECS: Dict[str, ToolCapabilityRequirement] = {
             IntegrationOption(
                 option_id="builtin_clinic_treatments",
                 name="Tenant Treatment Catalog & Fee Store",
-                description="Semantic procedure search and multi-tenant consultation fee storage built directly into Answerly.",
+                description="Semantic procedure search and multi-tenant consultation fee storage built directly into CallMe.",
                 is_built_in=True,
                 requires_external_connection=False,
                 authoritative_source=AuthoritativeSource.BUILTIN_DATABASE,
@@ -1232,7 +1232,7 @@ TOOL_CAPABILITY_SPECS: Dict[str, ToolCapabilityRequirement] = {
                 ],
                 instructions_markdown=(
                     "### Tenant Treatment Catalog & Fee Store\n"
-                    "Answerly manages and semantically indexes your clinical treatments, procedure fees, and doctor specializations directly in your tenant database.\n\n"
+                    "CallMe manages and semantically indexes your clinical treatments, procedure fees, and doctor specializations directly in your tenant database.\n\n"
                     "**Readiness Requirements:**\n"
                     "1. Upload your treatments with base fees, duration, and preparation notes under **Treatments & Fees**.\n"
                     "2. The receptionist AI uses semantic search to answer patient procedure, fee, and doctor inquiries."
