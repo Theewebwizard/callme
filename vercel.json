@@ -1,52 +1,19 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "services": {
-    "app": {
-      "root": ".",
-      "framework": "fastapi"
-    },
-    "frontend": {
-      "root": "frontend",
-      "framework": "vite"
-    }
-  },
+  "buildCommand": "npm --prefix frontend run build",
+  "outputDirectory": "frontend/dist",
   "rewrites": [
     {
-      "source": "/api/(.*)",
-      "destination": {
-        "service": "app"
-      }
+      "source": "/api/:path*",
+      "destination": "https://harsii03-callme-backend.hf.space/api/:path*"
     },
     {
       "source": "/health",
-      "destination": {
-        "service": "app"
-      }
-    },
-    {
-      "source": "/call",
-      "destination": {
-        "service": "app"
-      }
-    },
-    {
-      "source": "/docs",
-      "destination": {
-        "service": "app"
-      }
-    },
-    {
-      "source": "/openapi.json",
-      "destination": {
-        "service": "app"
-      }
+      "destination": "https://harsii03-callme-backend.hf.space/health"
     },
     {
       "source": "/(.*)",
-      "destination": {
-        "service": "frontend"
-      }
+      "destination": "/index.html"
     }
   ]
 }
-
