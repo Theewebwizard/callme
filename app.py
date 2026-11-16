@@ -24,7 +24,12 @@ def check_engine_status(prompt: str = "operational") -> str:
 
 import gradio as gr
 from fastapi.middleware.cors import CORSMiddleware
-from backend.main import app as fastapi_app
+from backend.api import api_router
+from backend.main import (
+    app as fastapi_app,
+    health_check,
+    get_public_platform_metrics,
+)
 
 with gr.Blocks(title="CallMe AI Receptionist API") as demo:
     gr.Markdown("# 📞 CallMe AI Receptionist API is LIVE!")
@@ -38,9 +43,18 @@ with gr.Blocks(title="CallMe AI Receptionist API") as demo:
     status_btn = gr.Button("Test Diagnostics Endpoint")
     status_btn.click(fn=check_engine_status, inputs=status_input, outputs=status_output)
 
-# Attach all FastAPI routes to demo.app so all /health and /api endpoints are served
+# Mount all FastAPI routes and routers directly on demo.app
+demo.app.include_router(api_router, prefix="/api")
+demo.app.add_api_route("/health", health_check, methods=["GET"])
+demo.app.add_api_route("/api/health", health_check, methods=["GET"])
+demo.app.add_api_route("/api/public/metrics", get_public_platform_metrics, methods=["GET"])
+demo.app.add_api_route("/api/platform/metrics", get_public_platform_metrics, methods=["GET"])
+
+# Also attach any remaining routes from fastapi_app
+existing_paths = {getattr(r, "path", None) for r in demo.app.routes}
 for route in fastapi_app.routes:
-    demo.app.routes.append(route)
+    if getattr(route, "path", None) not in existing_paths:
+        demo.app.routes.append(route)
 
 # Add CORS middleware to support Vercel frontend requests
 demo.app.add_middleware(
@@ -56,4 +70,4 @@ app = demo.app
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 7860))
-    demo.launch(server_name="0.0.0.0", server_port=port)
+    demo.launch(server_name="0.0.0.0", server_port=port, ssr_mode=False)
