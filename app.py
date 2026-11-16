@@ -60,4 +60,4 @@ if __name__ == "__main__":
             demo.server_app.routes.append(route)
 
     # Block main thread to keep application alive and responsive
-    demo.block()
+    demo.block_thread()
