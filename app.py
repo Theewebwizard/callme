@@ -43,31 +43,32 @@ with gr.Blocks(title="CallMe AI Receptionist API") as demo:
     status_btn = gr.Button("Test Diagnostics Endpoint")
     status_btn.click(fn=check_engine_status, inputs=status_input, outputs=status_output)
 
-# Mount all FastAPI routes and routers directly on demo.app
-demo.app.include_router(api_router, prefix="/api")
-demo.app.add_api_route("/health", health_check, methods=["GET"])
-demo.app.add_api_route("/api/health", health_check, methods=["GET"])
-demo.app.add_api_route("/api/public/metrics", get_public_platform_metrics, methods=["GET"])
-demo.app.add_api_route("/api/platform/metrics", get_public_platform_metrics, methods=["GET"])
-
-# Also attach any remaining routes from fastapi_app
-existing_paths = {getattr(r, "path", None) for r in demo.app.routes}
-for route in fastapi_app.routes:
-    if getattr(route, "path", None) not in existing_paths:
-        demo.app.routes.append(route)
-
-# Add CORS middleware to support Vercel frontend requests
-demo.app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_origin_regex=r"https://.*\.vercel\.app",
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-app = demo.app
-
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 7860))
-    demo.launch(server_name="0.0.0.0", server_port=port, ssr_mode=False)
+    # Launch Gradio server without thread lock so we can attach FastAPI routes to demo.server_app
+    demo.launch(prevent_thread_lock=True, server_name="0.0.0.0", server_port=port, ssr_mode=False)
+
+    # Attach all FastAPI endpoints to the active server application
+    demo.server_app.include_router(api_router, prefix="/api")
+    demo.server_app.add_api_route("/health", health_check, methods=["GET"])
+    demo.server_app.add_api_route("/api/health", health_check, methods=["GET"])
+    demo.server_app.add_api_route("/api/public/metrics", get_public_platform_metrics, methods=["GET"])
+    demo.server_app.add_api_route("/api/platform/metrics", get_public_platform_metrics, methods=["GET"])
+
+    existing_paths = {getattr(r, "path", None) for r in demo.server_app.routes}
+    for route in fastapi_app.routes:
+        if getattr(route, "path", None) not in existing_paths:
+            demo.server_app.routes.append(route)
+
+    # CORS middleware for Vercel frontend connectivity
+    demo.server_app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_origin_regex=r"https://.*\.vercel\.app",
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+    # Block main thread to keep application alive and responsive
+    demo.block()
