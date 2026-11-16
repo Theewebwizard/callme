@@ -23,7 +23,6 @@ def check_engine_status(prompt: str = "operational") -> str:
     return f"CallMe AI Receptionist ZeroGPU Engine is active ({prompt})"
 
 import gradio as gr
-from fastapi.middleware.cors import CORSMiddleware
 from backend.api import api_router
 from backend.main import (
     app as fastapi_app,
@@ -59,16 +58,6 @@ if __name__ == "__main__":
     for route in fastapi_app.routes:
         if getattr(route, "path", None) not in existing_paths:
             demo.server_app.routes.append(route)
-
-    # CORS middleware for Vercel frontend connectivity
-    demo.server_app.add_middleware(
-        CORSMiddleware,
-        allow_origins=["*"],
-        allow_origin_regex=r"https://.*\.vercel\.app",
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
 
     # Block main thread to keep application alive and responsive
     demo.block()
