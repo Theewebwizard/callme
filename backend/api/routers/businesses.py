@@ -60,8 +60,13 @@ class BusinessAccessRequest(BaseModel):
 @router.post("/login")
 def login_business(req: BusinessLoginRequest) -> Dict[str, Any]:
     """Sign in to a business tenant workspace using Gmail ID and password."""
-    db_service = get_database_service()
-    profile = db_service.authenticate_business(req.email, req.password)
+    try:
+        db_service = get_database_service()
+        profile = db_service.authenticate_business(req.email, req.password)
+    except Exception as exc:
+        logger.error("Exception during business login: %s", exc, exc_info=True)
+        profile = None
+
     if not profile:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -87,9 +92,13 @@ def login_business(req: BusinessLoginRequest) -> Dict[str, Any]:
 @router.post("/access")
 def access_business(req: BusinessAccessRequest) -> Dict[str, Any]:
     """Find and verify business tenant workspace access by name, ID, or phone number."""
-    db_service = get_database_service()
-    query = req.identifier.strip().lower()
-    all_b = db_service.get_all_businesses()
+    try:
+        db_service = get_database_service()
+        query = req.identifier.strip().lower()
+        all_b = db_service.get_all_businesses()
+    except Exception as exc:
+        logger.error("Exception during business access check: %s", exc, exc_info=True)
+        all_b = {}
 
     matched_b = None
     # 1. Exact ID

@@ -48,7 +48,7 @@ def normalize_database_url(url: str) -> str:
 
 def get_effective_database_url(override_url: Optional[str] = None) -> Optional[str]:
     """
-    Get the configured database URL from argument, settings, or return None if unconfigured.
+    Get the configured database URL from argument, settings, or return fallback SQLite URL.
     """
     if override_url:
         return normalize_database_url(override_url)
@@ -56,6 +56,5 @@ def get_effective_database_url(override_url: Optional[str] = None) -> Optional[s
     settings = get_settings()
     raw_url = settings.DATABASE_URL
     if is_placeholder_db_url(raw_url):
-        return None
-    
+        return "sqlite:///callme.db"
     return normalize_database_url(raw_url)

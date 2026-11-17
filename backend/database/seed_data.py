@@ -108,7 +108,7 @@ INITIAL_BUSINESSES: Dict[str, Dict[str, Any]] = {
         "transfer_instructions": "Transfer caller immediately if they ask for corporate banquets (>20 guests), private party catering, or have an urgent food allergy escalation.",
         "owner_email": "haveli.restaurant@gmail.com",
         "owner_name": "Spice Garden Manager",
-        "password_hash": "$2b$12$gLsnFKoSaaLi.zPdfnmkf.MAv4w4nTdJACwWV6jho1gcgg5ZwRtcq",
+        "password_hash": "$2b$12$tdMraba60gdqtkm69.0Gl.KUbn7bd/Aq.dfIjlWBK642XBUma8glC",
         "faqs": [
             {
                 "question": "Do you accept advance table reservations?",
@@ -311,7 +311,7 @@ INITIAL_BUSINESSES: Dict[str, Dict[str, Any]] = {
         "transfer_instructions": "Transfer caller immediately to the emergency triage desk if they report severe acute pain, continuous bleeding, or post-operative trauma.",
         "owner_email": "apex.dental@gmail.com",
         "owner_name": "Dr. Apex",
-        "password_hash": "$2b$12$gLsnFKoSaaLi.zPdfnmkf.MAv4w4nTdJACwWV6jho1gcgg5ZwRtcq",
+        "password_hash": "$2b$12$tdMraba60gdqtkm69.0Gl.KUbn7bd/Aq.dfIjlWBK642XBUma8glC",
         "faqs": [
             {
                 "question": "Do you accept cashless health insurance?",
@@ -442,7 +442,7 @@ INITIAL_BUSINESSES: Dict[str, Dict[str, Any]] = {
         "transfer_instructions": "Transfer caller immediately to the Chief Concierge or Front Office Duty Manager for VIP presidential suite bookings, airport helicopter transfers, or urgent stay escalations.",
         "owner_email": "concierge.azure@grandazure.com",
         "owner_name": "Grand Azure Concierge",
-        "password_hash": "$2b$12$gLsnFKoSaaLi.zPdfnmkf.MAv4w4nTdJACwWV6jho1gcgg5ZwRtcq",
+        "password_hash": "$2b$12$tdMraba60gdqtkm69.0Gl.KUbn7bd/Aq.dfIjlWBK642XBUma8glC",
         "faqs": [
             {
                 "question": "What are your check-in and check-out timings?",
@@ -588,7 +588,7 @@ INITIAL_BUSINESSES: Dict[str, Dict[str, Any]] = {
         "transfer_instructions": "Transfer caller directly to the Senior Spa Director for bespoke bridal parties (>4 persons), aesthetic medical consultations, or custom corporate gift cards.",
         "owner_email": "glow.salon.spa@gmail.com",
         "owner_name": "Glow Spa Director",
-        "password_hash": "$2b$12$gLsnFKoSaaLi.zPdfnmkf.MAv4w4nTdJACwWV6jho1gcgg5ZwRtcq",
+        "password_hash": "$2b$12$tdMraba60gdqtkm69.0Gl.KUbn7bd/Aq.dfIjlWBK642XBUma8glC",
         "faqs": [
             {
                 "question": "Do I need to book my appointment in advance?",

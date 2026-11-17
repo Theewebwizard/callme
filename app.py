@@ -43,6 +43,16 @@ with gr.Blocks(title="CallMe AI Receptionist API") as demo:
     status_btn.click(fn=check_engine_status, inputs=status_input, outputs=status_output)
 
 if __name__ == "__main__":
+    # Ensure database schema is initialized and seeded
+    try:
+        from backend.database.engine import get_engine, init_db_schema
+        from backend.database.seed import seed_database
+        eng = get_engine()
+        init_db_schema(eng)
+        seed_database(eng)
+    except Exception as init_exc:
+        print(f"Startup DB init notice: {init_exc}")
+
     port = int(os.environ.get("PORT", 7860))
     # Launch Gradio server without thread lock so we can attach FastAPI routes to demo.server_app
     demo.launch(prevent_thread_lock=True, server_name="0.0.0.0", server_port=port, ssr_mode=False)
@@ -53,6 +63,10 @@ if __name__ == "__main__":
     demo.server_app.add_api_route("/api/health", health_check, methods=["GET"])
     demo.server_app.add_api_route("/api/public/metrics", get_public_platform_metrics, methods=["GET"])
     demo.server_app.add_api_route("/api/platform/metrics", get_public_platform_metrics, methods=["GET"])
+
+    # Forward exception handlers from fastapi_app
+    for exc_cls, handler in fastapi_app.exception_handlers.items():
+        demo.server_app.add_exception_handler(exc_cls, handler)
 
     existing_paths = {getattr(r, "path", None) for r in demo.server_app.routes}
     for route in fastapi_app.routes:

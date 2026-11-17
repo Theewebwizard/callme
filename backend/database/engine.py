@@ -81,9 +81,10 @@ def create_database_engine(
             poolclass=QueuePool,
             pool_size=5,
             max_overflow=10,
-            pool_timeout=30,
+            pool_timeout=5,
             pool_recycle=1800,  # Recycle connections after 30 minutes
             pool_pre_ping=False,  # Avoid adding 400-500ms roundtrip ping on every connection checkout
+            connect_args={"connect_timeout": 5},
             echo=echo,
         )
 
@@ -91,13 +92,27 @@ def create_database_engine(
 
 
 def get_engine(database_url: Optional[str] = None) -> Engine:
-    """Retrieve or initialize singleton engine for the given URL."""
-    url = database_url or get_effective_database_url()
-    if not url:
-        raise DatabaseConfigurationError("No valid DATABASE_URL configured.")
+    """Retrieve or initialize singleton engine for the given URL with SQLite fallback."""
+    url = database_url or get_effective_database_url() or "sqlite:///callme.db"
     
     if url not in _ENGINE_CACHE:
-        _ENGINE_CACHE[url] = create_database_engine(database_url=url)
+        try:
+            eng = create_database_engine(database_url=url)
+            if not url.startswith("sqlite"):
+                # Probe remote connection with fast timeout
+                with eng.connect() as conn:
+                    conn.execute(text("SELECT 1"))
+            _ENGINE_CACHE[url] = eng
+        except Exception as exc:
+            logger.warning(
+                "Configured database (%s) unreachable: %s. Falling back to SQLite.",
+                url,
+                exc,
+            )
+            fallback_url = "sqlite:///callme.db"
+            if fallback_url not in _ENGINE_CACHE:
+                _ENGINE_CACHE[fallback_url] = create_database_engine(database_url=fallback_url)
+            return _ENGINE_CACHE[fallback_url]
     return _ENGINE_CACHE[url]
 
 
