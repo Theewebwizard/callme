@@ -2,7 +2,6 @@ import React, { useEffect, useState, useRef } from 'react';
 import { Sun, Moon } from 'lucide-react';
 
 export const THEME_STORAGE_KEY = 'callme_theme';
-export const LEGACY_THEME_STORAGE_KEY = 'answerly_theme';
 
 function readTheme() {
   if (typeof document === 'undefined') return 'dark';
@@ -20,8 +19,6 @@ function applyThemeClasses(next) {
 
   try {
     localStorage.setItem(THEME_STORAGE_KEY, next);
-    localStorage.setItem(LEGACY_THEME_STORAGE_KEY, next);
-    window.dispatchEvent(new CustomEvent('answerly:theme-changed', { detail: next }));
     window.dispatchEvent(new CustomEvent('callme:theme-changed', { detail: next }));
   } catch {
     /* storage unavailable in restricted sandbox */
@@ -40,10 +37,8 @@ export default function ThemeToggle({ className = '', style = {} }) {
       setTheme(readTheme());
     };
 
-    window.addEventListener('answerly:theme-changed', handleThemeChange);
     window.addEventListener('callme:theme-changed', handleThemeChange);
     return () => {
-      window.removeEventListener('answerly:theme-changed', handleThemeChange);
       window.removeEventListener('callme:theme-changed', handleThemeChange);
     };
   }, []);

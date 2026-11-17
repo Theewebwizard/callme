@@ -7,11 +7,10 @@ const FALLBACK_API_URL = 'https://harsii03-callme-backend.hf.space';
 const API_BASE = (import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/\/+$/, '') : FALLBACK_API_URL) + '/api';
 
 const TOKEN_KEY = 'callme_token';
-const LEGACY_TOKEN_KEY = 'answerly_token';
 
 function getStoredToken() {
   try {
-    return localStorage.getItem(TOKEN_KEY) || localStorage.getItem(LEGACY_TOKEN_KEY);
+    return localStorage.getItem(TOKEN_KEY);
   } catch {
     return null;
   }
@@ -21,7 +20,6 @@ function setStoredToken(token) {
   try {
     if (token) {
       localStorage.setItem(TOKEN_KEY, token);
-      localStorage.setItem(LEGACY_TOKEN_KEY, token);
     }
   } catch {}
 }
@@ -29,13 +27,11 @@ function setStoredToken(token) {
 function removeStoredToken() {
   try {
     localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(LEGACY_TOKEN_KEY);
   } catch {}
 }
 
 function dispatchUnauthorized(path) {
   if (typeof window !== 'undefined') {
-    window.dispatchEvent(new CustomEvent('answerly:unauthorized', { detail: { path } }));
     window.dispatchEvent(new CustomEvent('callme:unauthorized', { detail: { path } }));
   }
 }
@@ -101,8 +97,8 @@ async function request(path, options = {}) {
   };
 
   let token = getStoredToken();
-  const adminKey = localStorage.getItem('callme_admin_key') || localStorage.getItem('answerly_admin_key') || 'admin';
-  const role = localStorage.getItem('callme_role') || localStorage.getItem('answerly_role');
+  const adminKey = localStorage.getItem('callme_admin_key') || 'admin';
+  const role = localStorage.getItem('callme_role');
   const isAdminPath = path.startsWith('/admin') || role === 'admin';
 
   if (isAdminPath) {

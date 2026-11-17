@@ -22,10 +22,6 @@ export default function App() {
     initApp();
 
     const handleUnauthorized = () => {
-      localStorage.removeItem('answerly_active_business_id');
-      localStorage.removeItem('answerly_role');
-      localStorage.removeItem('answerly_token');
-      localStorage.removeItem('answerly_google_user');
       localStorage.removeItem('callme_active_business_id');
       localStorage.removeItem('callme_role');
       localStorage.removeItem('callme_token');
@@ -34,10 +30,8 @@ export default function App() {
       setRole(null);
     };
 
-    window.addEventListener('answerly:unauthorized', handleUnauthorized);
     window.addEventListener('callme:unauthorized', handleUnauthorized);
     return () => {
-      window.removeEventListener('answerly:unauthorized', handleUnauthorized);
       window.removeEventListener('callme:unauthorized', handleUnauthorized);
     };
   }, []);
@@ -48,10 +42,10 @@ export default function App() {
       api.getHealth().then(setHealth).catch(() => {});
 
       // 2. Check saved role and tenant context
-      const savedRole = localStorage.getItem('answerly_role') || localStorage.getItem('callme_role');
+      const savedRole = localStorage.getItem('callme_role');
       const urlParams = new URLSearchParams(window.location.search);
       const urlBizId = urlParams.get('biz');
-      const savedBizId = localStorage.getItem('answerly_active_business_id') || localStorage.getItem('callme_active_business_id');
+      const savedBizId = localStorage.getItem('callme_active_business_id');
 
       if (savedRole === 'admin' || urlParams.get('admin') === 'true') {
         setRole('admin');
@@ -61,12 +55,9 @@ export default function App() {
 
       const targetId = urlBizId || (savedRole === 'business' ? savedBizId : null);
       if (targetId) {
-        const token = localStorage.getItem('answerly_token') || localStorage.getItem('callme_token');
+        const token = localStorage.getItem('callme_token');
         if (!token || !token.trim() || token === 'undefined' || token === 'null') {
           // Token is missing or invalid; clean session to require sign-in
-          localStorage.removeItem('answerly_active_business_id');
-          localStorage.removeItem('answerly_role');
-          localStorage.removeItem('answerly_token');
           localStorage.removeItem('callme_active_business_id');
           localStorage.removeItem('callme_role');
           localStorage.removeItem('callme_token');
@@ -77,15 +68,10 @@ export default function App() {
             const profile = await api.getBusiness(targetId);
             setActiveBusiness(profile);
             setRole('business');
-            localStorage.setItem('answerly_role', 'business');
-            localStorage.setItem('answerly_active_business_id', profile.id);
             localStorage.setItem('callme_role', 'business');
             localStorage.setItem('callme_active_business_id', profile.id);
             loadCalls(profile.id);
           } catch {
-            localStorage.removeItem('answerly_active_business_id');
-            localStorage.removeItem('answerly_role');
-            localStorage.removeItem('answerly_token');
             localStorage.removeItem('callme_active_business_id');
             localStorage.removeItem('callme_role');
             localStorage.removeItem('callme_token');
@@ -118,8 +104,6 @@ export default function App() {
   const handleEnterWorkspace = (biz) => {
     setActiveBusiness(biz);
     setRole('business');
-    localStorage.setItem('answerly_role', 'business');
-    localStorage.setItem('answerly_active_business_id', biz.id);
     localStorage.setItem('callme_role', 'business');
     localStorage.setItem('callme_active_business_id', biz.id);
     setActiveTab('overview');
@@ -128,21 +112,15 @@ export default function App() {
 
   const handleEnterAdmin = () => {
     setRole('admin');
-    localStorage.setItem('answerly_role', 'admin');
     localStorage.setItem('callme_role', 'admin');
   };
 
   const handleExitAdmin = () => {
-    localStorage.removeItem('answerly_role');
     localStorage.removeItem('callme_role');
     setRole(null);
   };
 
   const handleExitWorkspace = () => {
-    localStorage.removeItem('answerly_role');
-    localStorage.removeItem('answerly_active_business_id');
-    localStorage.removeItem('answerly_google_user');
-    localStorage.removeItem('answerly_token');
     localStorage.removeItem('callme_role');
     localStorage.removeItem('callme_active_business_id');
     localStorage.removeItem('callme_google_user');

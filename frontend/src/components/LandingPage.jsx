@@ -166,7 +166,6 @@ export default function LandingPage({ onEnterWorkspace, onEnterAdmin }) {
           name: res.business.owner_name || res.business.name,
           avatarInitial: loginEmail.trim()[0].toUpperCase(),
         });
-        localStorage.setItem('answerly_google_user', googleUserPayload);
         localStorage.setItem('callme_google_user', googleUserPayload);
         onEnterWorkspace(res.business);
       }
@@ -224,7 +223,6 @@ export default function LandingPage({ onEnterWorkspace, onEnterAdmin }) {
         name: name.trim(),
         avatarInitial: regEmail.trim()[0].toUpperCase(),
       });
-      localStorage.setItem('answerly_google_user', regUserPayload);
       localStorage.setItem('callme_google_user', regUserPayload);
       onEnterWorkspace(created);
     } catch (err) {

@@ -214,7 +214,7 @@ export default function WebPhone({ business }) {
 
   const [speechLang, setSpeechLang] = useState(() => {
     try {
-      return localStorage.getItem('answerly_speech_lang') || localStorage.getItem('callme_speech_lang') || 'hi-IN';
+      return localStorage.getItem('callme_speech_lang') || 'hi-IN';
     } catch {
       return 'hi-IN';
     }
@@ -272,7 +272,6 @@ export default function WebPhone({ business }) {
     setSpeechLang(lang);
     speechLangRef.current = lang;
     try {
-      localStorage.setItem('answerly_speech_lang', lang);
       localStorage.setItem('callme_speech_lang', lang);
     } catch {}
     if (callActiveRef.current && isListeningRef.current) {
@@ -296,11 +295,10 @@ export default function WebPhone({ business }) {
     try {
       const AudioCtx = window.AudioContext || window.webkitAudioContext;
       if (AudioCtx) {
-        if (!window._answerlyAudioCtx && !window._callmeAudioCtx) {
-          window._answerlyAudioCtx = new AudioCtx();
-          window._callmeAudioCtx = window._answerlyAudioCtx;
+        if (!window._callmeAudioCtx) {
+          window._callmeAudioCtx = new AudioCtx();
         }
-        const aCtx = window._answerlyAudioCtx || window._callmeAudioCtx;
+        const aCtx = window._callmeAudioCtx;
         if (aCtx.state === 'suspended') aCtx.resume();
         const buf = aCtx.createBuffer(1, 1, 22050);
         const src = aCtx.createBufferSource();

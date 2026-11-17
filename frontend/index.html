@@ -21,7 +21,7 @@
         <script>
       (function() {
         try {
-          var saved = localStorage.getItem('callme_theme') || localStorage.getItem('answerly_theme');
+          var saved = localStorage.getItem('callme_theme');
           var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
           if (saved === 'light') {
             document.documentElement.classList.add('light');

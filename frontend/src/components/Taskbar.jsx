@@ -60,7 +60,7 @@ export default function Taskbar({
 
   const savedGoogleUser = (() => {
     try {
-      return JSON.parse(localStorage.getItem('answerly_google_user') || localStorage.getItem('callme_google_user') || 'null');
+      return JSON.parse(localStorage.getItem('callme_google_user') || 'null');
     } catch {
       return null;
     }

@@ -560,9 +560,6 @@ export default function ToolLibrary({ business }) {
                 className="btn-secondary"
                 style={{ padding: '0.3rem 0.75rem', fontSize: '0.78rem', cursor: 'pointer' }}
                 onClick={() => {
-                  localStorage.removeItem('answerly_token');
-                  localStorage.removeItem('answerly_active_business_id');
-                  localStorage.removeItem('answerly_role');
                   localStorage.removeItem('callme_token');
                   localStorage.removeItem('callme_active_business_id');
                   localStorage.removeItem('callme_role');
