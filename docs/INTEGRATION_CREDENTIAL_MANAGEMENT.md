@@ -4,7 +4,7 @@
 
 CallMe is a multi_tenant AI receptionist platform. To automate appointments, reservations, customer messaging, and payments, tenants connect third-party providers (Google Calendar, Stripe Connect, Twilio, SevenRooms, OpenTable, HubSpot, etc.).
 
-Managing third-party credentials in a multi-tenant environment requires strict isolation, defense-in-depth cryptography, and concurrency coordination.
+Managing  third-party credentials in a multi-tenant environment requires strict isolation, defense-in-depth cryptography, and concurrency coordination.
 
 ### Core Principles
 
