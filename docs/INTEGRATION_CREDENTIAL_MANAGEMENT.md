@@ -2,7 +2,7 @@
 
 ## 1. Executive Summary & Core Principles
 
-CallMe is a multi-tenant AI receptionist platform. To automate appointments, reservations, customer messaging, and payments, tenants connect third-party providers (Google Calendar, Stripe Connect, Twilio, SevenRooms, OpenTable, HubSpot, etc.).
+CallMe is a multi_tenant AI receptionist platform. To automate appointments, reservations, customer messaging, and payments, tenants connect third-party providers (Google Calendar, Stripe Connect, Twilio, SevenRooms, OpenTable, HubSpot, etc.).
 
 Managing third-party credentials in a multi-tenant environment requires strict isolation, defense-in-depth cryptography, and concurrency coordination.
 
@@ -19,15 +19,15 @@ Managing third-party credentials in a multi-tenant environment requires strict i
 
 ## 2. Threat Model & Security Boundaries
 
-| Threat / Attack Vector | Mitigation in CallMe |
-|---|---|
-| **Database Compromise (SQL Dump / Backup Leak)** | Stored data is AES-256-GCM ciphertext. Without access to the master key (`CAPABILITY_ENCRYPTION_KEY` or KMS), ciphertext is unrecoverable. |
-| **Ciphertext Tampering / Bit-Flipping** | 128-bit authentication tags verified on every read. Tampered ciphertext or authentication tags fail closed (`CredentialDecryptionError`). |
-| **Replay / Nonce Collision** | Every encryption operation generates a fresh 96-bit (12-byte) CSPRNG nonce via `os.urandom`. |
-| **Cross-Tenant Credential Hijacking** | Database foreign keys, partial unique indexes, repository queries, and adapter resolvers enforce tenant ownership (`WHERE business_id = :tenant_id`). |
-| **OAuth Refresh Race Conditions** | Distributed CAS lease acquisition deduplicates concurrent refresh requests; peer workers wait and consume the fresh tokens from the DB rather than hammering upstream OAuth servers. |
-| **Zombie Worker Stale Write** | Monotonically increasing fencing tokens validate write authority upon token commit. A worker that stalled beyond its lease TTL cannot overwrite a newer refresh. |
-| **Accidental Secret Logging** | Centralized redaction utilities (`redact_credential_dict`, `redact_secret_value`) mask tokens, keys, and passwords before logging or serialization. |
+| Threat / Attack Vector                                 | Mitigation in CallMe                                                                                                                                                                 |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Database Compromise (SQL Dump / Backup Leak)** | Stored data is AES-256-GCM ciphertext. Without access to the master key (`CAPABILITY_ENCRYPTION_KEY` or KMS), ciphertext is unrecoverable.                                         |
+| **Ciphertext Tampering / Bit-Flipping**          | 128-bit authentication tags verified on every read. Tampered ciphertext or authentication tags fail closed (`CredentialDecryptionError`).                                          |
+| **Replay / Nonce Collision**                     | Every encryption operation generates a fresh 96-bit (12-byte) CSPRNG nonce via `os.urandom`.                                                                                       |
+| **Cross-Tenant Credential Hijacking**            | Database foreign keys, partial unique indexes, repository queries, and adapter resolvers enforce tenant ownership (`WHERE business_id = :tenant_id`).                              |
+| **OAuth Refresh Race Conditions**                | Distributed CAS lease acquisition deduplicates concurrent refresh requests; peer workers wait and consume the fresh tokens from the DB rather than hammering upstream OAuth servers. |
+| **Zombie Worker Stale Write**                    | Monotonically increasing fencing tokens validate write authority upon token commit. A worker that stalled beyond its lease TTL cannot overwrite a newer refresh.                     |
+| **Accidental Secret Logging**                    | Centralized redaction utilities (`redact_credential_dict`, `redact_secret_value`) mask tokens, keys, and passwords before logging or serialization.                              |
 
 ---
 
@@ -132,18 +132,18 @@ erDiagram
 ```mermaid
 flowchart TD
     Start[resolve_tool_adapter Request] --> CheckExplicit{Explicit connection_id provided?}
-    
+  
     CheckExplicit -- Yes --> QueryConn[Fetch Connection WHERE id = connection_id AND business_id = business_id]
     QueryConn --> ValidConn{Valid & Active?}
     ValidConn -- No / Disconnected / Mismatch --> Unconfigured[Return UnconfiguredAdapter - Fail Closed]
     ValidConn -- Yes --> LoadConnCreds[Load Decrypted Credentials from Vault via connection_id]
-    
+  
     CheckExplicit -- No --> CheckToolConfig[Lookup Business Tool Config for Selected Provider]
     CheckToolConfig --> CheckDefaultConn[Fetch Default Connection WHERE business_id = business_id AND is_default = TRUE]
     CheckDefaultConn --> HasDefConn{Default Connection Found?}
     HasDefConn -- Yes --> LoadDefCreds[Load Decrypted Credentials from Default Connection]
     HasDefConn -- No --> LegacyFallback[Fallback: Load Legacy Credential WHERE business_id AND tool_id]
-    
+  
     LoadConnCreds --> InstantiateAdapter[Instantiate Provider Adapter with Decrypted Secrets & Tenant Config]
     LoadDefCreds --> InstantiateAdapter
     LegacyFallback --> InstantiateAdapter
@@ -154,7 +154,9 @@ flowchart TD
 ## 6. Distributed OAuth Token Refresh Coordination
 
 ### The Race Condition Problem
+
 When an access token expires on a busy system, dozens of voice calls and API requests may attempt to refresh the token simultaneously. Uncoordinated refreshes result in:
+
 1. Upstream OAuth provider rate limiting (`429 Too Many Requests`).
 2. Refresh token invalidation (many providers invalidate the old refresh token immediately upon issuance of a new one; racing workers will fail on subsequent calls).
 3. Zombie worker overwrites: A worker that experienced a network delay or GC pause might commit an obsolete token over a newer one.
@@ -176,7 +178,7 @@ sequenceDiagram
 
     W1->>DB: Atomic CAS acquire lease (ttl=15s)
     DB-->>W1: Lease Acquired! (fencing_token = 1)
-    
+  
     W2->>DB: Atomic CAS acquire lease
     DB-->>W2: Lease Held by W1 (None)
 
@@ -219,6 +221,7 @@ When a business disconnects an integration via `CapabilitySetupWizard.disconnect
 5. **Backup & Retention Note**:
    > [!IMPORTANT]
    > Deleting the live database row removes the credentials from live memory and application queries immediately. However, historical database backups, WAL archives, and replicas retain historical snapshots according to retention policies. True crypto-shredding of historical backups is achieved when rotating the Master Key, which renders all historical ciphertexts permanently unrecoverable across all backup tiers.
+   >
 
 ---
 
